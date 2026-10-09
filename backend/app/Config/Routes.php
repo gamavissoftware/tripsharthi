@@ -422,6 +422,9 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('(:num)/manifest.csv',       'Api\DeparturesController::manifestCsv/$1');
         $routes->delete('holds/(:num)',           'Api\DeparturesController::release/$1');
     });
+    // Website contact form (public, throttled; see Public\ContactController)
+    $routes->post('public/contact', 'Public\ContactController::submit');
+    $routes->options('public/contact', static function (): void {});   // CORS preflight from the marketing site (origins come from CORS_ORIGIN)
     // Travel-portal / aggregator leads: public webhook (token = credential) + owner/admin management.
     $routes->post('public/lead-sources/(:alphanum)', 'Public\LeadSourceController::receive/$1');
     $routes->group('lead-sources', ['filter' => ['auth', 'role:owner,admin']], static function (RouteCollection $routes): void {

@@ -271,3 +271,7 @@ address{font-style:normal;color:#2c3f5c}
 .foot a[href^="tel"],.foot a[href^="mailto"]{white-space:nowrap}
 @media (max-width:1020px){.cform-wrap{grid-template-columns:1fr;gap:30px}.company{grid-template-columns:1fr}}
 @media (max-width:640px){.two-f{grid-template-columns:1fr}.cform{padding:22px}.phero{padding:48px 0 28px}.cmp th,.cmp td{padding:12px 10px;font-size:14.5px}}
+
+.hp{position:absolute!important;left:-9999px;width:1px;height:1px;overflow:hidden}
+.cform .ok{color:#0b6f66;font-weight:600}.cform .err{color:#c0392b;font-weight:600}
+.cform button[disabled]{opacity:.65;cursor:progress}

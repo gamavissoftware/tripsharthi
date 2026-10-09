@@ -14,6 +14,12 @@ Marketing site = static `website/` (see `website/README.md`): sign-up/login butt
 Screenshots come from a fictional dev-only tenant built by `scripts/showcase_seed.py` (login showcase@tripsarthi.test); the product's demo-mode banner is hidden in captures. The default document brand colour moved from indigo to `#0a6cc4` (migration `RebrandDefaultColor`; the quote-PDF cache keys on the profile's `updated_at`, so change colours through the API, not SQL).
 `GET /travel/reports/ads` (Ads → Bookings page) had silently lost its controller method; `TravelReportService::ads` + `TravelReportsController::ads` restore it (first-touch campaign, spend, ROAS, closed-loop delivery counts) with a test.
 
+## Website contact form (built)
+`POST /api/v1/public/contact` (`Public\ContactController`, `Marketing\ContactEnquiryService`, table `contact_enquiries` — platform-level, no tenant). Saved FIRST, then emailed to `CONTACT_NOTIFY_EMAIL` (default manglesh@gamavis.com, Reply-To = the visitor) AFTER the HTTP response is flushed (`register_shutdown_function` + `fastcgi_finish_request`); a failed email leaves the row "not emailed".
+Public + unauthenticated, so: 5 per 10 min and 20 per day per IP, 20 KB body cap, honeypot field `website` and a 1.5 s minimum fill time (bots are told "sent", nothing stored), same sender+message within 15 min stored once, > 2 links = stored as `spam` and never emailed, IP kept only as a salted hash, topic whitelist is the only thing in the subject, everything HTML-escaped. No auto-reply to the visitor (it would make the form a free mail relay). Never answers 401.
+Ops: `php spark contact:list [--new] [--handled ID] [--retry]` — cron `*/15 * * * * php spark contact:list --retry` re-sends failed notifications. Cross-origin use needs the website origin in `CORS_ORIGIN` (an OPTIONS route exists for the preflight). The site's JS posts to `window.TRIPSARTHI_API_URL` (default `https://app.tripsarthi.com/api/v1`; `http://localhost:8731/api/v1` on localhost) and falls back to the visitor's email app if the API is unreachable.
+Dev note: with no SMTP server the send attempt takes ~4 s and PHP's built-in single-threaded server stays busy until it ends — production PHP-FPM does not have this problem.
+
 ## Stack
 PHP 8.3 + CodeIgniter 4 · MySQL 8 · React 19 + Vite · DB-backed queue (`php spark flow:work` via cron). No Redis.
 

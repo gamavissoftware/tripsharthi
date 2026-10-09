@@ -55,21 +55,37 @@
   } else { items.forEach(function (el) { el.classList.add('in'); }); }
 })();
 
-/* contact form -> opens the visitor's email app with the message ready (no server needed) */
+/* contact form: posts to the TripSarthi API (stored + emailed to the team). If the API cannot be reached it falls back to the visitor's email app. */
 (function () {
   'use strict';
   var form = document.getElementById('contact-form'); if (!form) return;
-  var EMAIL = 'manglesh@gamavis.com', note = document.getElementById('cf-note');
+  var EMAIL = 'manglesh@gamavis.com', PHONE = '+91-9718991797', note = document.getElementById('cf-note'), btn = form.querySelector('button[type=submit]');
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var API = window.TRIPSARTHI_API_URL || (local ? 'http://localhost:8731/api/v1' : 'https://app.tripsarthi.com/api/v1');
+  var loaded = Date.now();
   var topics = { demo: 'Demo request', pricing: 'Pricing enquiry', support: 'Help / support', partner: 'Partnership', other: 'Enquiry' };
   var hash = (location.hash || '').replace('#', ''); if (topics[hash]) form.topic.value = hash;
+  function say(msg, cls) { note.textContent = msg; note.className = 'fine' + (cls ? ' ' + cls : ''); }
+  function fallback(v) {
+    var body = ['Name: ' + v.name, 'Email: ' + v.email, 'Phone: ' + (v.phone || '-'), 'Company: ' + (v.company || '-'), '', v.message].join('\n');
+    location.href = 'mailto:' + EMAIL + '?subject=' + encodeURIComponent('TripSarthi — ' + topics[v.topic]) + '&body=' + encodeURIComponent(body);
+    say('We could not reach our server, so your email app should have opened. If not, please write to ' + EMAIL + ' or call ' + PHONE + '.', 'err');
+  }
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    var v = { name: form.name.value.trim(), email: form.email.value.trim(), phone: form.phone.value.trim(), company: form.company.value.trim(), topic: form.topic.value, message: form.message.value.trim(), website: form.website.value, source: location.pathname.replace(/^\//, '') || 'contact.html', t: loaded };
     var ok = true;
-    ['name', 'email'].forEach(function (n) { var f = form[n], v = f.value.trim(), bad = !v || (n === 'email' && !/^\S+@\S+\.\S+$/.test(v)); f.classList.toggle('bad', bad); if (bad) ok = false; });
-    if (!ok) { note.textContent = 'Please add your name and a valid email address.'; return; }
-    var v = function (n) { return form[n].value.trim(); };
-    var body = ['Name: ' + v('name'), 'Email: ' + v('email'), 'Phone: ' + (v('phone') || '-'), 'Company: ' + (v('company') || '-'), '', v('message')].join('\n');
-    location.href = 'mailto:' + EMAIL + '?subject=' + encodeURIComponent('TripSarthi — ' + topics[form.topic.value]) + '&body=' + encodeURIComponent(body);
-    note.textContent = 'Your email app should have opened. If not, please write to ' + EMAIL + ' or call +91-9718991797.';
+    [['name', v.name.length < 2], ['email', !/^\S+@\S+\.\S+$/.test(v.email)]].forEach(function (c) { form[c[0]].classList.toggle('bad', c[1]); if (c[1]) ok = false; });
+    if (!ok) { say('Please add your name and a valid email address.', 'err'); return; }
+    btn.disabled = true; say('Sending…');
+    fetch(API + '/public/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(v) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (res.status === 201 && res.body.success) { form.reset(); form.topic.value = v.topic; say(res.body.message || 'Thank you — we will be in touch shortly.', 'ok'); }
+        else if (res.status === 422 || res.status === 429 || res.status === 413) { say(res.body.message || 'Please check the form and try again.', 'err'); }
+        else { fallback(v); }
+      })
+      .catch(function () { fallback(v); })
+      .then(function () { btn.disabled = false; });
   });
 })();

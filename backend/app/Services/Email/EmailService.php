@@ -69,7 +69,8 @@ class EmailService
         string $to,
         string $subject,
         string $htmlBody,
-        string $textBody = ''
+        string $textBody = '',
+        ?string $replyTo = null
     ): bool {
         try {
             $email = self::makeEmailInstance();
@@ -81,6 +82,9 @@ class EmailService
             $email->setTo($to);
             $email->setSubject($subject);
             $email->setMessage($htmlBody);
+            if ($replyTo !== null && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
+                $email->setReplyTo($replyTo);
+            }
 
             if ($textBody !== '') {
                 $email->setAltMessage($textBody);
