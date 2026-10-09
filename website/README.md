@@ -7,11 +7,18 @@ website/
   index.html           landing page (all sections)
   privacy.html, terms.html   DRAFT legal pages — have a lawyer review before launch
   assets/css/site.css  design system (colours come from the logo)
-  assets/js/site.js    nav, product-tour tabs, pricing toggle, sign-up/login link wiring
+  assets/js/site.js    nav, product-tour tabs, pricing toggle, sign-up/login link wiring, contact form
+  assets/js/chat.js    WhatsApp button + live chat widget (talks to /api/v1/public/chat/*)
   assets/img/*.webp    product screenshots (sample data), og.png social card
   assets/brand/*       logo files cut from the supplied logo
   robots.txt, sitemap.xml, 404.html
 ```
+
+## Files you edit
+- Contact details, nav, footer, WhatsApp number, Search Console token: top of `build.py`
+- Landing pages and blog posts: `build_content.py` (plain data) — then run `python3 website/build.py`
+- Home page body: `index.html` (the build rewrites its head, header and footer)
+- See `SEO-CHECKLIST.md` for the go-live and ranking plan, `_headers` / `deploy/nginx-website.conf.example` for server headers and caching.
 
 ## Run locally
 ```

@@ -7,6 +7,8 @@
   var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var API = window.TRIPSARTHI_API_URL || (local ? 'http://localhost:8731/api/v1' : 'https://app.tripsarthi.com/api/v1');
   var KEY = 'ts_chat_v1', loaded = Date.now();
+  // asset + page links are relative to the site root, whichever folder the current page is in (e.g. /blog/)
+  var BASE = (document.currentScript && document.currentScript.src) ? document.currentScript.src.replace(/assets\/js\/chat\.js.*$/, '') : '';
   var waUrl = 'https://wa.me/' + WA + '?text=' + encodeURIComponent('Hi TripSarthi, I would like to know more about your software for travel agencies.');
 
   function el(tag, attrs, html) { var e = document.createElement(tag); for (var k in (attrs || {})) { if (k === 'class') e.className = attrs[k]; else e.setAttribute(k, attrs[k]); } if (html) e.innerHTML = html; return e; }
@@ -24,9 +26,9 @@
   var launch = el('button', { class: 'tsc-launch', type: 'button', 'aria-label': 'Open live chat', 'aria-expanded': 'false', 'aria-controls': 'ts-chat-panel' }, ICON_CHAT + '<span class="tsc-badge" hidden>1</span>');
   var panel = el('section', { class: 'tsc-panel', id: 'ts-chat-panel', role: 'dialog', 'aria-label': 'Live chat with TripSarthi', hidden: '' });
   panel.innerHTML =
-    '<header class="tsc-head"><img src="assets/brand/mark.png" alt="" width="34" height="34"><div><b>TripSarthi support</b><small><i class="tsc-dot"></i><span class="tsc-status">We usually reply within minutes</span></small></div><button type="button" class="tsc-x" aria-label="Close chat">&times;</button></header>' +
+    '<header class="tsc-head"><img src="' + BASE + 'assets/brand/mark-96.png" alt="" width="34" height="34"><div><b>TripSarthi support</b><small><i class="tsc-dot"></i><span class="tsc-status">We usually reply within minutes</span></small></div><button type="button" class="tsc-x" aria-label="Close chat">&times;</button></header>' +
     '<div class="tsc-body" aria-live="polite"></div>' +
-    '<form class="tsc-start" novalidate><p>Hi 👋 Ask us anything about TripSarthi.</p><input name="name" placeholder="Your name (optional)" autocomplete="name"><input name="email" type="email" placeholder="Email (optional — so we can reply if you leave)" autocomplete="email"><div class="tsc-hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div><textarea name="message" rows="3" placeholder="How can we help?" required></textarea><button type="submit" class="tsc-send">Start chat</button><p class="tsc-fine">Prefer WhatsApp? <a href="' + waUrl + '" target="_blank" rel="noopener">Message us there</a>. By chatting you agree to our <a href="privacy.html">privacy policy</a>.</p></form>' +
+    '<form class="tsc-start" novalidate><p>Hi 👋 Ask us anything about TripSarthi.</p><input name="name" placeholder="Your name (optional)" autocomplete="name"><input name="email" type="email" placeholder="Email (optional — so we can reply if you leave)" autocomplete="email"><div class="tsc-hp" aria-hidden="true"><input name="website" tabindex="-1" autocomplete="off"></div><textarea name="message" rows="3" placeholder="How can we help?" required></textarea><button type="submit" class="tsc-send">Start chat</button><p class="tsc-fine">Prefer WhatsApp? <a href="' + waUrl + '" target="_blank" rel="noopener">Message us there</a>. By chatting you agree to our <a href="' + BASE + 'privacy.html">privacy policy</a>.</p></form>' +
     '<form class="tsc-reply" hidden><input name="body" placeholder="Type a message…" autocomplete="off" maxlength="1000"><button type="submit" class="tsc-send" aria-label="Send">&#10148;</button></form>';
   root.appendChild(wa); root.appendChild(launch); root.appendChild(panel);
 

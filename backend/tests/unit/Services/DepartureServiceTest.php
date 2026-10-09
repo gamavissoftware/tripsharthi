@@ -128,11 +128,11 @@ final class DepartureServiceTest extends CIUnitTestCase
 
     public function testBookingAfterAnExpiredHoldWhoseSeatsWereTakenIsRefused(): void
     {
+        // BookingService reads the REAL clock, so this test's clocks are relative to it (a fixed date made it fail once the calendar moved on).
         $d = $this->dep(['total_seats' => 4, 'min_pax' => 0]);
         $t1 = $this->trip();
-        $r1 = $this->svc()->reserve(1, $d, $t1, 3, 0, 0, 1);
-        $later = $this->svc(self::NOW + 2 * 3600);
-        $later->reserve(1, $d, $this->trip(), 3, 0, 0, 24);                                  // someone else takes the freed seats
+        $r1 = $this->svc(time() - 2 * 3600)->reserve(1, $d, $t1, 3, 0, 0, 1);               // held 2 h ago for 1 h -> expired an hour ago
+        $this->svc(time())->reserve(1, $d, $this->trip(), 3, 0, 0, 24);                     // someone else takes the freed seats, hold valid for a day
         $before = db_connect()->table('bookings')->countAllResults();
         try { (new BookingService())->createFromItinerary(1, $r1['itinerary_id'], [], 9); $this->fail('oversold via an expired hold'); }
         catch (\DomainException $e) { $this->assertStringContainsString('expired', $e->getMessage()); }

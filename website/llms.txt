@@ -1,0 +1,12 @@
+# TripSarthi
+> TripSarthi is travel agency software for India: CRM, WhatsApp shared inbox and automation, itinerary quotes, instalment payments, GST invoicing and TCS tracking, group departures, supplier rate cards and Meta/Google ad management. A product of Gamavis Software Solutions, Faridabad, Haryana.
+
+## Key pages
+- [Features](https://tripsarthi.com/features.html): Everything the product does
+- [Pricing](https://tripsarthi.com/pricing.html): Starter ₹1,499, Growth ₹3,999, Pro ₹6,999 per month
+- [Travel agency software](https://tripsarthi.com/travel-agency-software.html): Overview for Indian travel agencies
+- [WhatsApp CRM for travel agents](https://tripsarthi.com/whatsapp-crm-for-travel-agents.html): Shared inbox and automations within WhatsApp rules
+- [GST billing for travel agents](https://tripsarthi.com/gst-billing-for-travel-agents.html): GST invoices, TCS, GSTR exports
+- [Tour operator software](https://tripsarthi.com/tour-operator-software.html): Group departures, supplier rates, payables
+- [Blog](https://tripsarthi.com/blog/index.html): Guides for travel agents
+- [Contact](https://tripsarthi.com/contact.html): manglesh@gamavis.com, +91-9718991797

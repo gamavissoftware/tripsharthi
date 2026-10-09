@@ -1,0 +1,44 @@
+# tripsarthi.com — static marketing site (replace /var/www/tripsarthi/website with where you upload the `website/` folder).
+# Needs TLS certificates (e.g. certbot --nginx -d tripsarthi.com -d www.tripsarthi.com).
+server {
+    listen 80;
+    server_name tripsarthi.com www.tripsarthi.com;
+    return 301 https://tripsarthi.com$request_uri;
+}
+server {
+    listen 443 ssl http2;
+    server_name www.tripsarthi.com;
+    ssl_certificate     /etc/letsencrypt/live/tripsarthi.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tripsarthi.com/privkey.pem;
+    return 301 https://tripsarthi.com$request_uri;                     # one canonical host (matches the canonical tags)
+}
+server {
+    listen 443 ssl http2;
+    server_name tripsarthi.com;
+    ssl_certificate     /etc/letsencrypt/live/tripsarthi.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tripsarthi.com/privkey.pem;
+    root /var/www/tripsarthi/website;
+    index index.html;
+    error_page 404 /404.html;
+
+    gzip on; gzip_comp_level 6; gzip_vary on;
+    gzip_types text/css application/javascript application/json image/svg+xml application/xml text/plain;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header X-Frame-Options SAMEORIGIN always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self' https://app.tripsarthi.com; frame-src https://www.google.com; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'self'" always;
+
+    # clean URLs: /pricing -> /pricing.html ; /index.html -> /
+    location = /index.html { return 301 /; }
+    location / { try_files $uri $uri.html $uri/ =404; }
+
+    location /assets/fonts/ { expires 1y; add_header Cache-Control "public, immutable"; }
+    location /assets/img/   { expires 30d; add_header Cache-Control "public"; }
+    location ~* ^/assets/(css|js)/ { expires 1y; add_header Cache-Control "public"; }      # files are versioned with ?v=hash by build.py
+    location ~* \.html$ { add_header Cache-Control "public, max-age=0, must-revalidate"; }
+    location = /sitemap.xml { default_type application/xml; }
+    location = /robots.txt  { default_type text/plain; }
+}

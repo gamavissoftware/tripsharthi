@@ -199,4 +199,15 @@ class App extends BaseConfig
      * @see http://www.w3.org/TR/CSP/
      */
     public bool $CSPEnabled = false;
+
+    public function __construct()
+    {
+        parent::__construct();
+        // Behind nginx / a load balancer every request arrives from the proxy. Without this, the per-IP limits (login, contact form, live chat,
+        // lead webhooks) would be shared by ALL visitors. TRUSTED_PROXIES = comma list of proxy IPs/CIDRs, e.g. "127.0.0.1,10.0.0.0/8".
+        // The proxy must set X-Forwarded-For (the nginx example does: proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for).
+        foreach (array_filter(array_map('trim', explode(',', (string) env('TRUSTED_PROXIES', '')))) as $ip) {
+            $this->proxyIPs[$ip] = (string) env('TRUSTED_PROXY_HEADER', 'X-Forwarded-For');
+        }
+    }
 }
