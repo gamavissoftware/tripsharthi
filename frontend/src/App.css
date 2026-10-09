@@ -1,0 +1,294 @@
+/* App-level layout — sidebar + main shell.
+   Shared component styles (cards, buttons, badges, tables…) live in index.css. */
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 236px;
+  flex-shrink: 0;
+  background: linear-gradient(185deg, #0a1f44 0%, #0b2a5b 70%, #0a3a6a 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--sidebar-border);
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: 1.25rem 1.15rem 1rem;
+  text-decoration: none;
+}
+
+.sidebar-logo-icon {
+  width: 30px; height: 30px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .9rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 -8px 14px rgba(0,0,0,.22), 0 1px 3px rgba(0,0,0,.4);
+}
+
+.sidebar-logo-text {
+  font-size: .95rem;
+  font-weight: 650;
+  color: #fff;
+  letter-spacing: -.01em;
+}
+
+.sidebar-section-label {
+  font-size: .64rem;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #5c5c66;
+  padding: .8rem 1.3rem .3rem;
+}
+
+.sidebar-nav { flex: 1; padding-bottom: .5rem; }
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin: 1px .6rem;
+  padding: .46rem .7rem;
+  color: var(--sidebar-text);
+  text-decoration: none;
+  font-size: .855rem;
+  font-weight: 500;
+  letter-spacing: -.005em;
+  border-radius: 7px;
+  transition: background .12s ease, color .12s ease;
+  position: relative;
+}
+
+.sidebar-link:hover {
+  background: var(--sidebar-hover);
+  color: #e4e4e9;
+}
+
+.sidebar-link.active {
+  background: var(--sidebar-active);
+  color: #fff;
+  font-weight: 550;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+}
+
+.sidebar-link-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  opacity: .7;
+  transition: opacity .12s ease;
+}
+
+.sidebar-link:hover .sidebar-link-icon,
+.sidebar-link.active .sidebar-link-icon { opacity: 1; }
+
+/* ── Collapsible nav groups ─────────────────────────────────────────────── */
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  padding: .58rem 1.25rem;
+  background: none;
+  border: 0;
+  color: var(--sidebar-text);
+  font-size: .875rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s, color .12s;
+}
+.nav-group-header:hover { background: var(--sidebar-hover); color: #e2e8f0; }
+.nav-group-header.has-active { color: #bcdcf6; }
+.nav-group-label { flex: 1; }
+.nav-group-chevron { font-size: .7rem; opacity: .55; transition: transform .15s ease; }
+.nav-group.open .nav-group-chevron { transform: rotate(90deg); }
+.nav-group-items { padding-bottom: .1rem; }
+
+/* Indented sub-links inside a group */
+.sidebar-link.sidebar-sublink { padding-left: 2.45rem; font-size: .84rem; }
+.sidebar-link.sidebar-sublink .sidebar-link-icon { font-size: .82rem; opacity: .65; }
+
+.sidebar-divider {
+  height: 1px;
+  background: var(--sidebar-border);
+  margin: .6rem 1.25rem .1rem;
+}
+
+.sidebar-footer {
+  padding: .85rem;
+  border-top: 1px solid var(--sidebar-border);
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .35rem .4rem .75rem;
+}
+
+.sidebar-user-info { min-width: 0; }
+
+.sidebar-user-name {
+  font-size: .8125rem;
+  font-weight: 550;
+  color: #e4e4e9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+  font-size: .68rem;
+  color: #6e6e78;
+  text-transform: capitalize;
+  letter-spacing: .02em;
+}
+
+.sidebar-signout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: .42rem;
+  background: rgba(255,255,255,.04);
+  color: #9b9ba6;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 7px;
+  font-size: .8rem;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background .14s ease, color .14s ease, border-color .14s ease;
+}
+.sidebar-signout:hover {
+  background: rgba(255,255,255,.08);
+  color: #e4e4e9;
+  border-color: rgba(255,255,255,.14);
+}
+
+/* ── Main content area ──────────────────────────────────────────────────── */
+.app-main {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Mobile top bar + drawer trigger (hidden on desktop) ───────────────── */
+.mobile-topbar { display: none; }
+.nav-backdrop { display: none; }
+
+/* ── Responsive: phone / small tablet ──────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Sidebar becomes an off-canvas drawer; main content takes the full width. */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    height: 100vh;
+    z-index: 120;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+    box-shadow: 2px 0 16px rgba(0,0,0,.18);
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .nav-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,.45);
+    z-index: 110;
+  }
+
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .8rem;
+    border-bottom: 1px solid var(--sidebar-border, #e5e7eb);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+  .mobile-hamburger {
+    appearance: none;
+    border: 1px solid var(--sidebar-border, #e5e7eb);
+    background: #fff;
+    border-radius: 9px;
+    width: 40px; height: 38px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .mobile-topbar-title { font-weight: 800; font-size: 15px; }
+
+  /* Tighten content padding and let wide data tables scroll horizontally. */
+  .app-main { padding-left: 0; padding-right: 0; }
+  .app-main table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+}
+
+/* ── Form field validation states ──────────────────────────────────────── */
+.form-input.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .12);
+  background: #fffafa;
+}
+
+.form-input.is-valid,
+.form-select.is-valid {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, .1);
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: .75rem;
+  margin-top: .2rem;
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  animation: shake .3s ease;
+}
+
+.field-hint {
+  color: var(--text-3);
+  font-size: .75rem;
+  margin-top: .2rem;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0) }
+  20%       { transform: translateX(-4px) }
+  60%       { transform: translateX(4px) }
+}

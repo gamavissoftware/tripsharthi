@@ -1,0 +1,214 @@
+# CLAUDE.md — TravelPilot
+
+> CRM + WhatsApp automation + ad management for the **Indian travel industry**. By Gamavis Software Solutions.
+> Forked from LeadPilot's platform layer (tenancy, auth, WhatsApp Cloud API, flow engine, Meta/Google lead
+> ingestion, Razorpay billing, email marketing, AI). The travel domain is built on top of it.
+> The inherited platform spec is in `docs/LEADPILOT_PLATFORM_SPEC.md` — **its WhatsApp policy rules (§1) and flow
+> engine design (§8) still bind this product.** Product blueprint + roadmap: `docs/TRAVELPILOT_BLUEPRINT.md`.
+> Research: `docs/research/` (market/compliance, ads & lead APIs).
+
+## Brand & website (TripSarthi)
+Product name is **TripSarthi** (domain tripsarthi.com; "TravelPilot" survives only in code identifiers, the `X-TravelPilot-Signature` webhook header and the `TravelPilot` spark command group). Logo files: `frontend/public/brand/*` (cut from the supplied logo; website copies in `website/assets/brand`).
+Palette from the logo: navy `#0a1f44`, blue `#0a6cc4` (`--primary`), teal `#12a89e` (`--accent`), orange `#f98f26` (`--accent-warm`). Auth screens share `components/AuthBrandPanel.jsx`; the SPA answers `#/login` and `#/register` so the website can deep-link.
+Marketing site = static `website/` (see `website/README.md`): sign-up/login buttons go to the app (`localhost:5917` in dev, `app.tripsarthi.com` otherwise). Its pricing mirrors `BillingPage.jsx` / `BillingService` — change together. Legal pages are DRAFTS needing a lawyer.
+Screenshots come from a fictional dev-only tenant built by `scripts/showcase_seed.py` (login showcase@tripsarthi.test); the product's demo-mode banner is hidden in captures. The default document brand colour moved from indigo to `#0a6cc4` (migration `RebrandDefaultColor`; the quote-PDF cache keys on the profile's `updated_at`, so change colours through the API, not SQL).
+`GET /travel/reports/ads` (Ads → Bookings page) had silently lost its controller method; `TravelReportService::ads` + `TravelReportsController::ads` restore it (first-touch campaign, spend, ROAS, closed-loop delivery counts) with a test.
+
+## Stack
+PHP 8.3 + CodeIgniter 4 · MySQL 8 · React 19 + Vite · DB-backed queue (`php spark flow:work` via cron). No Redis.
+
+## Local dev (ports chosen to avoid the other projects on this machine)
+```
+cd backend && php spark migrate && php spark serve --port 8731     # API
+cd frontend && npm run dev                                          # SPA on :5917 (proxies /api -> :8731)
+bash scripts/smoke-travel.sh                                        # enquiry -> quote -> booking -> payment, end to end
+cd backend && vendor/bin/phpunit --no-coverage                      # 1092 tests
+```
+Set `AI_MOCK_MODE = true` in `backend/.env` to run without an Anthropic key (travel AI falls back to deterministic parsers).
+
+## Travel domain model (Phase 1, built)
+- **Trip = extension of a CRM Deal** (1:1 via `trips.deal_id`) in the auto-provisioned "Travel Sales" pipeline
+  (`TravelPipelineService`). Everything that works on deals (forecast, rotting, assignment, flow triggers) works on trips.
+  Always change status via `TripService::setStatus` — it moves the deal, fires flow triggers and queues ad feedback.
+- **Itinerary** (`itineraries`/`itinerary_days`/`itinerary_items`): versioned, costed per line. `cost_*` = what we pay
+  suppliers, never exposed publicly. `ItineraryService::recalc` is the only place totals are computed (via `PricingService`).
+- **Booking** (`bookings`, `booking_payments`, `booking_services`, `travelers`): created from an itinerary by
+  `BookingService`; payment schedule = deposit + instalments; supplier to-dos per service; passports encrypted (`passport_no_enc`).
+- **Suppliers / rate cards / destinations**: master data. AI may only reference a rate by `rate_id`; **the model never invents prices**.
+- **Attribution + closed loop**: `lead_attributions` (first/last touch: gclid, fbclid, ctwa_clid, lead_id, UTMs) is written for
+  every lead source through `ContactDedupeService::upsert($tenant, [... '_attribution' => [...]])`. `conversion_events`
+  is an outbox delivered by `php spark conversions:send` (cron every 5 min) to Meta CAPI / Google offline conversions.
+- Public customer quote: `GET /api/v1/public/quotes/{32-hex token}` (+ `/accept`), SPA route `#/q/{token}`. Token is the credential.
+
+## Payment links & WhatsApp dunning (built)
+- One Razorpay link per instalment (`InstalmentLinkService`, reuses a live link; tenant's OWN Razorpay via Settings → Payments).
+  `payment_link.paid` webhook (signature-verified per tenant) -> `BookingService::onPaymentLinkPaid` settles the instalment
+  idempotently and sends a receipt. A manual "mark paid" plus a later link payment logs a `possible double payment` warning.
+- Dunning (`DunningService` + pure `DunningPlanner`): steps relative to due date (before_3d, due_today, overdue_2d/5d, escalate_7d task),
+  configurable at Settings -> Payment Reminders. Cron: `php spark bookings:dunning` **every 15 min**.
+  Each (instalment, step) is reserved in `payment_reminders` (UNIQUE) before sending. Missed steps are skipped, not blasted.
+  Window open -> plain text; window closed -> APPROVED utility template only (else no send + human task). Opt-out -> never message.
+  Sends only 09:00-20:00 IST (configurable); customer messaging stops 45 days overdue.
+- Tests: `scripts/test-mysql.sh` runs the MySQL-backed integration group (real migrations, throwaway DB `travelpilot_test`).
+  Default `phpunit` excludes group `mysql`. Do not use `$refresh = true` there: an inherited LeadPilot migration has a broken `down()`.
+
+## Ad platform credentials (built)
+Settings -> Ad Platforms (`/settings/ads`, owner/admin only; `AdCredentialsService`, `AdPlatformsController`).
+- **Meta CAPI**: dataset ID + access token are validated against Graph API before saving; "Send test event" uses the Test Event Code.
+- **Google Ads**: "Connect with Google" OAuth (platform env `GOOGLE_ADS_CLIENT_ID/SECRET`; redirect URI = `{base}/api/v1/google-ads/oauth/callback`),
+  then pick account (+ optional MCC) and map events to UPLOAD_CLICKS conversion actions. Only the refresh token is kept.
+- Secrets live encrypted (`TokenCipher`, `*_enc` keys in `integrations.config`) and are never returned by any endpoint.
+- Per-platform event allow-list (`events`); Delivery log with retry of failed/skipped events (`conversions:send` cron delivers).
+- Local dev: `CONVERSIONS_MOCK_MODE=true` simulates both platforms. Route gotcha: never use `(a|b)` alternation in routes — it silently drops filters; use `(:segment)` and validate in the controller.
+
+## Travel flow triggers (built)
+- **One registry**: `App\Services\Flow\FlowTriggers` (backend) and `frontend/src/flow-builder/travelTriggers.js`. The old duplicated lists are gone;
+  a MySQL test fails if `flows.trigger_type` ENUM and the registry disagree. To add a trigger: registry -> migration widening the ENUM -> frontend list.
+- Triggers: `quote_sent`, `quote_viewed`, `quote_accepted`, `quote_stale`(days, audience), `booking_confirmed`, `payment_received`, `payment_overdue`,
+  `departure_soon`(days_before), `trip_started`, `trip_completed`, `passport_expiring`(within_days). Optional filters on all: `international` (any|yes|no), `trip_type`.
+- `TravelTriggerService` fires them; event ones from the code path that causes them (share/view/accept/booking/payment), timed ones by cron
+  **`php spark travel:triggers` hourly** (also moves bookings to travelling/completed). Every firing is claimed in `travel_trigger_log` (UNIQUE) -> never twice.
+- Context (`TravelFlowContext`) is pre-formatted and customer-safe (no cost/margin). Templates read it as `state:trip_destination` etc.; free-form copy as `{{trip.destination}}`,
+  `{{quote.link}}`, `{{booking.ref}}` … (whitelisted groups only; an empty value leaves the token visible, never blank).
+- **Starter automations** (`TravelFlowRecipes`, page `/automations`): 7 draft flows + draft templates, each `window_check -> free-form (open) / approved template (closed)`.
+  Installing sends nothing; the validator blocks activation until the template is Meta-approved. If you use the `payment_received` trigger for a thank-you, turn off the
+  dunning receipt (or don't enable both) to avoid two messages.
+
+## Ad campaign management (built)
+Travel -> Ad Campaigns (`/ads/campaigns`, owner/admin only). Backend: `App\Services\Ads\*`, `AdCampaignsController`.
+- **Everything goes through `AdCampaignManager`**: guardrails -> local row FIRST -> platform call -> update row -> audit log. Never call an adapter directly.
+- **Safety model**: all campaigns are created PAUSED. A daily spend cap > 0 is mandatory (default 0 = managing OFF). `AdGuardrails` (pure) checks every launch / budget raise:
+  cap across ALL active campaigns (synced ones count), min budget, max single raise %, INR accounts only. Cuts and pauses are never blocked.
+  Rules (`AdRulesService`) can only PAUSE or NOTIFY — never enable or raise; only touch ACTIVE campaigns; once per rule/campaign/day.
+- Platforms: Meta = campaign > ad set (budget lives here) > creative > ad (rolled back if a step fails); Google = ONE atomic `googleAds:mutate` with temp ids.
+  `validate_only` powers the review step. Plans are pure (`MetaPlanBuilder`, `GooglePlanBuilder`) and contract-tested. Budgets: paise (Meta INR minor units; Google micros / 10,000).
+- Platform errors are classified (`AdsApiException` kinds) and returned as **422, never 401** (the SPA logs out on 401).
+- Meta write access needs `ads_management` + `pages_manage_ads`: requested only via Facebook Login `return_to=ads_manage` (reporting-only connections keep working). Needs Meta App Review in production.
+- `ADS_MOCK_MODE=true` (`AdsMockHttp`) simulates both APIs statefully for local dev/tests. It mimics the request shapes we send; it is NOT proof against a real ad account.
+- Reporting joins platform spend (`ad_insights_daily`) to CRM first-touch attribution -> leads, bookings, ex-tax revenue, ROAS. Web-form leads carry the campaign via `utm_id` / numeric `utm_campaign`,
+  forwarded by the form embed script (first-click gclid/fbclid kept 90 days). Click-to-WhatsApp leads match by the ad id of TravelPilot-created ads.
+- Cron: **`php spark ads:run` hourly** (sync + rules). AI copy (`AdCopyAiService`): every line passes `AdCopyLint` + char limits; ₹ prices may only equal the price the agent typed.
+- `GraphClient` now honours `META_GRAPH_VERSION` (its built-in default is still v21.0 — set the env to a current version).
+
+## E-invoicing / IRN (built; simulator + contract tests ONLY — never verified against the real IRP or a real GSP)
+Settings -> E-invoicing (`/settings/einvoice`, owner/admin). Code: `App\Services\Einvoice\*` (`EinvoiceBuilder` + `EinvoiceValidator` pure, `IrpClient` interface, `MockIrpClient`, `GspIrpClient`, `EinvoiceService`, `EinvoiceException`), `EinvoiceController`, hook in `InvoiceService::insertDocument`.
+- **When it applies** (`EinvoiceService::applies`): tenant switched it on AND confirmed turnover > INR 5 Cr, doc is a TAX INVOICE or CREDIT NOTE, and the buyer is B2B (valid-checksum GSTIN). B2C, bills of supply and receipts are never e-invoiced.
+- **Atomicity (the key design)**: registration happens INSIDE the numbering transaction — number assigned -> build INV-01 -> validate -> IRP -> IRN/QR onto the PDF + row. Any failure rolls back, so NO invoice and NO number exists without a valid IRN (gap-free numbering kept; tested). If the IRP registered it but our commit failed, the retry reuses the number, the IRP answers duplicate (2150) and we ADOPT the existing IRN. The network call holds the tenant's `doc_sequences` row lock for its duration (timeout 30 s).
+- Payload: schema INV-01 v1.1, one service line (IsServc Y, HSN = profile SAC, qty 1, unit OTH), **TCS rides in `ValDtls.OthChrg`** so TotInvVal equals the invoice total to the paisa; CRN carries `RefDtls.PrecDocDtls`. The validator reports EVERY problem at once in plain words (buyer address/city/PIN/state, GSTIN-state match, doc number <= 16 chars `[A-Za-z0-9/-]`, rate slabs, intra=CGST+SGST / inter=IGST, arithmetic).
+- **Clients**: `MockIrpClient` (only when `EINVOICE_MOCK_MODE=true` — a simulated IRN must NEVER reach a real invoice; the server refuses `demo` mode otherwise) enforces schema errors, duplicates (2150), the 24 h cancel window. `GspIrpClient` is a GENERIC REST adapter: base URL, paths and auth (custom headers / bearer / basic) are configured per provider and the answer is read NIC-style (`Irn/AckNo/AckDt/SignedQRCode`, top-level or under `data`). The direct NIC protocol (RSA/AES-ECB session crypto) is NOT implemented. Credentials are encrypted (`TokenCipher`) and write-only (blank keeps the stored value). HTTP mapping: provider/credential trouble is **502, never 401** (the SPA logs staff out on 401); data problems 422.
+- Stored on `invoices`: `einvoice_irn/status/ack_no/ack_dt/qr(signed JWT)`; the PDF prints IRN, ack and the QR. The immutable-invoice guard now allows ONLY the cancel fields (`status`, `einvoice_status`, `einvoice_cancelled_at/reason`) to change. Cancel: only within 24 h of the ack, never after a credit note exists, remark required; the invoice becomes `cancelled`, its public PDF link answers 410, and the booking can be invoiced again (new number, new IRN). Cancelled docs are out of GSTR-1/3B and counted as cancelled in the document summary.
+- Compliance net: the GSTR-1 summary warns about B2B tax invoices issued while enabled that have no IRN. NOT built: the 30-day reporting limit for AATO >= INR 10 Cr, e-way bills, export/SEZ supply types, debit notes, bulk back-reporting of old invoices, direct NIC integration. The first real run MUST be in the provider's sandbox.
+- Test gotcha: `einvoice_settings` leaks between test classes (it switches e-invoicing on for the tenant) — every test class that issues invoices truncates it.
+
+## Multi-currency (built)
+**INR is the ONLY accounting currency** — GST, TCS, invoices, receipts, credit notes, reports and every `*_amount` stay in INR paise. Foreign currencies exist for (1) supplier COSTS / what we owe suppliers, and (2) an indicative equivalent shown to the customer. NOT built (by design): invoicing customers in a foreign currency, GST export/LUT handling, foreign-currency customer payments, non-INR ad accounts (guardrails already refuse them).
+- Code: pure `Currency` (minor-unit exponents: JPY 0, KWD 3 …; `toInrPaise`, `fromInrPaise`, `realisedRate`, `plausibleChange`), `FxService`, `FxController` (`/api/v1/fx`), page `/settings/fx`, cron **`php spark fx:refresh` daily** (after 17:00 IST). Foreign amounts are integer MINOR units; rates are INR per 1 major unit, `DECIMAL(18,8)` (IDR ~0.005 needs it).
+- Rates: manual (never overwritten) or auto (Frankfurter/ECB `latest?base=INR`, inverted; AED/SAR/QAR/OMR/BHD follow their USD pegs, BTN = 1.0; currencies with no source say so). A change > 25% (auto: > 15%) is refused/skipped as a probable typo; > 3 days old = flagged stale. Every change is in `fx_rate_history` + audited.
+- **Costs**: a quote line with `cost_currency` + `unit_cost_fx` is converted ONCE at `rate x (1 + buffer%)` (buffer defaults 2%, costs only) into the INR `unit_cost`, and the rate is LOCKED on the line (`fx_rate`) — a quote never drifts; `POST /itineraries/:id/relock-fx` re-prices at today's rates (refused once accepted). A client-supplied INR total on a foreign line is ignored. No rate configured = error, never a guess. AI plans convert foreign rate cards (a USD 100 rate card is 10,000 CENTS — it used to be read as ₹100).
+- **Customer view**: `itineraries.display_currency` -> `fx_display` (mid rate, no buffer) on the public quote + quote PDF, labelled indicative. All foreign cost fields are stripped from customer payloads (`unit_cost_fx`, `cost_currency`, `fx_rate`); tests assert it.
+- **Suppliers**: `booking_services` carries `cost_currency/cost_fx/paid_fx/fx_rate`; payments record the foreign amount paid AND the INR the bank debited (realised rate). Plausibility: INR/foreign vs today's rate (> 25% off = refused, catches a dropped zero). When `paid_fx >= cost_fx` the service is SETTLED: `cost_amount` becomes the INR really paid (so margin is real), `cost_quoted_inr` keeps the quote and `fx_variance` = actual − quoted (+ = loss). Removing a payment reverts to the quote. `bookings.cost_total` is re-derived by `SupplierPayableService::rederive`. Payables show foreign outstanding + INR estimate at today's rate and an "owed in foreign currency" exposure card; the business report adds exposure + realised variance. PATCH of a foreign service edits `cost_fx` (INR derived at its locked rate), never `cost_amount`.
+- Gotcha: MySQL returns DECIMAL/BIGINT as strings — cast before comparing.
+
+## Ads gaps closed (built; simulator + contract tests only, never a real ad account)
+- **Disapproval alerts** (`AdIssueService`, `ad_issues`): each `ads:run` sync passes the COMPLETE list of disapproved/limited ads per platform (Meta `ads?effective_status IN (DISAPPROVED, WITH_ISSUES)` + `ad_review_feedback`; Google GAQL `ad_group_ad.policy_summary`). New problem -> in-app + phone push (type `ad_issue` -> push category `ads`, owners/admins only) ONCE; reappearing after a fix alerts again; gone from the list = resolved. A failed fetch must never call `record()` (absence means "fixed"). Shown as a red panel on Ad campaigns.
+- **Multi ad sets / ad groups**: Meta spec `adsets:[{name,budget_pct,targeting,creative,audiences}]` (<=5, shares must sum to 100, each >= INR 100/day, remainder paise to the first set so parts ALWAYS equal the total); `MetaPlanBuilder::plan` returns `sets[]` and keeps `adset/creative/ad` = first for old callers; children store `sets[]`; launch activates every set; `setBudget` keeps each set's share. Google `ad_groups:[{name,headlines,descriptions,keywords,final_url?}]` (<=5, temp ids -3,-4,… in one atomic mutate); `GooglePlanBuilder::ids` adds `ad_groups`/`ads` lists. Attribution of click-to-WhatsApp leads matches ANY set's ad id (`JSON_CONTAINS` on `children.sets[*].ad_id`).
+- **Image upload** (`AdAssetService`, `ad_assets`, override dir `AD_ASSET_STORAGE_DIR`): JPG/PNG by CONTENT, 400-8000 px, <5 MB, RE-ENCODED with GD (strips EXIF + trailing payloads), deduped by sha256, integrity-checked on read, served to staff only. Meta: uploaded once per account to `act_x/adimages`, creative uses `image_hash` (hash cached in `meta_hashes`). Google: sent inline as image assets.
+- **Audiences** (`AdAudienceService`, `ad_audiences`, `ad_audience_members`; page `/ads/audiences`): Meta custom audiences from CRM (booked / unbooked enquiries / saved segment / all opted-in) and lookalikes (1-10%, seed >= 100). **DPDP**: explicit consent confirmation required (audited), only `opt_in = 1` contacts, phone/email SHA-256 hashed BEFORE sending, only hashes stored, `refresh` REMOVES people who opted out. Used in campaigns as include/exclude (`audiences:[{audience_id,mode}]`, resolved to Meta ids; wrong-account or unready audiences refused); an audience used by an ACTIVE campaign can't be deleted (decode the spec JSON — never string-match a MySQL JSON column).
+- **Performance Max** (`PmaxPlanBuilder`): one atomic mutate = budget + campaign (`PERFORMANCE_MAX`, `maximizeConversions`, PAUSED) + asset group + text/image assets + links. Needs 3-15 headlines (30), 1-5 long headlines (90), 2-5 descriptions (one <= 60), business name (25), >= 1 landscape and 1 square image; slot shapes are checked against the stored image. Image bytes are injected at plan time and NEVER saved in the campaign spec.
+- **Demand Gen** (`DemandGenPlanBuilder`, wizard tile "Demand Gen"): image-only multi-asset ads for YouTube/Discover/Gmail/Display/Maps. One atomic mutate = budget + campaign (`DEMAND_GEN`, `maximizeConversions` or `targetSpend`, PAUSED, `upgradedTargeting`) + ONE ad group (`demandGenAdGroupSettings.channelControls`: `ALL_CHANNELS` / `ALL_OWNED_AND_OPERATED_CHANNELS` / `selectedChannels`) + image assets + `demandGenMultiAssetAd` + location/language criteria on the AD GROUP. Field names/limits were taken from the google-ads Python v25 definitions (not a live account): headlines 1-5 (30), descriptions 1-5 (90), business name (25, plain string), landscape 1.91:1 >= 600x314, square >= 300x300, portrait 4:5 >= 480x600, tall 9:16 >= 600x1067, logo 1:1 >= 128x128 (1-5 required), >= 1 landscape/square, <= 20 images. Unlike PMax the ratio must be exact (+-1%): `AdAssetService::strictProblem` is checked in `GoogleAdapter::checkImages`; the simulator enforces the ad rules (`AdsMockHttp::demandGenProblem`). NOT built: video, carousel, product-feed ads, ad-group audiences/lookalike signals, multiple ad groups.
+- Verification status: shapes follow each platform's documented REST format and pass our contract tests + simulator (which mimics Google's PMax asset minimums); the review step's validate-only call is what proves a spec on a real account. Re-verify before go-live (API versions move).
+
+## PDF quotes, GST invoices & vouchers (built)
+Code: `App\Services\Billing\Docs\*`, views in `app/Views/pdf/`, `BillingDocsController` (route group `billing-docs`), `PublicDocumentsController`. Engine: dompdf (pure PHP, no Chrome).
+- **Business profile** (`business_profiles`, Settings -> Business & invoicing): legal name, GSTIN/PAN/state, bank/UPI, prefixes, SAC, terms. GSTIN is checksum-validated; state and PAN auto-fill from it.
+- **Documents**: quote PDF (customer-safe — built only from `ItineraryService::full($t,$id,true)`; a test asserts no cost/margin/supplier ever reaches the PDF), tax invoice / bill of supply, credit note, payment receipt, service voucher.
+- **Legal-document invariants (all tested)**: numbering is gap-free per tenant+series+financial year (counter row locked; PDF rendered and file written inside the SAME transaction, so a failure rolls the number back);
+  issued invoices are immutable (`InvoiceModel` refuses edits; seller/buyer/lines are snapshots; PDF stored once with sha256, served from storage, integrity-checked, NEVER regenerated);
+  total must equal the booking total to the paisa; no GSTIN => Bill of Supply, and refused if the booking charges GST; one live invoice per booking (corrections via credit notes);
+  credit notes can't exceed the remaining value and the last one takes the exact remainder (no rounding drift). Invoice numbers are `PREFIX/26-27/00001` (GST caps numbers at 16 chars: prefix <= 4).
+- Tax split: `Gst::split` (CGST+SGST when seller state == place of supply, else IGST). Place of supply = recipient's state (GSTIN state if given), else supplier's state.
+- **Storage**: `writable/uploads/invoices/{tenant}/{FY}/` (override `INVOICE_STORAGE_DIR`; tests MUST set it — a test once deleted real PDFs by sharing the folder). **Back this folder up like the database.**
+- **Image safety**: logos/cover photos are fetched by `SafeImage` (https only, public IPs pinned against DNS rebinding incl. IPv6 literals, no redirects, size/pixel caps, SVG refused, re-encoded to JPEG); dompdf itself is locked down (no remote, no PHP, chroot) and pinned >= 3.1.6 (earlier versions have SVG file-read advisories).
+- **WhatsApp delivery** (`DocumentDeliveryService`, `POST /billing-docs/send {kind: invoice|voucher, id}`; invoice covers credit notes/receipts): a person presses Send. Window open -> the stored PDF as a WhatsApp document (falls back to a download link if the provider can't carry media);
+  window closed -> ONLY the approved utility template `tp_document_ready` (draft created by `POST /billing-docs/whatsapp-template`, must be submitted to Meta), else 409 with instructions. Opted-out customers refused; same doc+customer within 60s refused (double-click);
+  a missing/tampered stored PDF stops the send. Audit in `document_deliveries`. Quotes are deliberately not included (marketing-vs-utility classification is Meta's call; quote sharing has its own flow).
+- **GST & accounting exports** (Settings -> GST & Tally exports, owner/admin; `GstExportService` + pure `GstReturns`): per month, GSTR-1 JSON (B2B, B2CL > INR 2.5 lakh inter-state, B2CS summarised by place/rate, CDNR, CDNUR, document summary),
+  a sales register CSV (credit notes negative; formula-injection safe), and a Tally Sales/Credit Note voucher XML (each voucher balances to zero; ledgers must pre-exist in Tally). Credit notes against small B2C supplies are NETTED into B2CS.
+  Warnings shown before filing: math mismatch, invalid buyer GSTIN, numbering gaps. Receipts / bills of supply / cancelled are excluded. NOT included: aggregate turnover (`gt`), amendments, e-invoice IRN. (HSN table and GSTR-3B: see the next bullet.)
+- **GSTR-3B, HSN summary & filing tracker** (same page, tabs; `Gstr3b`, `HsnSummary`, `GstDeadlines` pure; `GstExportService`; cron reminder `GstFilingReminder` inside `travel:triggers`):
+  3B is derived from issued tax invoices minus credit notes of the month: 3.1(a) taxable (heads IGST/CGST/SGST), 3.1(c) nil/exempt + bills of supply, 3.2 inter-state to UNREGISTERED buyers by place of supply (B2B inter-state is not there), net liability floored at 0 with a warning when credit notes exceed it. **Input tax credit is typed by the user** (`gst_itc_entries`; we never see suppliers' invoices): eligible ITC, reversals, optional opening balance; otherwise last month's closing credit CARRIES FORWARD automatically. Set-off follows Rule 88A (IGST credit first -> IGST, CGST, SGST; CGST credit -> CGST then IGST; SGST credit -> SGST then IGST; CGST/SGST never cross) and is property-tested for conservation. A reconciliation badge compares 3B outward tax with GSTR-1 (they use the same source and must match). Warnings: ITC claimed while every invoice is 5% (no-ITC scheme), 18% invoices with no ITC entered.
+  HSN: one row per (SAC, rate), credit notes reduce it, UQC `NA`, qty 0, 4/6-digit via the profile SAC; it is also inside the GSTR-1 JSON (`hsn.data`) and `hsn.csv`. Filing tracker (`gst_filings`): monthly filers only — GSTR-1 due 11th, GSTR-3B 20th; owners/admins get an in-app/push reminder 3 days before and daily when late until marked filed (claimed once via `travel_trigger_log`). **NOT built**: QRMP quarterly dates, reverse-charge purchases, zero-rated/export supplies, interest & late-fee calculation, GSTR-9, and any portal API upload. The GSTR-3B JSON follows the GSTN offline-tool key names from the published schema but was NOT validated on the portal — have the CA load it in the first month. **Validate the first month's file with the CA / offline tool** — the JSON follows the GSTN offline schema from memory of the spec, not a portal test.
+- **TCS tracking** (Settings -> TCS (Form 27EQ); `TcsLedger` pure + `TcsReportService`): TCS is collected when money is RECEIVED, so a booking's `tcs_amount` is spread over its paid instalments pro-rata (last one takes the exact remainder; never exceeds the booking TCS).
+  Quarter view (FY quarters Apr-Jun...), monthly collected vs deposited (`tcs_challans`: BSR + serial + date), due = 7th of next month, status nil/due/partial/overdue/paid, customer PAN on `bookings.customer_pan` (inline edit), collectee-wise CSV for the CA.
+  NOT done: refunds of TCS on cancellations, interest on late deposit, FVU/27EQ file generation (the CA's software does that), the special March deposit date, TCS on non-package LRS. Rate/base/PAN-less higher rate (s.206CC) all need CA confirmation.
+- PHP gotcha that bit twice: numeric-string array keys ('29') become ints — never key state codes in a PHP array you then compare as strings (`Gst::states()` returns a list; `Gst::code()` re-pads).
+- **Needs CA sign-off before real use**: SAC code (default 998554 "tour operator services"; the early research said 998555 — verify), the GST rate/ITC declaration wording on invoices, TCS wording, and e-invoicing (see the E-invoicing section: built against a simulator and a generic GSP adapter, NOT verified with any real IRP/GSP).
+
+## Supplier payables (built)
+`SupplierPayableService`, page `/payables` (owner/admin). `supplier_payments` is a LEDGER: `booking_services.paid_amount` and `bookings.supplier_paid` are re-derived from it in the same transaction (row-locked) — never write `paid_amount` directly (the PATCH no longer accepts it).
+Overpaying a service, future dates and cancelled services are refused; cancelled-but-paid services surface as "refunds due". Pay-by defaults to 7 days before travel when unset. `BookingService::rollup` now also derives `cost_total` (non-cancelled services). Migration back-fills old `paid_amount` as an opening-balance ledger row.
+
+## AI rate-card import (built; AI path tested with a fake model only — never with a real Anthropic key)
+Suppliers & Rates -> "Import rates (AI)" (owner/admin; `RateImportController`, `RateCardImportService`, pure `RateCardRows`, table `rate_import_batches`, routes `travel/rate-import/*` declared BEFORE the generic `travel/(:segment)` routes).
+- Flow: paste text or upload CSV/TSV/TXT/XLSX -> **preview** (writes only the batch row) -> a person ticks rows (and may correct names/prices inline) -> **commit** once (row-locked, one transaction, audited). PDFs are refused with "paste the table" guidance (no PDF reader installed).
+- Three read modes: `table` (a recognisable header with a name + a price column: deterministic, no AI, header may sit below a title), `ai` (text in 6,000-char chunks -> JSON rows), `lines` (no AI available: "Name – Rs 12,500 per night"). The preview says which was used.
+- **The model never supplies a price**: for `ai` rows the amount must appear in the source text as printed (also "12k" / "1.5 lakh"); a computed/invented number makes the row INVALID ("Price not found in your text") and commit refuses it unless a person types the price. Table cells and person edits are trusted.
+- Amounts are stored as MINOR units of the row's currency (INR paise, USD cents, JPY whole yen, KWD fils). Currency from the cell/symbol, else the form's default; unknown codes are errors.
+- Matching: existing rate = same supplier + name (case-insensitive) + unit + currency + valid_from. `same` = skipped; `change` UPDATES THE ROW IN PLACE (rate_id links stay valid; quotes already priced keep their own locked line costs); a move of more than 50% needs an explicit "I checked this price" (typo guard). Duplicates inside one file: the first wins.
+- Gotcha found live: a delimiter chosen by counting commas fails on `"12,500"` — the delimiter is now chosen by parsing the first rows; and `getJSON(true)` throws on multipart, so the controller only decodes JSON for a JSON content-type.
+- Not built: PDF/image OCR, multi-sheet workbooks (active sheet only), contract rate "supplements"/child policies/extra-bed rules (flat rows only), occupancy-based pricing tables, undo of a committed import (edit rates by hand; `meta.import_batch` records the source).
+
+## Document & visa checklists (built)
+`ChecklistPlanner` (pure rules) + `ChecklistService`, card on the booking page and `/checklists` overview (upcoming departures not document-ready). International: passport copy, photo, visa (skipped when the traveller's `visa_status` = not_required), birth certificate for minors, optional insurance; domestic: photo ID. Due dates are relative to departure.
+Generation is idempotent (UNIQUE booking+traveller+key, `INSERT IGNORE`) so it never resets progress; adding a traveller adds their items. Rules are generic guidance — per-country visa requirements are NOT modelled. No customer-facing upload/portal yet.
+
+## Mobile app v2 (built, bundled, NOT run on a device)
+`mobile/`: WhatsApp inbox (`ChatsScreen`/`ChatScreen`, polling 15 s / 6 s, uses the existing `/inbox` API incl. the server-side 24h window gate — `WINDOW_CLOSED` 422 -> offer templates), quick enquiry (`POST /api/v1/trips/quick`, `QuickEnquiryService`: contact upsert + open-enquiry reuse so a retried submit never duplicates), quote screen (AI draft, markup/discount via `PUT /itineraries/:id`, send), offline cache (`src/cache.js`, AsyncStorage, wiped on sign-out, stale data always labelled), biometric lock (`src/lock.js`, `expo-local-authentication`).
+Pure logic is in `src/logic.js` (CommonJS so `node --test` can run it): `npm test`. RN gotcha: never define a component INSIDE another component (inputs lose focus every keystroke) — `NewEnquiryScreen`'s `Field` lives at module level.
+Not built: media/voice messages in chat, creating/editing individual itinerary line items on the phone, attachment viewing, EAS build + store listing, background refresh.
+
+## Travel-portal leads (built)
+Settings -> Travel portal leads (`/settings/lead-sources`, owner/admin), `PortalLeadService` + pure `LeadFieldExtractor`, tables `lead_sources` / `lead_events`, `contacts.source = 'portal'` (ENUM widened in the DB AND `ContactModel` AND `ContactsController` — all three must change together).
+- Two doors: `POST /api/v1/public/lead-sources/{token}` (JSON or form; token = credential, rotatable, 120/min throttle, 100 KB cap, 422 when rejected so the portal sees why, never 401) and email: `InboundEmailService::ingest` first checks `matchEmailSource` (sender address or `@domain`) and routes a matching portal notification through the same pipeline — **the portal's own address never becomes a contact**.
+- Extractor: field names are normalised and matched against an alias table (+ per-source `field_map`); email bodies parsed as "Key: Value" lines and HTML table rows, with phone/email pattern fallbacks; Indian phones (`+91` inference, no-plus numbers accepted only if valid Indian mobiles), day-first dates (past dates rejected), budgets in lakh/k/crore, "7 days" = 6 nights; free text feeds `TravelAiService::heuristicParse` for destination/pax/month. Bad values are reported in `issues`, never guessed.
+- Outcome per lead: contact upsert (tag = portal name, attribution platform `portal`, channel = portal) -> trip enquiry (unless the same person already has an OPEN enquiry for the same place in 14 days: then a note is added, status `existing`) -> push alert. Same payload within 7 days = `duplicate` (ignored). `lead_events.payload` keeps the raw lead (personal data) — purge per your retention policy.
+- WhatsApp consent: portal leads follow the same default `opt_in` as other lead sources; the portal is responsible for the customer's consent to be contacted.
+- Not built: pull-style APIs (polling a portal's REST API), per-portal signature verification (token only), auto-reply to the lead, lead-source ROI report (Business report's "Lead sources" already splits by `contacts.source`).
+
+## Group departures & seat inventory (built)
+`/departures` (create/edit owner+admin; agents reserve), `DepartureService` + pure `DeparturePricing`, tables `departures` + `departure_seats`. Agents hold seats from an enquiry (Trip -> "Group departure"); that creates a normal DRAFT itinerary (one line, flat markup so sell price is exact; GST/TCS from the usual pricing) so quote -> accept -> booking -> payments -> invoice all work unchanged.
+- **Invariant: confirmed + unexpired-held seats <= total_seats.** Every seat change takes a `FOR UPDATE` lock on the departure row and re-counts; availability is ALWAYS computed from seat rows (no stored counter). Holds expire by clock (24h default); `travel:triggers` cron tidies them (`holds_expired=`).
+- `BookingService::createFromItinerary` converts the hold to confirmed BEFORE inserting the booking (re-checks under the lock: a lapsed hold whose seats were resold is refused and leaves NO booking row), then attaches the booking; cancelling a booking releases its seats. One live hold per enquiry.
+- Agents never see internal cost (`cost_pax`, `single_supplement_cost` stripped for non-owner/admin). Manifest + rooming-list CSV (no prices/passport numbers; names formula-injection-safe). `at_risk` = below `min_pax` within 30 days (go/no-go).
+- Not built: waitlist, per-room-type inventory, seat-level allocation (coach seats), supplier allotments/releases, online self-booking from a public page, moving a booking between departures.
+
+## Customer portal (built)
+Public SPA route `#/trip/{32-hex portal_token}` (`PublicPortalPage`), API `GET /api/v1/public/portal/{token}` (+ `POST .../payments/{id}/link`, `POST .../items/{id}/upload`), service `PortalService`. Staff: "Customer portal" card on the booking (copy / send on WhatsApp via `DocumentDeliveryService` kind `portal` / rotate link) and Accept/Reject on uploaded checklist items.
+- The token is the ONLY credential: it shows itinerary (customer-safe), payments (+ pay-now via the instalment's Razorpay link), invoices/receipts/vouchers, and the document checklist. Every id the customer sends is re-checked against that booking.
+- Exceptions map to HTTP: `OutOfBoundsException` = link/id not this booking (404), `InvalidArgumentException` = bad input (422), `DomainException` = not allowed now (409). Never 401 (the SPA logs staff out on 401). Per-IP+token throttle (`throttler`): view 60/min, pay 10/min, upload 10/min.
+- Uploads: PDF/JPG/PNG detected by CONTENT (magic bytes), <= 5 MB, <= 5 per item, <= 40 per booking per day, **encrypted at rest** (`service('encrypter')`, `writable/uploads/portal/{tenant}/{booking}/*.enc`, override `PORTAL_STORAGE_DIR` — tests must), sha256 checked on read, served to staff only with `nosniff` + `CSP: sandbox`. Checklist status `uploaded` = awaiting staff review (does NOT count as done); reject needs a reason the customer sees. Back this folder up like the database.
+- Not built: customer-editable traveller details, e-signature, in-portal chat, portal login/OTP (link possession = access; rotate if forwarded).
+
+## Business report (built)
+`/business-report` (owner/admin), `TravelReportService`, `GET /api/v1/travel-reports?from&to`. Funnel (enquiry -> quoted -> booked), revenue EX-TAX and margin (revenue - supplier cost; bookings without cost entered are flagged), top destinations, lead sources, agents, 6-month trend, cash position (receivables vs `SupplierPayableService` payables) and a forecast (departures 90d, collections 30d, open quotes weighted by the period's quote->book rate — a rough guide).
+MySQL gotcha: `ONLY_FULL_GROUP_BY` is on — group by an alias only via a derived table (a plain `GROUP BY name` over `COALESCE(...)` failed live, unit tests with SQLite-style assumptions would not have caught it).
+
+## Mobile push notifications (built)
+Server: `App\Services\Push\*`, `MobilePushController` (`/api/v1/mobile/*`), cron **`php spark push:run` every minute**. App: `mobile/` (see mobile/README.md — needs EAS project + APNs/FCM credentials + a dev build).
+- **One entry point**: `PushNotifier::notify()`. Order (each tested): dedupe -> in-app row (always) -> preferences/quiet hours/staff-only -> flood throttle (30/h then ONE summary) -> devices -> privacy ("minimal" hides names/amounts) -> queue + inline send -> retry/receipts by cron.
+  Use `PushNotifier::safely()` from business code: a push problem must never break the action that caused it. Existing `Crm\NotificationService::notify` is bridged automatically (push-only; no duplicate in-app row).
+- Events: new lead (ad/web form/email), WhatsApp reply (first unread; a brand-new contact is announced as a LEAD), quote viewed/accepted, payment received/overdue, booking confirmed, ad-rule alerts, mentions, morning briefing. Recipients: the record's owner, else owners/admins (`PushRecipients`).
+- `push_log` is the audit trail AND the answer to "why didn't I get it?" (suppressed rows carry the reason). Dead tokens (`DeviceNotRegistered`, also via receipts) are disabled automatically. A token belongs to ONE user: re-registering on the same phone moves it.
+- Android channel ids == category keys (`PushCategory::ALL`); change both sides together. `PUSH_MOCK_MODE=true` for local dev.
+- Gotchas found by tests: PHP `+` on arrays lets the LEFT side win (use `array_merge` for overrides); MySQL JSON reorders object keys (compare with assertEquals); the MySQL test DB must be utf8mb4 for emoji.
+
+## Rules that must not be broken
+1. **Money is integer paise** everywhere (BIGINT). Convert only at the UI edge (`inr()` / `toPaise()` in `frontend/src/api/travel.js`).
+2. **Tax rates are inputs, not constants in logic** (`PricingService`): GST 5% (no ITC) / 18% (ITC); TCS on overseas packages
+   **2% flat from 1 Apr 2026** (was 5%/20%). TCS base (GST-inclusive) and instalment timing **need CA confirmation** before launch.
+3. **Tenant scoping**: every query goes through a `BaseModel` with `setTenant()`. Public/webhook paths use `withoutTenantScope()` deliberately and narrowly.
+4. **Never expose cost/margin/supplier** in customer-facing payloads (`ItineraryService::full($t, $id, true)`).
+5. **WhatsApp 24h-window + template rules** (platform spec §1) apply to every send, including travel automations.
+6. Ad-platform API versions sunset fast — `META_GRAPH_VERSION`, `GOOGLE_ADS_API_VERSION` are env-configurable; re-verify before go-live.
+7. DPDP Act: passport/visa data is sensitive — encrypted at rest, never logged, never in webhooks/exports by default.
+8. Gotcha: `AuthController::register` needed an explicit tenant scope on its post-insert `find()` (fixed here; LeadPilot still has the bug).

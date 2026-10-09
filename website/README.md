@@ -1,0 +1,32 @@
+# TripSarthi website (tripsarthi.com)
+
+Static site — plain HTML/CSS/JS, no build step.
+
+```
+website/
+  index.html           landing page (all sections)
+  privacy.html, terms.html   DRAFT legal pages — have a lawyer review before launch
+  assets/css/site.css  design system (colours come from the logo)
+  assets/js/site.js    nav, product-tour tabs, pricing toggle, sign-up/login link wiring
+  assets/img/*.webp    product screenshots (sample data), og.png social card
+  assets/brand/*       logo files cut from the supplied logo
+  robots.txt, sitemap.xml, 404.html
+```
+
+## Run locally
+```
+python3 -m http.server 5920 --directory website      # http://localhost:5920
+```
+On `localhost` the **Log in / Start free** buttons point at the local app (`http://localhost:5917/#/login`, `#/register`).
+Anywhere else they point at `https://app.tripsarthi.com`. To host the app elsewhere set `window.TRIPSARTHI_APP_URL` before `site.js` loads.
+
+## Deploy
+- `tripsarthi.com` -> upload this folder to any static host (Netlify, Cloudflare Pages, S3 + CloudFront, nginx). Serve `404.html` for missing pages.
+- `app.tripsarthi.com` -> the React app (`cd frontend && npm run build`, host `dist/`), with the API reachable from it (CORS + `VITE`/proxy settings). The sign-up and login screens answer `#/register` and `#/login`.
+- Replace the placeholders: `hello@tripsarthi.com`, `privacy@tripsarthi.com`, legal text, governing law and grievance officer.
+- Pricing on the page mirrors the in-app Billing plans (`BillingPage.jsx` / `BillingService`). Change both together.
+
+## Refreshing the screenshots
+`scripts/showcase_seed.py` builds a fictional agency (Blue Horizon Holidays) in the LOCAL dev database; every name and number is invented.
+`python3 scripts/showcase_seed.py` (login `showcase@tripsarthi.test`), then `--extras`, `--ads`, `--runs`, `--polish`; `--reset` removes it again.
+Capture with headless Chrome at 1440x900 @2x and convert to WebP (see the commands used in the session notes: crop with Pillow, `quality=80`).

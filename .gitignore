@@ -1,0 +1,61 @@
+# -----------------------------------------------------------------------
+# TravelPilot .gitignore
+# -----------------------------------------------------------------------
+
+# Backend — CodeIgniter 4
+backend/.env
+backend/writable/cache/*
+backend/writable/logs/*
+backend/writable/session/*
+backend/writable/uploads/*
+backend/writable/debugbar/*
+!backend/writable/cache/.gitkeep
+!backend/writable/logs/.gitkeep
+!backend/writable/session/.gitkeep
+!backend/writable/uploads/.gitkeep
+backend/build/
+backend/vendor/
+backend/phpunit.xml
+
+# Frontend — Vite / Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local Claude Code tooling — settings.local.json holds machine-specific
+# permission rules that can embed API tokens.
+.claude/
+
+# Runtime data, not source. storage/backups holds MySQL dumps of the live
+# database, including real customer phone numbers and message content.
+backend/storage/
+
+# Mobile (Expo)
+mobile/node_modules/
+mobile/dist/
+mobile/.expo/
+
+# Mobile
+mobile/node_modules/
+mobile/.expo/
+mobile/dist/
+
+# Local tooling / secrets
+.claude/
+*.log
+.env
+.env.*
+!.env.example
+backend/writable/ads-mock-*.json
+backend/writable/*.sqlite
