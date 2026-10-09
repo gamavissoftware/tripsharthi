@@ -82,6 +82,15 @@ class SubscriptionCheck extends BaseCommand
             );
         }
 
+        // Plans given by hand from the platform admin (razorpay_sub_id 'admin-…') end on their own date: back to the free plan.
+        $expired = $db->table('subscriptions')->where('status', 'active')->like('razorpay_sub_id', 'admin-', 'after')->where('current_period_end <', date('Y-m-d H:i:s'))->get()->getResultArray();
+        foreach ($expired as $sub) {
+            $db->table('subscriptions')->where('id', $sub['id'])->update(['status' => 'downgraded', 'updated_at' => date('Y-m-d H:i:s')]);
+            $db->table('tenants')->where('id', $sub['tenant_id'])->update(['plan' => 'free', 'updated_at' => date('Y-m-d H:i:s')]);
+            $downgraded++;
+            CLI::write("[subscription:check] Tenant #{$sub['tenant_id']}: complimentary/manual {$sub['plan']} plan ended — back to free.", 'yellow');
+        }
+
         CLI::write(
             "[subscription:check] Done. {$downgraded} subscription(s) downgraded.",
             $downgraded > 0 ? 'yellow' : 'green'

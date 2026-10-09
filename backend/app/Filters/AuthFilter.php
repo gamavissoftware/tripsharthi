@@ -41,6 +41,19 @@ class AuthFilter implements FilterInterface
             return $this->unauthorized('Invalid or expired token.');
         }
 
+        // A suspended or cancelled workspace cannot use the API (platform admins are never locked out). 403, not 401: the SPA logs out on 401.
+        $isAdmin = (int) (is_array($user) ? ($user['is_platform_admin'] ?? 0) : ($user->is_platform_admin ?? 0)) === 1;
+        if (! $isAdmin) {
+            $tid = (int) (is_array($user) ? $user['tenant_id'] : $user->tenant_id);
+            $t = db_connect()->table('tenants')->select('status')->where('id', $tid)->get()->getRowArray();
+            if ($t !== null && $t['status'] !== 'active') {
+                return service('response')->setStatusCode(403)->setContentType('application/json')->setBody(json_encode([
+                    'success' => false, 'code' => 'tenant_' . $t['status'],
+                    'message' => 'This workspace is ' . $t['status'] . '. Please contact TripSarthi support.',
+                ]));
+            }
+        }
+
         CurrentUser::set($user);
         return null; // proceed
     }

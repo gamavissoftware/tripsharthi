@@ -50,6 +50,11 @@ class AuthController extends ResourceController
         }
 
         $userId   = (int) (is_array($user) ? $user['id'] : $user->id);
+        $isAdmin  = (int) (is_array($user) ? ($user['is_platform_admin'] ?? 0) : ($user->is_platform_admin ?? 0)) === 1;
+        if (! $isAdmin) {
+            $t = db_connect()->table('tenants')->select('status')->where('id', (int) (is_array($user) ? $user['tenant_id'] : $user->tenant_id))->get()->getRowArray();
+            if ($t !== null && $t['status'] !== 'active') { return $this->failForbidden('This workspace is ' . $t['status'] . '. Please contact TripSarthi support.'); }
+        }
         $rawToken = $userModel->setToken($userId);
 
         return $this->respond([
@@ -316,6 +321,7 @@ class AuthController extends ResourceController
             'name'      => $u['name'] ?? null,
             'email'     => $u['email'] ?? null,
             'role'      => $u['role'] ?? null,
+            'is_platform_admin' => (int) ($u['is_platform_admin'] ?? 0) === 1,
         ];
     }
 

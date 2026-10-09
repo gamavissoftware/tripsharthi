@@ -64,6 +64,7 @@ def page(fname, title, desc, body, cur='', extra_head='', ld=''):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/chat.css">
 {ld}
 </head>
 <body>
@@ -75,6 +76,7 @@ def page(fname, title, desc, body, cur='', extra_head='', ld=''):
 </main>
 {footer()}
 <script src="assets/js/site.js" defer></script>
+<script src="assets/js/chat.js" defer></script>
 </body>
 </html>
 '''
@@ -232,6 +234,8 @@ def patch_index():
     global SPRITE
     p = os.path.join(ROOT, 'index.html'); s = open(p, encoding='utf-8').read()
     SPRITE = re.search(r'<!-- icon sprite -->\s*(<svg.*?</svg>)', s, re.S).group(1)
+    if 'assets/css/chat.css' not in s: s = s.replace('<link rel="stylesheet" href="assets/css/site.css">', '<link rel="stylesheet" href="assets/css/site.css">\n<link rel="stylesheet" href="assets/css/chat.css">', 1)
+    if 'assets/js/chat.js' not in s: s = s.replace('<script src="assets/js/site.js" defer></script>', '<script src="assets/js/site.js" defer></script>\n<script src="assets/js/chat.js" defer></script>', 1)
     s = re.sub(r'<header class="nav".*?</header>', lambda m: header(), s, flags=re.S)
     s = re.sub(r'<footer class="foot">.*?</footer>', lambda m: footer(), s, flags=re.S)
     s = re.sub(r'<a class="btn btn-glass btn-lg" id="demo"[^>]*>Book a demo</a>', '<a class="btn btn-glass btn-lg" id="demo" href="contact.html#demo">Book a demo</a>', s)

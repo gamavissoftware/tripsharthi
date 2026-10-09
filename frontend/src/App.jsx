@@ -7,8 +7,8 @@ import {
   ShoppingBag, IndianRupee, BarChart3, TrendingUp, Trophy, Copy, Trash2,
   Plug, Smartphone, Store, Webhook, Wallet, Bot, Settings, Shuffle, Target,
   Pin, Clock, Home, CircleUser, Palette, Bell, CreditCard, ScrollText,
-  Mail, Plane, Handshake } from 'lucide-react'
-import { isLoggedIn, clearToken } from './api/client'
+  Mail, Plane, Handshake, ShieldCheck, MessagesSquare } from 'lucide-react'
+import { api, isLoggedIn, clearToken } from './api/client'
 import { ToastProvider } from './components/Toast'
 import GlobalSearch from './components/GlobalSearch'
 import NotificationBell from './components/NotificationBell'
@@ -100,6 +100,11 @@ import BusinessReportPage from './pages/BusinessReportPage'
 import DeparturesPage from './pages/DeparturesPage'
 import LeadSourcesPage from './pages/LeadSourcesPage'
 import MobileNotificationsPage from './pages/MobileNotificationsPage'
+
+import AdminOverviewPage from './pages/admin/AdminOverviewPage'
+import AdminCustomersPage from './pages/admin/AdminCustomersPage'
+import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage'
+import AdminInboxPage from './pages/admin/AdminInboxPage'
 
 import './App.css'
 
@@ -202,6 +207,19 @@ const SETTINGS_GROUPS = [
   ]},
 ]
 
+// Platform admin (the TripSarthi team only): shown when /auth/me says is_platform_admin. The API enforces it again on every call.
+const NAV_ADMIN = { label: 'Platform admin', icon: ShieldCheck, items: [
+  { to: '/admin',               label: 'Overview',      icon: LayoutDashboard },
+  { to: '/admin/customers',     label: 'Customers',     icon: Building2 },
+  { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+  { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
+]}
+
+function AdminOnly({ user, children }) {
+  if (!user) return <div className="page"><p style={{ color: 'var(--text-3)' }}>Loading…</p></div>
+  return user.is_platform_admin ? children : <Navigate to="/" replace />
+}
+
 // ── Collapsible nav group ────────────────────────────────────────────────────
 // NavLink `end` for '/ads': otherwise it also lights up for /ads/campaigns.
 function NavGroup({ group, onNavigate }) {
@@ -277,6 +295,11 @@ function Sidebar({ user, onLogout, open = false, onNavigate }) {
           {NAV_HOME.label}
         </NavLink>
 
+        {user?.is_platform_admin && (<>
+          <div className="sidebar-section-label">Platform</div>
+          <NavGroup group={NAV_ADMIN} onNavigate={onNavigate} />
+        </>)}
+
         <div className="sidebar-section-label">Workspace</div>
         {NAV_GROUPS.map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} />)}
 
@@ -328,6 +351,12 @@ function Layout({ user, onLogout }) {
         <Routes>
           <Route path="/"                       element={<Navigate to="/trips" replace />} />
           <Route path="/dashboard"              element={<CrmDashboardPage />} />
+
+          {/* Platform admin (TripSarthi team) */}
+          <Route path="/admin"                  element={<AdminOnly user={user}><AdminOverviewPage /></AdminOnly>} />
+          <Route path="/admin/customers"        element={<AdminOnly user={user}><AdminCustomersPage /></AdminOnly>} />
+          <Route path="/admin/subscriptions"    element={<AdminOnly user={user}><AdminSubscriptionsPage /></AdminOnly>} />
+          <Route path="/admin/inbox"            element={<AdminOnly user={user}><AdminInboxPage /></AdminOnly>} />
 
           {/* Leads / CRM */}
           <Route path="/trips"                  element={<TripsPage />} />
@@ -449,6 +478,14 @@ export default function App() {
     window.addEventListener('hashchange', onHash)
     return () => { window.removeEventListener('tp:unauthorized', onUnauthorized); window.removeEventListener('hashchange', onHash) }
   }, [])
+
+  // After a page reload we only have the token: ask who we are (also brings back the sidebar user card and platform-admin menu).
+  useEffect(() => {
+    if (!authed || user) return undefined
+    let alive = true
+    api.get('/auth/me').then(r => { if (alive && r?.user) setUser(r.user) }).catch(() => {})
+    return () => { alive = false }
+  }, [authed, user])
 
   function handleLogin(userData) { setUser(userData); setAuthed(true); setShowRegister(false); if (/^#\/(login|register|signup)/.test(window.location.hash)) window.location.hash = '#/' }
   function handleLogout() { clearToken(); setUser(null); setAuthed(false) }

@@ -425,6 +425,26 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     // Website contact form (public, throttled; see Public\ContactController)
     $routes->post('public/contact', 'Public\ContactController::submit');
     $routes->options('public/contact', static function (): void {});   // CORS preflight from the marketing site (origins come from CORS_ORIGIN)
+    // Website live chat (visitor side) + CORS preflight for the marketing site
+    $routes->post('public/chat/start',                 'Public\ChatController::start');
+    $routes->post('public/chat/(:alphanum)/send',      'Public\ChatController::send/$1');
+    $routes->get('public/chat/(:alphanum)/poll',       'Public\ChatController::poll/$1');
+    $routes->options('public/chat/(:any)',             static function (): void {});
+    // Platform (TripSarthi team) admin: every customer workspace, subscriptions, website enquiries and live chat
+    $routes->group('admin', ['filter' => ['auth', 'platformadmin']], static function (RouteCollection $routes): void {
+        $routes->get('overview',                   'Api\PlatformAdminController::overview');
+        $routes->get('tenants',                    'Api\PlatformAdminController::tenants');
+        $routes->get('tenants/(:num)',             'Api\PlatformAdminController::tenant/$1');
+        $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
+        $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
+        $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
+        $routes->get('enquiries',                  'Api\PlatformAdminController::enquiries');
+        $routes->put('enquiries/(:num)',           'Api\PlatformAdminController::enquiryStatus/$1');
+        $routes->get('chats',                      'Api\PlatformAdminController::chats');
+        $routes->get('chats/(:num)',               'Api\PlatformAdminController::chat/$1');
+        $routes->post('chats/(:num)/reply',        'Api\PlatformAdminController::chatReply/$1');
+        $routes->post('chats/(:num)/close',        'Api\PlatformAdminController::chatClose/$1');
+    });
     // Travel-portal / aggregator leads: public webhook (token = credential) + owner/admin management.
     $routes->post('public/lead-sources/(:alphanum)', 'Public\LeadSourceController::receive/$1');
     $routes->group('lead-sources', ['filter' => ['auth', 'role:owner,admin']], static function (RouteCollection $routes): void {

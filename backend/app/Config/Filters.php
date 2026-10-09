@@ -5,6 +5,7 @@ namespace Config;
 use App\Filters\AuthFilter;
 use App\Filters\LicenseFilter;
 use App\Filters\RateLimitFilter;
+use App\Filters\PlatformAdminFilter;
 use App\Filters\RoleFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
@@ -46,6 +47,8 @@ class Filters extends BaseFilters
         'ratelimit'     => RateLimitFilter::class,
         // Role-based access: ['filter' => 'role:owner'] or 'role:owner,admin'
         'role'          => RoleFilter::class,
+        // Platform (TripSarthi team) admin: users.is_platform_admin = 1
+        'platformadmin' => \App\Filters\PlatformAdminFilter::class,
     ];
 
     /**
