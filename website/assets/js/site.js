@@ -54,3 +54,22 @@
     items.forEach(function (el) { io.observe(el); });
   } else { items.forEach(function (el) { el.classList.add('in'); }); }
 })();
+
+/* contact form -> opens the visitor's email app with the message ready (no server needed) */
+(function () {
+  'use strict';
+  var form = document.getElementById('contact-form'); if (!form) return;
+  var EMAIL = 'manglesh@gamavis.com', note = document.getElementById('cf-note');
+  var topics = { demo: 'Demo request', pricing: 'Pricing enquiry', support: 'Help / support', partner: 'Partnership', other: 'Enquiry' };
+  var hash = (location.hash || '').replace('#', ''); if (topics[hash]) form.topic.value = hash;
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ok = true;
+    ['name', 'email'].forEach(function (n) { var f = form[n], v = f.value.trim(), bad = !v || (n === 'email' && !/^\S+@\S+\.\S+$/.test(v)); f.classList.toggle('bad', bad); if (bad) ok = false; });
+    if (!ok) { note.textContent = 'Please add your name and a valid email address.'; return; }
+    var v = function (n) { return form[n].value.trim(); };
+    var body = ['Name: ' + v('name'), 'Email: ' + v('email'), 'Phone: ' + (v('phone') || '-'), 'Company: ' + (v('company') || '-'), '', v('message')].join('\n');
+    location.href = 'mailto:' + EMAIL + '?subject=' + encodeURIComponent('TripSarthi — ' + topics[form.topic.value]) + '&body=' + encodeURIComponent(body);
+    note.textContent = 'Your email app should have opened. If not, please write to ' + EMAIL + ' or call +91-9718991797.';
+  });
+})();

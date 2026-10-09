@@ -228,3 +228,46 @@ section[id]{scroll-margin-top:84px}
 .legal h1{font-size:clamp(32px,4vw,44px);margin-bottom:8px}.legal h2{font-size:22px;margin:34px 0 10px}.legal p,.legal li{color:#33465f;font-size:16.5px;margin-bottom:12px}.legal ul{list-style:disc;padding-left:22px}
 .legal .meta{color:var(--muted);font-size:14.5px;margin-bottom:26px}
 .notice{background:#fff7e6;border:1px solid #ffd9a0;color:#7a4a00;border-radius:12px;padding:14px 18px;font-size:15px;margin-bottom:26px}
+
+/* ---- inner pages ---- */
+.links a.cur{color:var(--blue);font-weight:600}
+.phero{position:relative;overflow:hidden;padding:72px 0 40px;background:linear-gradient(180deg,#f2f8ff,#fff);text-align:center}
+.phero .wrap{position:relative}
+.phero h1{font-size:clamp(34px,4.8vw,56px);font-weight:800;letter-spacing:-.035em;max-width:900px;margin:0 auto}
+.phero .lead{margin:20px auto 0;max-width:680px}
+.phero .toggle{margin-top:28px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:30px}
+.chips a{background:#fff;border:1px solid var(--line);color:#34496a;font-weight:500;font-size:14px;padding:7px 15px;border-radius:999px;transition:.15s}
+.chips a:hover{border-color:var(--blue);color:var(--blue)}
+.row[id]{scroll-margin-top:90px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff;box-shadow:var(--shadow)}
+.cmp{width:100%;border-collapse:collapse;font-size:16px}
+.cmp th,.cmp td{padding:15px 20px;text-align:center;border-bottom:1px solid var(--line)}
+.cmp thead th{font:700 17px var(--head);background:var(--soft)}
+.cmp tbody th{text-align:left;font-weight:500;color:#2c3f5c}
+.cmp .hl{background:#f0f7ff;font-weight:600}
+.cmp tr:last-child th,.cmp tr:last-child td{border-bottom:0}
+.cmp .y{color:var(--teal)}.cmp .n{color:#a7b4c7}
+.faq+.fine{margin-top:28px}.center{text-align:center}
+.stack2{display:grid;place-items:center}
+.quote{background:linear-gradient(135deg,var(--navy),var(--navy-2) 60%,#0a6f8a);color:#fff;border:0;padding:44px 38px}
+.quote p{color:#fff;font:700 24px/1.35 var(--head);letter-spacing:-.02em}.quote span{display:block;margin-top:18px;color:#9fe7df;font-size:14px}
+.company{display:grid;grid-template-columns:repeat(3,1fr);gap:26px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:30px;box-shadow:var(--shadow)}
+.company h3{font-size:15px;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}.company a,.company address{font-style:normal;color:#2c3f5c;line-height:1.7}
+address{font-style:normal;color:#2c3f5c}
+.cc{text-align:left}.cc h3{margin:18px 0 12px;font-size:21px}
+.clist{display:grid;gap:8px}.clist .big{font:700 20px var(--head);color:var(--ink);letter-spacing:-.01em}.clist .big:hover{color:var(--blue)}
+.cc .fine{margin-top:10px}
+.cform-wrap{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:56px;align-items:start;margin:84px 0 56px;scroll-margin-top:90px}
+.cform-copy h2{font-size:clamp(28px,3.2vw,38px);font-weight:800;letter-spacing:-.03em;margin-bottom:14px}
+.cform{padding:32px;display:grid;gap:16px}
+.cform label{display:grid;gap:6px;font:600 14px var(--font);color:#2c3f5c}
+.cform input,.cform select,.cform textarea{font:400 16px var(--font);color:var(--ink);padding:12px 14px;border:1.5px solid #cfdbea;border-radius:12px;background:#fff;width:100%}
+.cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 4px rgba(10,108,196,.15)}
+.cform .bad{border-color:#e0453a}
+.two-f{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.map{border-radius:var(--r);overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);height:380px}.map iframe{width:100%;height:100%;border:0}
+.faddr{margin-top:18px;color:#9fb3d3;font-size:14.5px;line-height:1.7}
+.foot a[href^="tel"],.foot a[href^="mailto"]{white-space:nowrap}
+@media (max-width:1020px){.cform-wrap{grid-template-columns:1fr;gap:30px}.company{grid-template-columns:1fr}}
+@media (max-width:640px){.two-f{grid-template-columns:1fr}.cform{padding:22px}.phero{padding:48px 0 28px}.cmp th,.cmp td{padding:12px 10px;font-size:14.5px}}
