@@ -207,6 +207,10 @@ class BillingService
         try { (new OfferService())->confirm($tenantId, (int) $order['id']); }
         catch (\Throwable $e) { log_message('critical', "BillingService: could not record the coupon redemption for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
 
+        // Partner program: a referred customer's verified payment earns the partner a commission. Same rule - never undo a payment over it.
+        try { (new \App\Services\Partner\PartnerService())->recordPayment($tenantId, (int) $order['id'], $amountPaise, $plan, $cycle); }
+        catch (\Throwable $e) { log_message('critical', "BillingService: could not record the partner commission for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
+
         log_message('info', "BillingService: tenant#{$tenantId} activated plan={$plan} via payment={$paymentId}");
     }
 

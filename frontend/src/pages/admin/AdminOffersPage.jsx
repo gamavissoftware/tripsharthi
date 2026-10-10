@@ -28,21 +28,21 @@ function PlanPicker({ value, onChange, disabled }) {
 }
 
 // ── Coupons ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
-const BLANK_COUPON = { code: '', description: '', type: 'percent', value: 20, value_rs: 500, plans: [], cycle: 'any', duration_periods: 1, max_redemptions: '', max_per_tenant: 1, new_customers_only: false, starts_at: '', expires_at: '' }
+const BLANK_COUPON = { code: '', description: '', type: 'percent', value: 20, value_rs: 500, plans: [], cycle: 'any', duration_periods: 1, max_redemptions: '', max_per_tenant: 1, new_customers_only: false, starts_at: '', expires_at: '', partner_id: '' }
 
 function randomCode() { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({ length: 8 }, () => a[Math.floor(Math.random() * a.length)]).join('') }
 
-function CouponForm({ initial, onSaved, onCancel }) {
+function CouponForm({ initial, partners, onSaved, onCancel }) {
   const editing = Boolean(initial?.id)
   const locked = editing && (initial.redeemed_count > 0 || initial.payments > 0)
   const [f, setF] = useState(() => editing
-    ? { ...BLANK_COUPON, ...initial, value: initial.type === 'percent' ? initial.value : 20, value_rs: initial.type === 'flat' ? initial.value / 100 : 500, max_redemptions: initial.max_redemptions ?? '', starts_at: istDate(initial.starts_at), expires_at: istDate(initial.expires_at) }
+    ? { ...BLANK_COUPON, ...initial, value: initial.type === 'percent' ? initial.value : 20, value_rs: initial.type === 'flat' ? initial.value / 100 : 500, max_redemptions: initial.max_redemptions ?? '', starts_at: istDate(initial.starts_at), expires_at: istDate(initial.expires_at), partner_id: initial.partner_id ?? '' }
     : BLANK_COUPON)
   const [busy, setBusy] = useState(false)
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
   async function save(e) {
     e.preventDefault(); setBusy(true)
-    const body = { description: f.description, active: true, starts_at: f.starts_at || null, expires_at: f.expires_at || null, max_redemptions: f.max_redemptions === '' ? null : Number(f.max_redemptions) }
+    const body = { partner_id: f.partner_id === '' ? null : Number(f.partner_id), description: f.description, active: true, starts_at: f.starts_at || null, expires_at: f.expires_at || null, max_redemptions: f.max_redemptions === '' ? null : Number(f.max_redemptions) }
     if (!locked) Object.assign(body, { type: f.type, plans: f.plans, cycle: f.cycle, duration_periods: Number(f.duration_periods), max_per_tenant: Number(f.max_per_tenant), new_customers_only: f.new_customers_only, ...(f.type === 'percent' ? { value: Number(f.value) } : { value_rs: Number(f.value_rs) }) })
     try {
       const r = editing ? await admin.updateCoupon(initial.id, body) : await admin.createCoupon({ ...body, code: f.code })
@@ -66,6 +66,7 @@ function CouponForm({ initial, onSaved, onCancel }) {
       <Field label="Uses per customer" hint="For one-payment codes. Multi-payment codes run once per customer."><input className="form-input" type="number" min="1" disabled={locked} value={f.max_per_tenant} onChange={e => set('max_per_tenant', e.target.value)} /></Field>
       <Field label="Valid from (optional)"><input className="form-input" type="date" value={f.starts_at} onChange={e => set('starts_at', e.target.value)} /></Field>
       <Field label="Expires on (optional)" hint="Valid through the end of that day."><input className="form-input" type="date" value={f.expires_at} onChange={e => set('expires_at', e.target.value)} /></Field>
+      <Field label="Partner (optional)" hint="A partner's code: a brand-new customer who pays with it is attributed to them and earns them commission."><select className="form-select" disabled={locked} value={f.partner_id} onChange={e => set('partner_id', e.target.value)}><option value="">— none —</option>{(partners || []).map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}</select></Field>
       <Field label="Who can use it"><label style={{ display: 'flex', gap: 6, alignItems: 'center', paddingTop: 8, fontSize: 13 }}><input type="checkbox" disabled={locked} checked={f.new_customers_only} onChange={e => set('new_customers_only', e.target.checked)} /> New customers only (never paid before)</label></Field>
       <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8 }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : editing ? 'Save changes' : 'Create coupon'}</button><button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button></div>
     </form>
@@ -83,6 +84,8 @@ function CouponsTab() {
   const [form, setForm] = useState(null)          // null | {} (new) | coupon (edit)
   const [open, setOpen] = useState(null)          // coupon whose redemptions are shown
   const [reds, setReds] = useState(null)
+  const [partners, setPartners] = useState([])
+  useEffect(() => { admin.partners().then(setPartners).catch(() => {}) }, [])
   const load = useCallback(() => admin.coupons().then(setRows).catch(e => toast.error('Could not load', e.message)), [])
   useEffect(() => { load() }, [load])
   async function toggle(c) { try { await admin.updateCoupon(c.id, { active: !c.active }); load() } catch (e) { toast.error('Not changed', e.message) } }
@@ -93,7 +96,7 @@ function CouponsTab() {
         <p style={{ margin: 0, color: 'var(--text-3)', fontSize: 13 }}>Codes customers type at checkout. A code and an automatic promotion do not combine: the bigger discount wins.</p>
         {!form && <button className="btn btn-primary" onClick={() => setForm({})}>+ New coupon</button>}
       </div>
-      {form && <CouponForm key={form.id ?? 'new'} initial={form.id ? form : null} onCancel={() => setForm(null)} onSaved={() => { setForm(null); load() }} />}
+      {form && <CouponForm key={form.id ?? 'new'} initial={form.id ? form : null} partners={partners} onCancel={() => setForm(null)} onSaved={() => { setForm(null); load() }} />}
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>{['Code', 'Discount', 'Plans', 'Valid', 'Used by', 'Discount given', 'Status', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
@@ -103,7 +106,7 @@ function CouponsTab() {
             {rows?.map(c => (
               <Fragment key={c.id}>
                 <tr>
-                  <td style={td}><b style={{ fontFamily: 'ui-monospace,monospace' }}>{c.code}</b>{c.description && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.description}</div>}</td>
+                  <td style={td}><b style={{ fontFamily: 'ui-monospace,monospace' }}>{c.code}</b>{c.description && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.description}</div>}{c.partner_id && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>partner: {partners.find(p => p.id === c.partner_id)?.name || `#${c.partner_id}`}</div>}</td>
                   <td style={td}>{ruleText(c)}{c.new_customers_only && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>new customers only</div>}</td>
                   <td style={td}>{c.plans.length ? c.plans.map(p => <Pill key={p} color={PLAN_COLOR[p]}>{p}</Pill>) : 'All'}{c.cycle !== 'any' && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{c.cycle} only</div>}</td>
                   <td style={td}>{c.starts_at && c.expires_at ? `${fmtDate(c.starts_at)} → ${fmtDate(c.expires_at)}` : c.starts_at ? `from ${fmtDate(c.starts_at)}` : c.expires_at ? `until ${fmtDate(c.expires_at)}` : 'no expiry'}</td>

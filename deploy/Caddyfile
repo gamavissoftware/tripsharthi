@@ -99,3 +99,31 @@ admin.{$DOMAIN} {
 		file_server
 	}
 }
+
+# ---- referral partner portal (external partners): its own host, its own login + session ------------------------------------
+# Needs a DNS record: partners.{$DOMAIN} -> this server. Only /api/* reaches PHP.
+partners.{$DOMAIN} {
+	import security
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow, noarchive"
+	header X-Frame-Options DENY
+	header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+	request_body {
+		max_size 1MB
+	}
+
+	@backend path /api/*
+	handle @backend {
+		root * {$APP_DIR}/backend/public
+		php_fastcgi unix//run/php/php{$PHP_V}-fpm.sock
+	}
+
+	handle {
+		root * {$APP_DIR}/frontend/dist-partner
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header /partner.html Cache-Control "no-cache"
+		try_files {path} /partner.html
+		file_server
+	}
+}

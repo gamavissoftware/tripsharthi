@@ -126,6 +126,13 @@ class AuthController extends ResourceController
             return $this->failServerError('Failed to create user.');
         }
 
+        // Partner program: a signup through a referral link (?ref=CODE) is attributed to that partner. Never allowed to break registration.
+        $ref = trim((string) ($this->request->getJsonVar('ref') ?? ''));
+        if ($ref !== '') {
+            try { (new \App\Services\Partner\PartnerService())->attributeSignup((int) $tenantId, $ref, (string) $email); }
+            catch (\Throwable $e) { log_message('error', 'partner attribution failed: ' . $e->getMessage()); }
+        }
+
         $rawToken = $userModel->setToken((int) $userId);
         $user     = $userModel->setTenant((int) $tenantId)->find((int) $userId);
 

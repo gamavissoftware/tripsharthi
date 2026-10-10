@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -10,6 +10,8 @@ import AdminCustomersPage from '../pages/admin/AdminCustomersPage'
 import AdminSubscriptionsPage from '../pages/admin/AdminSubscriptionsPage'
 import AdminInboxPage from '../pages/admin/AdminInboxPage'
 import AdminOffersPage from '../pages/admin/AdminOffersPage'
+import AdminPartnersPage from '../pages/admin/AdminPartnersPage'
+import AdminPartnerDetailPage from '../pages/admin/AdminPartnerDetailPage'
 
 // One place to add sections as the admin grows (offers, partners, WhatsApp, ...).
 const NAV = [
@@ -18,6 +20,7 @@ const NAV = [
     { to: '/admin/customers',     label: 'Customers',     icon: Building2 },
     { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
     { to: '/admin/offers',        label: 'Offers',        icon: Tag },
+    { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
     { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
   ] },
 ]
@@ -69,6 +72,8 @@ function Shell({ user, onLogout }) {
           <Route path="/admin/customers" element={<AdminCustomersPage />} />
           <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
           <Route path="/admin/offers" element={<AdminOffersPage />} />
+          <Route path="/admin/partners" element={<AdminPartnersPage />} />
+          <Route path="/admin/partners/:id" element={<AdminPartnerDetailPage />} />
           <Route path="/admin/inbox" element={<AdminInboxPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

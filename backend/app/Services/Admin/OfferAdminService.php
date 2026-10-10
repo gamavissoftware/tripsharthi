@@ -77,6 +77,13 @@ final class OfferAdminService
             $row['new_customers_only'] = array_key_exists('new_customers_only', $in) ? (int) ! empty($in['new_customers_only']) : (int) ($existing['new_customers_only'] ?? 0);
         }
 
+        if (array_key_exists('partner_id', $in)) {                                    // a partner's code: the sale is attributed to (and earns a commission for) that partner
+            $pid = $in['partner_id'] === null || $in['partner_id'] === '' ? null : (int) $in['partner_id'];
+            if ($pid !== null && $db->table('partners')->where('id', $pid)->countAllResults() === 0) { throw new \InvalidArgumentException('That partner does not exist.'); }
+            if ($locked && $pid !== ($existing['partner_id'] !== null ? (int) $existing['partner_id'] : null)) { throw new \DomainException('This code has been used, so its partner cannot be changed.'); }
+            $row['partner_id'] = $pid;
+        }
+
         $row['updated_at'] = $this->stamp();
         if ($existing === null) {
             $code = OfferService::normalizeCode((string) ($in['code'] ?? ''));

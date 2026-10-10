@@ -2,6 +2,7 @@
 export const th = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase', whiteSpace: 'nowrap' }
 export const td = { padding: '10px 14px', borderTop: '1px solid var(--border)', verticalAlign: 'middle' }
 
+export const PARTNER_STATUS_COLOR = { active: 'var(--success)', invited: 'var(--warning)', suspended: 'var(--danger)' }
 export const PLAN_COLOR = { free: '#64748b', starter: '#0891b2', growth: '#0a6cc4', pro: '#0e8f8c' }
 export const STATUS_COLOR = { active: 'var(--success)', suspended: 'var(--danger)', cancelled: 'var(--text-3)', halted: 'var(--warning)', created: 'var(--text-3)', authenticated: 'var(--text-3)', downgraded: 'var(--text-3)', new: 'var(--warning)', handled: 'var(--success)', spam: 'var(--text-3)' }
 

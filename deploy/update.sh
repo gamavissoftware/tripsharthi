@@ -24,7 +24,7 @@ chown -R www-data:www-data writable
 cd "$APP_DIR/frontend"
 NODE_OPTIONS=--max-old-space-size=1024 npm ci --no-audit --no-fund --silent
 NODE_OPTIONS=--max-old-space-size=1024 npm run build:all --silent
-chmod -R a+rX dist dist-admin
+chmod -R a+rX dist dist-admin dist-partner
 
 systemctl reload "php${PHP_V}-fpm"       # drop cached PHP code
 sed -e "s|{\$APP_DIR}|${APP_DIR}|g" "$APP_DIR/deploy/tripsarthi.cron" > /etc/cron.d/tripsarthi && chmod 644 /etc/cron.d/tripsarthi

@@ -51,6 +51,8 @@ class Filters extends BaseFilters
         'platformadmin' => \App\Filters\PlatformAdminFilter::class,
         // Separate admin app: only a live admin session (admin_sessions) is accepted
         'adminauth'     => \App\Filters\AdminAuthFilter::class,
+        // Partner portal: only a live partner session
+        'partnerauth'   => \App\Filters\PartnerAuthFilter::class,
     ];
 
     /**

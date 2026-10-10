@@ -166,7 +166,7 @@ log "Running database migrations"
 
 log "Building the web app (this takes a minute)"
 (cd "$APP_DIR/frontend" && NODE_OPTIONS=--max-old-space-size=1024 npm ci --no-audit --no-fund --silent && NODE_OPTIONS=--max-old-space-size=1024 npm run build:all --silent)
-chmod -R a+rX "$APP_DIR/frontend/dist" "$APP_DIR/frontend/dist-admin" "$APP_DIR/website"
+chmod -R a+rX "$APP_DIR/frontend/dist" "$APP_DIR/frontend/dist-admin" "$APP_DIR/frontend/dist-partner" "$APP_DIR/website"
 
 # ---------------------------------------------------------------------------------------------------- PHP-FPM, Caddy
 svc "php${PHP_V}-fpm" restart || svc "php${PHP_V}-fpm" start

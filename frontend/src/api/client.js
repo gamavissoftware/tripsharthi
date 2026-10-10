@@ -6,12 +6,14 @@
  * CORS configuration is needed during local development.
  */
 
-/* global __ADMIN_APP__ */
+/* global __ADMIN_APP__, __PARTNER_APP__ */
 const BASE = '/api/v1'
 
-// The platform-admin app is a separate build (vite.admin.config.js defines __ADMIN_APP__) with its OWN storage key,
+// The platform-admin and partner apps are separate builds (vite.*.config.js define __ADMIN_APP__ / __PARTNER_APP__) with their OWN storage keys,
 // so a customer session and an admin session in the same browser can never overwrite each other.
-const TOKEN_KEY = typeof __ADMIN_APP__ !== 'undefined' && __ADMIN_APP__ ? 'tp_admin_token' : 'tp_token'
+const TOKEN_KEY = typeof __ADMIN_APP__ !== 'undefined' && __ADMIN_APP__ ? 'tp_admin_token'
+  : typeof __PARTNER_APP__ !== 'undefined' && __PARTNER_APP__ ? 'tp_partner_token'      // the partner portal (partners.tripsarthi.com)
+  : 'tp_token'
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY)

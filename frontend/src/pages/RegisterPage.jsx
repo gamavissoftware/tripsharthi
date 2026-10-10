@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api, saveToken } from '../api/client'
 import AuthBrandPanel from '../components/AuthBrandPanel'
+import { readReferral, clearReferral } from '../lib/referral'
 
 export default function RegisterPage({ onLogin, onShowLogin }) {
   const [name, setName]         = useState('')
@@ -19,7 +20,9 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
     }
     setLoading(true)
     try {
-      const data = await api.post('/auth/register', { name, company, email, password })
+      const ref = readReferral()
+      const data = await api.post('/auth/register', { name, company, email, password, ...(ref ? { ref } : {}) })
+      clearReferral()
       saveToken(data.token)
       onLogin?.(data.user)
     } catch (err) {

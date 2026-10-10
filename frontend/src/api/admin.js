@@ -18,6 +18,16 @@ export const admin = {
   chatReply:     (id, body)  => api.post(`/admin/chats/${id}/reply`, { body }).then(unwrap),
   chatClose:     (id)        => api.post(`/admin/chats/${id}/close`, {}).then(unwrap),
 
+  // Partner program
+  partners:           ()        => api.get('/admin/partners').then(unwrap),
+  partner:            (id)      => api.get(`/admin/partners/${id}`).then(unwrap),
+  createPartner:      (b)       => api.post('/admin/partners', b).then(unwrap),
+  updatePartner:      (id, b)   => api.put(`/admin/partners/${id}`, b).then(unwrap),
+  partnerStatus:      (id, st)  => api.post(`/admin/partners/${id}/status`, { status: st }).then(unwrap),
+  partnerInvite:      (id)      => api.post(`/admin/partners/${id}/invite`, {}).then(unwrap),
+  partnerPayout:      (id, b)   => api.post(`/admin/partners/${id}/payout`, b).then(unwrap),
+  voidCommission:     (id, reason) => api.post(`/admin/commissions/${id}/void`, { reason }).then(unwrap),
+
   // Offers
   coupons:            ()        => api.get('/admin/coupons').then(unwrap),
   createCoupon:       (b)       => api.post('/admin/coupons', b).then(unwrap),

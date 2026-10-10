@@ -4,8 +4,20 @@
   // Where the product lives. Local dev -> the Vite dev server; production -> app.tripsarthi.com. Change APP_URL if you host the app elsewhere.
   var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var APP_URL = window.TRIPSARTHI_APP_URL || (local ? 'http://localhost:5917' : 'https://app.tripsarthi.com');
+  // Partner referral: remember ?ref=CODE for 90 days (first touch wins) and carry it to the app's sign-up link, because the website and the
+  // app are different origins. The server decides whether the code counts.
+  var REF_KEY = 'ts_ref', REF_OK = /^[A-Za-z0-9][A-Za-z0-9_-]{2,19}$/;
+  function readRef() {
+    try { var v = JSON.parse(localStorage.getItem(REF_KEY) || 'null'); return v && REF_OK.test(v.code) && Date.now() - v.at < 90 * 864e5 ? v.code : null; } catch (e) { return null; }
+  }
+  try {
+    var qm = /[?&]ref=([A-Za-z0-9_-]{3,20})(?:&|$)/.exec(location.search);
+    if (qm && REF_OK.test(qm[1]) && !readRef()) localStorage.setItem(REF_KEY, JSON.stringify({ code: qm[1].toUpperCase(), at: Date.now() }));
+  } catch (e) { /* storage blocked: the referral is simply not remembered */ }
+  var REF = readRef();
   document.querySelectorAll('[data-app]').forEach(function (a) {
-    a.href = APP_URL + '/#/' + (a.getAttribute('data-app') === 'signup' ? 'register' : 'login');
+    var signup = a.getAttribute('data-app') === 'signup';
+    a.href = REF && signup ? APP_URL + '/?ref=' + encodeURIComponent(REF) + '#/register' : APP_URL + '/#/' + (signup ? 'register' : 'login');
   });
 
   var yr = document.getElementById('yr'); if (yr) yr.textContent = new Date().getFullYear();

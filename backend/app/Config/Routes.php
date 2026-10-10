@@ -438,6 +438,17 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->post('admin-auth/login',  'Api\AdminAuthController::login');
     $routes->get('admin-auth/me',      'Api\AdminAuthController::me',     ['filter' => 'adminauth']);
     $routes->post('admin-auth/logout', 'Api\AdminAuthController::logout', ['filter' => 'adminauth']);
+    // Partner portal (partners.tripsarthi.com): external referral partners, their own login + sessions
+    $routes->post('partner-auth/login',          'Api\PartnerAuthController::login');
+    $routes->get('partner-auth/invite/(:segment)', 'Api\PartnerAuthController::invite/$1');
+    $routes->post('partner-auth/accept',         'Api\PartnerAuthController::accept');
+    $routes->get('partner-auth/me',              'Api\PartnerAuthController::me',     ['filter' => 'partnerauth']);
+    $routes->post('partner-auth/logout',         'Api\PartnerAuthController::logout', ['filter' => 'partnerauth']);
+    $routes->group('partner', ['filter' => 'partnerauth'], static function (RouteCollection $routes): void {
+        $routes->get('dashboard',      'Api\PartnerPortalController::dashboard');
+        $routes->put('payout-details', 'Api\PartnerPortalController::savePayout');
+        $routes->put('password',       'Api\PartnerPortalController::changePassword');
+    });
     $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollection $routes): void {
         $routes->get('overview',                   'Api\PlatformAdminController::overview');
         $routes->get('tenants',                    'Api\PlatformAdminController::tenants');
@@ -445,6 +456,15 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
+        // Partner program
+        $routes->get('partners',                   'Api\AdminPartnersController::index');
+        $routes->post('partners',                  'Api\AdminPartnersController::create');
+        $routes->get('partners/(:num)',            'Api\AdminPartnersController::show/$1');
+        $routes->put('partners/(:num)',            'Api\AdminPartnersController::update/$1');
+        $routes->post('partners/(:num)/status',    'Api\AdminPartnersController::status/$1');
+        $routes->post('partners/(:num)/invite',    'Api\AdminPartnersController::invite/$1');
+        $routes->post('partners/(:num)/payout',    'Api\AdminPartnersController::payout/$1');
+        $routes->post('commissions/(:num)/void',   'Api\AdminPartnersController::voidCommission/$1');
         // Offers: coupon codes, plan promotions, free-day grants
         $routes->get('coupons',                    'Api\AdminOffersController::coupons');
         $routes->post('coupons',                   'Api\AdminOffersController::createCoupon');
