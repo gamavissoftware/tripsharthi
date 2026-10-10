@@ -14,6 +14,7 @@ export const CHANNELS = [
   { id: 'booking', name: 'Bookings & trips',         importance: Notifications.AndroidImportance.DEFAULT },
   { id: 'task',    name: 'Tasks & mentions',         importance: Notifications.AndroidImportance.DEFAULT },
   { id: 'ads',     name: 'Ad campaign alerts',       importance: Notifications.AndroidImportance.DEFAULT },
+  { id: 'target',  name: 'Sales target nudges',      importance: Notifications.AndroidImportance.DEFAULT },
   { id: 'digest',  name: 'Morning briefing',         importance: Notifications.AndroidImportance.LOW },
 ]
 

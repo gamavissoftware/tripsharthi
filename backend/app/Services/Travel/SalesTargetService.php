@@ -50,14 +50,14 @@ final class SalesTargetService
     /**
      * The targets in force for a month, keyed by user id. People whose effective target is 0 are left out.
      *
-     * @return array<int, array{revenue:int, bookings:int, source:string, from:?string}>   source: 'month' (set for this month) | 'carried' (from an earlier month, named in `from`)
+     * @return array<int, array{revenue:int, bookings:int, source:string, from:?string, since:?string}>   source: 'month' (set for this month) | 'carried' (from an earlier month, named in `from`); since = when it was last changed
      */
     public function forMonth(int $tenantId, string $month): array
     {
         if (! self::validMonth($month)) { throw new \InvalidArgumentException('Choose a valid month.'); }
         [$start] = self::bounds($month);
         // Monthly rows only (a whole calendar month), newest first: the first row seen per person+metric is the one in force.
-        $rows = db_connect()->query("SELECT user_id, metric, period_start, target_amount FROM sales_targets
+        $rows = db_connect()->query("SELECT user_id, metric, period_start, target_amount, updated_at FROM sales_targets
             WHERE tenant_id = ? AND deleted_at IS NULL AND metric IN ('won_value','won_count') AND period_start <= ?
               AND DAYOFMONTH(period_start) = 1 AND period_end = LAST_DAY(period_start)
             ORDER BY period_start DESC, id DESC", [$tenantId, $start])->getResultArray();
@@ -68,12 +68,25 @@ final class SalesTargetService
             $seen[$k] = true;
             $u = (int) $r['user_id']; $field = $r['metric'] === 'won_value' ? 'revenue' : 'bookings';
             $own = $r['period_start'] === $start;
-            $out[$u] ??= ['revenue' => 0, 'bookings' => 0, 'source' => 'carried', 'from' => null];
+            $out[$u] ??= ['revenue' => 0, 'bookings' => 0, 'source' => 'carried', 'from' => null, 'since' => null];
+            if ($r['updated_at'] !== null && ($out[$u]['since'] === null || $r['updated_at'] > $out[$u]['since'])) { $out[$u]['since'] = $r['updated_at']; }
             $out[$u][$field] = (int) $r['target_amount'];
             if ($own) { $out[$u]['source'] = 'month'; }
             elseif ($out[$u]['source'] !== 'month') { $out[$u]['from'] = substr((string) $r['period_start'], 0, 7); }
         }
         return array_filter($out, static fn ($t) => $t['revenue'] > 0 || $t['bookings'] > 0);
+    }
+
+    /**
+     * Month-to-date results for one person: bookings they own made in [$from, $to), revenue ex-tax (paise) and how many.
+     * (The dashboard computes the same two numbers inside its own queries; a test keeps them equal.)
+     *
+     * @return array{revenue:int, bookings:int}
+     */
+    public function actuals(int $tenantId, int $userId, string $from, string $to): array
+    {
+        $r = db_connect()->query("SELECT COUNT(*) n, COALESCE(SUM(subtotal),0) revenue FROM bookings WHERE tenant_id = ? AND owner_id = ? AND deleted_at IS NULL AND status <> 'cancelled' AND created_at >= ? AND created_at < ?", [$tenantId, $userId, $from, $to])->getRowArray();
+        return ['revenue' => (int) $r['revenue'], 'bookings' => (int) $r['n']];
     }
 
     /** Everyone in the workspace with the target that applies to $month (for the settings page). */
