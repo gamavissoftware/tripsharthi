@@ -111,7 +111,9 @@ else
 fi
 git config --global --add safe.directory "$APP_DIR" || true
 
-# ---------------------------------------------------------------------------------------------------- database + .env
+# ---------------------------------------------------------------------------------------------------- dependencies, database + .env
+log "Installing backend dependencies"
+(cd "$APP_DIR/backend" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --quiet)
 ENV_FILE="$APP_DIR/backend/.env"
 if [ ! -f "$ENV_FILE" ]; then
   log "Creating the database and a production .env (secrets are generated, never printed)"
@@ -144,16 +146,16 @@ SQL
   setenv MAIL_FROM_NAME TripSarthi
   setenv CONTACT_NOTIFY_EMAIL "$ACME_EMAIL"
   for f in WHATSAPP_MOCK_MODE META_LEADS_MOCK_MODE RAZORPAY_MOCK_MODE EMAIL_MOCK_MODE AI_MOCK_MODE ADS_MOCK_MODE PUSH_MOCK_MODE CONVERSIONS_MOCK_MODE EINVOICE_MOCK_MODE; do setenv "$f" false; done
-  (cd "$APP_DIR/backend" && php spark key:generate --force >/dev/null 2>&1) || true
-  grep -qE '^encryption.key *= *[^ ]' "$ENV_FILE" || die "Could not generate the encryption key."
-  chown root:www-data "$ENV_FILE"; chmod 640 "$ENV_FILE"
 else
   log "backend/.env already exists — keeping it"
 fi
+if ! grep -qE '^encryption.key *= *[^ ]' "$ENV_FILE"; then
+  (cd "$APP_DIR/backend" && php spark key:generate --force >/dev/null 2>&1) || true
+  grep -qE '^encryption.key *= *[^ ]' "$ENV_FILE" || die "Could not generate the encryption key (php spark key:generate)."
+fi
+chown root:www-data "$ENV_FILE"; chmod 640 "$ENV_FILE"
 
 # ---------------------------------------------------------------------------------------------------- build
-log "Installing backend dependencies"
-(cd "$APP_DIR/backend" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --quiet)
 mkdir -p "$APP_DIR/backend/writable"/{cache,logs,session,uploads,debugbar}
 chown -R www-data:www-data "$APP_DIR/backend/writable"; chmod -R u+rwX,g+rwX "$APP_DIR/backend/writable"
 
