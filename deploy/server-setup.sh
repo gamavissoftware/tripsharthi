@@ -37,6 +37,8 @@ case "${ID}-${VERSION_ID}" in
   *) die "This script supports Ubuntu 22.04 / 24.04 (found ${PRETTY_NAME:-unknown}). Tell us the OS and we will adapt it." ;;
 esac
 export DEBIAN_FRONTEND=noninteractive
+# containers have no init system: let package scripts start/stop services through the old "service" wrapper
+if [ "$TEST_MODE" = 1 ]; then printf '#!/bin/sh\nexit 0\n' > /usr/sbin/policy-rc.d; chmod +x /usr/sbin/policy-rc.d; fi
 
 # ---------------------------------------------------------------------------------------------------- packages
 log "Installing base packages"
