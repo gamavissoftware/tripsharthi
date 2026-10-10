@@ -45,6 +45,8 @@ MAIL_FROM_ADDRESS=noreply@tripsarthi.com
 ```
 Then `systemctl reload php8.3-fpm`. Test with the website contact form; `php spark contact:list` shows whether the notification went out.
 
+`php spark golive:check` (run at the end of the setup) lists what is still missing. Expect these until you connect the services: **META_APP_SECRET** (needed for WhatsApp / Meta webhooks — put it in `.env`), a WhatsApp number, and the queue note (it clears after the first minute of cron).
+
 Other settings to fill in when you are ready: Razorpay (`Settings → Payments` inside the app), WhatsApp Business (Settings → Channels), `ANTHROPIC_API_KEY` for the AI features, `GOOGLE_ADS_CLIENT_ID/SECRET`, `META_*`. Everything starts with all *mock modes switched off*, so nothing is simulated.
 
 ## 5. Secure the server (please do this today)
@@ -82,3 +84,6 @@ cd /var/www/tripsarthi/backend && php spark contact:list --new
 - **API errors (500):** read the log file above; the most common cause is a missing value in `.env`.
 - **Webhooks (WhatsApp, Razorpay, Meta):** use `https://app.tripsarthi.com/webhooks/...` as the callback URLs.
 - **The GitHub repository is public** (anyone can read the code, no secrets are in it). To make it private, change it in GitHub → Settings, then give the server a read-only deploy key and set `REPO` to the SSH URL.
+
+## What was tested
+The setup script was run end to end in a clean Ubuntu 24.04 container (packages, database, `.env` with generated secrets, all 149 migrations from an empty database, web-app build, cron file, backup and restore of the dump), and the Caddy configuration was validated and exercised with a real Caddy + PHP-FPM against the app (API routes, webhooks, page fallback, caching headers, blocked files). **It has not yet been run on your real server** — that first run, and Let's Encrypt issuing the certificates, are the parts only the live server can prove.
