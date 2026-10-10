@@ -7,7 +7,7 @@ import {
   ShoppingBag, IndianRupee, BarChart3, TrendingUp, Trophy, Copy, Trash2,
   Plug, Smartphone, Store, Webhook, Wallet, Bot, Settings, Shuffle, Target,
   Pin, Clock, Home, CircleUser, Palette, Bell, CreditCard, ScrollText,
-  Mail, Plane, Handshake, ShieldCheck, MessagesSquare } from 'lucide-react'
+  Mail, Plane, Handshake, ShieldCheck, MessagesSquare, PanelLeftClose, PanelLeftOpen, LogOut, Menu } from 'lucide-react'
 import { api, isLoggedIn, clearToken } from './api/client'
 import { ToastProvider } from './components/Toast'
 import GlobalSearch from './components/GlobalSearch'
@@ -222,7 +222,7 @@ function AdminOnly({ user, children }) {
 
 // ── Collapsible nav group ────────────────────────────────────────────────────
 // NavLink `end` for '/ads': otherwise it also lights up for /ads/campaigns.
-function NavGroup({ group, onNavigate }) {
+function NavGroup({ group, onNavigate, collapsed = false, up = false }) {
   const { pathname } = useLocation()
   // A child is active when the path equals it or is a sub-route (e.g. /contacts/42).
   const hasActive = group.items.some(i => pathname === i.to || pathname.startsWith(i.to + '/'))
@@ -231,19 +231,21 @@ function NavGroup({ group, onNavigate }) {
   useEffect(() => { if (hasActive) setOpen(true) }, [hasActive])
 
   return (
-    <div className={'nav-group' + (open ? ' open' : '')}>
+    <div className={'nav-group' + (open ? ' open' : '') + (up ? ' flyout-up' : '')}>
       <button
         type="button"
         className={'nav-group-header' + (hasActive ? ' has-active' : '')}
         onClick={() => setOpen(o => !o)}
-        aria-expanded={open}
+        aria-expanded={collapsed ? undefined : open}
+        title={collapsed ? group.label : undefined}
       >
         <span className="sidebar-link-icon"><group.icon size={17} strokeWidth={1.8} /></span>
         <span className="nav-group-label">{group.label}</span>
         <span className="nav-group-chevron">▸</span>
       </button>
-      {open && (
+      {(open || collapsed) && (
         <div className="nav-group-items">
+          {collapsed && <div className="nav-flyout-title">{group.label}</div>}
           {group.items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
@@ -263,7 +265,7 @@ function NavGroup({ group, onNavigate }) {
 }
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
-function Sidebar({ user, onLogout, open = false, onNavigate }) {
+function Sidebar({ user, onLogout, open = false, onNavigate, collapsed = false, onToggleCollapse }) {
   const { branding } = useBranding()
   const appName = branding?.app_name?.trim() || 'TripSarthi'
   const initials = (user?.name ?? 'U')
@@ -274,7 +276,7 @@ function Sidebar({ user, onLogout, open = false, onNavigate }) {
     .toUpperCase()
 
   return (
-    <aside className={'sidebar' + (open ? ' open' : '')}>
+    <aside className={'sidebar' + (open ? ' open' : '') + (collapsed ? ' collapsed' : '')}>
       {/* Logo */}
       <div className="sidebar-logo">
         {branding?.logo_url
@@ -292,21 +294,21 @@ function Sidebar({ user, onLogout, open = false, onNavigate }) {
           className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}
         >
           <span className="sidebar-link-icon"><NAV_HOME.icon size={17} strokeWidth={1.8} /></span>
-          {NAV_HOME.label}
+          <span className="sidebar-link-text">{NAV_HOME.label}</span>
         </NavLink>
 
         {user?.is_platform_admin && (<>
           <div className="sidebar-section-label">Platform</div>
-          <NavGroup group={NAV_ADMIN} onNavigate={onNavigate} />
+          <NavGroup group={NAV_ADMIN} onNavigate={onNavigate} collapsed={collapsed} />
         </>)}
 
         <div className="sidebar-section-label">Workspace</div>
-        {NAV_GROUPS.map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} />)}
+        {NAV_GROUPS.map((g, i) => <NavGroup key={g.label} group={g} onNavigate={onNavigate} collapsed={collapsed} up={i >= 4} />)}
 
         {/* Settings section */}
         <div className="sidebar-divider" />
         <div className="sidebar-section-label">Settings</div>
-        {SETTINGS_GROUPS.map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} />)}
+        {SETTINGS_GROUPS.map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} collapsed={collapsed} up />)}
       </div>
 
       {/* Footer */}
@@ -322,8 +324,13 @@ function Sidebar({ user, onLogout, open = false, onNavigate }) {
             </div>
           </div>
         )}
-        <button className="sidebar-signout" onClick={onLogout}>
-          Sign out
+        <button className="sidebar-signout" onClick={onToggleCollapse} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'} title={collapsed ? 'Expand menu' : 'Collapse menu'}>
+          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          <span className="sidebar-link-text">Collapse menu</span>
+        </button>
+        <button className="sidebar-signout" onClick={onLogout} title="Sign out">
+          <LogOut size={16} />
+          <span className="sidebar-link-text">Sign out</span>
         </button>
       </div>
     </aside>
@@ -333,20 +340,28 @@ function Sidebar({ user, onLogout, open = false, onNavigate }) {
 // ── Layout ───────────────────────────────────────────────────────────────────
 function Layout({ user, onLogout }) {
   const [navOpen, setNavOpen] = useState(false)
+  // Desktop menu: full width or a slim icon rail. Remembered per browser.
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('ts_nav_collapsed') === '1' } catch { return false } })
+  function toggleCollapsed() {
+    setCollapsed(c => { const n = !c; try { localStorage.setItem('ts_nav_collapsed', n ? '1' : '0') } catch { /* private mode */ } return n })
+  }
+  const initials = (user?.name ?? 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
   return (
     <div className="app-shell">
-      <Sidebar user={user} onLogout={onLogout} open={navOpen} onNavigate={() => setNavOpen(false)} />
+      <Sidebar user={user} onLogout={onLogout} open={navOpen} onNavigate={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
       {navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
       <main className="app-main">
-        {/* Mobile-only top bar with the drawer toggle (hidden on desktop via CSS) */}
-        <div className="mobile-topbar">
-          <button className="mobile-hamburger" aria-label="Open menu" onClick={() => setNavOpen(true)}>☰</button>
-          <span className="mobile-topbar-title">Menu</span>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 10, padding: '0 0 .9rem' }}>
-          <GlobalSearch />
-          <NotificationBell />
-        </div>
+        <header className="app-topbar">
+          <button className="topbar-menu" aria-label="Open menu" onClick={() => setNavOpen(true)}><Menu size={20} /></button>
+          <button className="topbar-collapse" aria-label={collapsed ? 'Expand menu' : 'Collapse menu'} title={collapsed ? 'Expand menu' : 'Collapse menu'} onClick={toggleCollapsed}>
+            {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
+          <div className="topbar-search"><GlobalSearch /></div>
+          <div className="topbar-right">
+            <NotificationBell />
+            {user && <NavLink to="/settings/profile" className="topbar-user" title={user.name}><span className="avatar" style={{ width: 30, height: 30 }}>{initials}</span></NavLink>}
+          </div>
+        </header>
         <OnboardingBanner user={user} />
         <Routes>
           <Route path="/"                       element={<Navigate to="/trips" replace />} />
