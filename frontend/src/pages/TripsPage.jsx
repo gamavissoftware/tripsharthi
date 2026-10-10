@@ -96,12 +96,15 @@ function NewTripModal({ onClose, onCreated }) {
   )
 }
 
-export default function TripsPage() {
+export default function TripsPage({ user }) {
   const nav = useNavigate()
   const [rows, setRows] = useState(null)
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
+  // "Only my trips": narrows both views to trips I own. Remembered in this browser.
+  const [mine, setMine] = useState(() => { try { return localStorage.getItem('ts_trips_mine') === '1' } catch { return false } })
+  function toggleMine() { setMine(m => { const n = !m; try { localStorage.setItem('ts_trips_mine', n ? '1' : '0') } catch { /* private mode */ } return n }) }
   const [act, setAct] = useState('all')   // board filter: all | overdue | none (nothing scheduled)
   // Board (pipeline columns) is the default; the choice is remembered in this browser.
   const [view, setView] = useState(() => { try { return localStorage.getItem('ts_trips_view') === 'list' ? 'list' : 'board' } catch { return 'board' } })
@@ -116,11 +119,15 @@ export default function TripsPage() {
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load])
 
   // Counts for the filter chips, and the rows the board shows. Booked-and-later trips carry no activity chip, so they only appear under "All".
+  const isMine = (r) => !!user && Number(r.owner_id) === Number(user.id)
+  const nMine = (rows || []).filter(isMine).length
+  const nUnowned = (rows || []).filter(r => !r.owner_id).length
+  const scoped = rows && (mine && user ? rows.filter(isMine) : rows)
   const now = new Date()
-  const states = (rows || []).map(r => activityState(r, now))
+  const states = (scoped || []).map(r => activityState(r, now))
   const nOverdue = states.filter(x => x === 'overdue').length
   const nNone = states.filter(x => x === 'none').length
-  const boardRows = rows && (act === 'all' ? rows : rows.filter((r, i) => states[i] === (act === 'overdue' ? 'overdue' : 'none')))
+  const boardRows = scoped && (act === 'all' ? scoped : scoped.filter((r, i) => states[i] === (act === 'overdue' ? 'overdue' : 'none')))
 
   // Move a card: show it in the new column at once, then tell the server; put it back if the server says no.
   async function moveTrip(trip, status, reason) {
@@ -149,6 +156,9 @@ export default function TripsPage() {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
         {view === 'list' && FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
+        <button className={'btn btn-sm ' + (mine && user ? 'btn-primary' : 'btn-ghost')} onClick={toggleMine} disabled={!user} aria-pressed={mine && !!user}
+          title={user ? 'Show only the trips you own' : 'Loading your profile…'}>Only my trips{rows ? <span className="tboard-fcount">{nMine}</span> : null}</button>
+        {mine && user && nUnowned > 0 && <span className="text-muted">{nUnowned} trip{nUnowned === 1 ? '' : 's'} with no owner hidden</span>}
         <input className="form-input" style={{ maxWidth: 240, marginLeft: 'auto' }} placeholder="Search destination or title…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
       {view === 'board' && rows !== null && (
@@ -168,8 +178,8 @@ export default function TripsPage() {
             {['Trip', 'Destination', 'Dates', 'Pax', 'Budget', 'Status'].map(h => <th key={h} style={{ padding: '10px 14px' }}>{h}</th>)}</tr></thead>
           <tbody>
             {rows === null && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center' }}>Loading…</td></tr>}
-            {rows?.length === 0 && <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>No trips yet — create your first enquiry.</td></tr>}
-            {rows?.map(t => (
+            {scoped?.length === 0 && <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>{mine && user && rows?.length ? 'None of the trips in this view are yours.' : 'No trips yet — create your first enquiry.'}</td></tr>}
+            {scoped?.map(t => (
               <tr key={t.id} onClick={() => nav(`/trips/${t.id}`)} style={{ cursor: 'pointer', borderTop: '1px solid var(--border)' }}>
                 <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.title}</td>
                 <td style={{ padding: '12px 14px' }}>{t.destination_text || '—'} {Number(t.is_international) ? '🌍' : ''}</td>

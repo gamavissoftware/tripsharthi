@@ -374,7 +374,7 @@ function Layout({ user, onLogout }) {
           <Route path="/admin/inbox"            element={<AdminOnly user={user}><AdminInboxPage /></AdminOnly>} />
 
           {/* Leads / CRM */}
-          <Route path="/trips"                  element={<TripsPage />} />
+          <Route path="/trips"                  element={<TripsPage user={user} />} />
           <Route path="/trips/:id"              element={<TripDetailPage />} />
           <Route path="/itineraries/:id"        element={<ItineraryBuilderPage />} />
           <Route path="/bookings"               element={<BookingsPage />} />
