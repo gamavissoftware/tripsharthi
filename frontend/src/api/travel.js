@@ -18,6 +18,8 @@ export const travel = {
   remove:  (res, id)          => api.delete(`/travel/${res}/${id}`),
   adsReport: (from, to)       => api.get(`/travel/reports/ads?from=${from}&to=${to}`).then(unwrap),
 
+  // home dashboard (managers may pass a user id to focus on one person)
+  home:        (userId)       => api.get(`/home${userId ? `?user=${userId}` : ''}`).then(unwrap),
   // trips
   trips:       (q = '')       => api.get(`/trips${q ? `?${q}` : ''}`).then(unwrap),
   trip:        (id)           => api.get(`/trips/${id}`).then(unwrap),

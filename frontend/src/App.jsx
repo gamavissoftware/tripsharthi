@@ -28,7 +28,7 @@ import DealCreatePage    from './pages/DealCreatePage'
 import DealDetailPage    from './pages/DealDetailPage'
 import TicketsPage       from './pages/TicketsPage'
 import TicketDetailPage  from './pages/TicketDetailPage'
-import CrmDashboardPage  from './pages/CrmDashboardPage'
+import HomeDashboardPage  from './pages/HomeDashboardPage'
 import CustomObjectsPage from './pages/CustomObjectsPage'
 import RecordsPage       from './pages/RecordsPage'
 import RecordDetailPage  from './pages/RecordDetailPage'
@@ -364,8 +364,8 @@ function Layout({ user, onLogout }) {
         </header>
         <OnboardingBanner user={user} />
         <Routes>
-          <Route path="/"                       element={<Navigate to="/trips" replace />} />
-          <Route path="/dashboard"              element={<CrmDashboardPage />} />
+          <Route path="/"                       element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"              element={<HomeDashboardPage user={user} />} />
 
           {/* Platform admin (TripSarthi team) */}
           <Route path="/admin"                  element={<AdminOnly user={user}><AdminOverviewPage /></AdminOnly>} />

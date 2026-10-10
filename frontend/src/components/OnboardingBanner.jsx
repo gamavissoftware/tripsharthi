@@ -61,9 +61,7 @@ export default function OnboardingBanner({ user }) {
         background: '#fffbeb',
         border: '1px solid #f59e0b',
         borderRadius: 10,
-        marginBottom: 20,
-        maxWidth: 480,
-        marginLeft: 'auto',
+        margin: '.75rem 1.5rem 0',
         position: 'relative',
         boxShadow: '0 1px 4px rgba(245,158,11,0.10)',
       }}
@@ -88,15 +86,13 @@ export default function OnboardingBanner({ user }) {
         <X size={16} />
       </button>
 
-      <div className="card-body" style={{ padding: '14px 16px' }}>
-        <div style={{ marginBottom: 4 }}>
-          <span style={{ fontWeight: 700, fontSize: 14, color: '#78350f' }}>
+      <div className="card-body" style={{ padding: '10px 40px 10px 16px', display: 'flex', alignItems: 'center', gap: '.5rem 1.5rem', flexWrap: 'wrap' }}>
+        <div>
+          <span style={{ fontWeight: 600, fontSize: 14, color: '#78350f' }}>
             Get started with TripSarthi
           </span>
+          <span style={{ marginLeft: 10, fontSize: 12, color: '#92400e' }}>3 steps to send your first message</span>
         </div>
-        <p style={{ margin: '0 0 10px', fontSize: 12, color: '#92400e' }}>
-          Complete these 3 steps to send your first message.
-        </p>
 
         {loading ? (
           <p style={{ fontSize: 12, color: '#b45309' }}>Loading...</p>
@@ -115,7 +111,7 @@ export default function OnboardingBanner({ user }) {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: '6px 18px' }}>
               {steps.map((step, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span
