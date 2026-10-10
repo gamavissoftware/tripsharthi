@@ -66,7 +66,7 @@ cp "/etc/php/${PHP_V}/fpm/conf.d/99-tripsarthi.ini" "/etc/php/${PHP_V}/cli/conf.
 sed -i 's/^opcache.enable = 1/opcache.enable = 1\nopcache.enable_cli = 0/' "/etc/php/${PHP_V}/cli/conf.d/99-tripsarthi.ini"
 
 log "Installing MySQL 8"
-if [ "$TEST_MODE" = 1 ]; then apt-get install -y mysql-server || { pkill -x mysqld || true; sleep 3; dpkg --configure -a; }; mkdir -p /var/run/mysqld && chown mysql:mysql /var/run/mysqld   # container-only quirk
+if [ "$TEST_MODE" = 1 ]; then apt-get install -y mysql-server || { pkill -x mysqld || true; sleep 3; dpkg --configure -a; }; mkdir -p /var/run/mysqld && chown mysql:mysql /var/run/mysqld && chmod 755 /var/run/mysqld   # container-only quirk
 else apt-get install -y mysql-server; fi
 svc mysql start
 for i in $(seq 1 30); do mysqladmin ping >/dev/null 2>&1 && break; sleep 1; done
