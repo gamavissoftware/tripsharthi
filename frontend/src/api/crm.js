@@ -2,6 +2,32 @@ import { api } from './client'
 
 // CRM — accounts, tasks, notes, activities/timeline. Helpers return the raw
 // { success, data } envelope; callers read `.data` (see api envelope convention).
+// Report widgets call runReport() all at once on page load; coalesce calls made in the
+// same tick into ONE request (the API rate-limits per user). Resolves to { success, data }
+// like a single call; a failed spec rejects only its own caller.
+let pendingReports = []
+function runReportBatched(spec) {
+  return new Promise((resolve, reject) => {
+    pendingReports.push({ spec, resolve, reject })
+    if (pendingReports.length === 1) setTimeout(flushReports, 15)
+  })
+}
+async function flushReports() {
+  const batch = pendingReports
+  pendingReports = []
+  for (let i = 0; i < batch.length; i += 40) {
+    const part = batch.slice(i, i + 40)
+    try {
+      const r = await api.post('/crm/reports/run-batch', { specs: part.map(b => b.spec) })
+      part.forEach((b, n) => {
+        const item = r.data?.[n]
+        if (item && item.data) b.resolve({ success: true, data: item.data })
+        else b.reject(new Error(item?.error || 'Report failed'))
+      })
+    } catch (e) { part.forEach(b => b.reject(e)) }
+  }
+}
+
 export const crm = {
   // Accounts
   listAccounts:  (params = {}) => api.get('/accounts?' + new URLSearchParams(params)),
@@ -141,7 +167,7 @@ export const crm = {
   addWidget:       (dashId, data)  => api.post(`/crm/dashboards/${dashId}/widgets`, data),
   updateWidget:    (id, data)      => api.put(`/crm/widgets/${id}`, data),
   deleteWidget:    (id)            => api.delete(`/crm/widgets/${id}`),
-  runReport:       (spec)          => api.post('/crm/reports/run', spec),
+  runReport:       (spec)          => runReportBatched(spec),
   reportOptions:   ()              => api.get('/crm/reports/options'),
   exportReport: async (spec) => {
     const token = localStorage.getItem('tp_token')

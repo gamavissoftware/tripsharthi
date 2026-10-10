@@ -37,6 +37,38 @@ class ReportsController extends ResourceController
         return $this->respond(['success' => true, 'data' => $res]);
     }
 
+    /**
+     * POST /crm/reports/run-batch {specs: [spec, ...]} — runs many report specs in one request
+     * (a dashboard has a dozen widgets; one call per widget trips the rate limiter).
+     * Result order matches the input; a failing spec yields {error} and never fails the others.
+     */
+    public function runBatch(): ResponseInterface
+    {
+        $specs = $this->request->getJsonVar('specs', true);
+        if (! is_array($specs) || $specs === []) {
+            return $this->fail('specs must be a non-empty list', 422);
+        }
+        if (count($specs) > 40) {
+            return $this->fail('At most 40 reports per request', 422);
+        }
+        $svc     = new ReportService();
+        $tenant  = CurrentUser::tenantId();
+        $results = [];
+        foreach ($specs as $spec) {
+            $spec = is_array($spec) ? $spec : [];
+            $in   = [];
+            foreach (['entity', 'metric', 'dimension', 'from', 'to', 'preset'] as $k) {
+                $in[$k] = $spec[$k] ?? null;
+            }
+            try {
+                $results[] = ['data' => $svc->run($tenant, $in)];
+            } catch (\Throwable $e) {
+                $results[] = ['error' => $e->getMessage()];
+            }
+        }
+        return $this->respond(['success' => true, 'data' => $results]);
+    }
+
     public function options(): ResponseInterface
     {
         return $this->respond(['success' => true, 'data' => ReportService::options()]);

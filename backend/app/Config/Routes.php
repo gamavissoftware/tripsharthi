@@ -171,6 +171,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->put('crm/widgets/(:num)',              'Api\DashboardsController::updateWidget/$1', ['filter' => 'auth']);
     $routes->delete('crm/widgets/(:num)',           'Api\DashboardsController::deleteWidget/$1', ['filter' => 'auth']);
     $routes->post('crm/reports/run',                'Api\ReportsController::run',     ['filter' => 'auth']);
+    $routes->post('crm/reports/run-batch',          'Api\ReportsController::runBatch', ['filter' => 'auth']);
     $routes->get('crm/reports/options',             'Api\ReportsController::options', ['filter' => 'auth']);
     $routes->get('crm/reports/export',              'Api\ReportsController::export',  ['filter' => 'auth']);
     $routes->get('crm/forecast',             'Api\ForecastController::index',       ['filter' => 'auth']);
