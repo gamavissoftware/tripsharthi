@@ -1,6 +1,6 @@
 <?php
 $e = [\App\Services\Billing\Docs\DocFormat::class, 'e']; $n = [\App\Services\Billing\Docs\DocFormat::class, 'num']; $inr = [\App\Services\Billing\Docs\DocFormat::class, 'inr']; $nl = [\App\Services\Billing\Docs\DocFormat::class, 'nl'];
-$isCn = $doc['doc_type'] === 'credit_note'; $isBos = $doc['doc_type'] === 'bill_of_supply'; $intra = $doc['supply_type'] === 'intra'; $hasTax = ! $isBos;
+$isCn = $doc['doc_type'] === 'credit_note'; $isBos = $doc['doc_type'] === 'bill_of_supply'; $intra = $doc['supply_type'] === 'intra'; $nilTax = $isBos || ($doc['original_doc_type'] ?? null) === 'bill_of_supply'; $hasTax = ! $nilTax;   // a credit note against a bill of supply carries no tax either
 $rate = rtrim(rtrim(number_format((float) $doc['gst_rate'], 2), '0'), '.'); $half = rtrim(rtrim(number_format((float) $doc['gst_rate'] / 2, 2), '0'), '.');
 $label = ['tax_invoice' => 'TAX INVOICE', 'bill_of_supply' => 'BILL OF SUPPLY', 'credit_note' => 'CREDIT NOTE'][$doc['doc_type']];
 ?>

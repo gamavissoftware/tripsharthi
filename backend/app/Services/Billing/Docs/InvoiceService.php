@@ -268,7 +268,7 @@ final class InvoiceService
         $isCn = $docType === 'credit_note';
         $o = $d['original'] ?? null;
         $rate = (float) $d['gst_rate'];
-        $declaration = $docType === 'bill_of_supply' ? '' : ($rate > 0 && $rate <= 5.0
+        $declaration = ($docType === 'bill_of_supply' || ($o['doc_type'] ?? null) === 'bill_of_supply') ? '' : ($rate > 0 && $rate <= 5.0
             ? "GST charged at {$rate}% for tour operator services without input tax credit on goods or services used to provide this supply (other than input tax credit on tour operator services in the same line of business), as per the applicable GST notification."
             : "GST charged at {$rate}% on tour operator services, with input tax credit as applicable.");
         $bank = ['has' => false, 'rows' => [], 'qr' => null, 'qr_amount' => 0];
@@ -286,7 +286,7 @@ final class InvoiceService
                 'place_name' => Gst::STATES[$d['place_of_supply'] ?? ''] ?? '', 'supply_type' => $d['supply_type'], 'sac' => $d['sac'], 'taxable_value' => $d['taxable_value'], 'gst_rate' => $d['gst_rate'],
                 'cgst' => $d['cgst'], 'sgst' => $d['sgst'], 'igst' => $d['igst'], 'tcs_rate' => $d['tcs_rate'], 'tcs' => $d['tcs'], 'total' => $d['total'], 'words' => AmountInWords::paise($d['total']), 'reason' => $d['reason'],
                 'einvoice' => ! empty($d['einvoice']) ? ['irn' => $d['einvoice']['irn'], 'ack_no' => $d['einvoice']['ack_no'], 'ack_dt' => DocFormat::date(substr($d['einvoice']['ack_dt'], 0, 10)), 'qr' => Qr::dataUri($d['einvoice']['signed_qr'], 3)] : null,
-                'original_number' => $o['number'] ?? null, 'original_date' => isset($o['issue_date']) ? DocFormat::date($o['issue_date']) : null, 'paid_at_issue' => $isCn ? null : ($d['lines']['paid_at_issue'] ?? 0)]];
+                'original_number' => $o['number'] ?? null, 'original_doc_type' => $o['doc_type'] ?? null, 'original_date' => isset($o['issue_date']) ? DocFormat::date($o['issue_date']) : null, 'paid_at_issue' => $isCn ? null : ($d['lines']['paid_at_issue'] ?? 0)]];
         return PdfRenderer::render(view('pdf/invoice', $view), $d['number'] . ' · ' . $d['seller']['legal_name'] . (empty($d['seller']['gstin']) ? '' : ' · GSTIN ' . $d['seller']['gstin']), ($isCn ? 'Credit note ' : 'Invoice ') . $d['number']);
     }
 }

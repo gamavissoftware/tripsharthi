@@ -198,6 +198,27 @@ final class InvoiceServiceTest extends CIUnitTestCase
         }
     }
 
+    public function testACreditNoteAgainstABillOfSupplyCarriesNoTaxColumnsOrGstDeclaration(): void
+    {
+        db_connect()->table('business_profiles')->where('tenant_id', 1)->update(['gstin' => null]);
+        $b = $this->booking(['subtotal' => 4_830_000, 'gst_amount' => 0, 'tcs_amount' => 0, 'total_amount' => 4_830_000]);
+        $inv = $this->svc()->issueForBooking(1, $b, ['state' => 'Kerala']);
+        $this->assertSame('bill_of_supply', $inv['doc_type']);
+
+        $cn = $this->svc()->creditNote(1, (int) $inv['id'], ['reason' => 'One traveller dropped out', 'taxable_value' => 350_000]);
+        $this->assertSame('credit_note', $cn['doc_type']);
+        $this->assertSame([0, 0, 0], [(int) $cn['cgst'], (int) $cn['sgst'], (int) $cn['igst']]);
+        $this->assertSame(350_000, (int) $cn['total']);
+        if (($t = $this->text($this->svc()->pdf($cn))) !== null) {
+            $this->assertStringContainsString('CREDIT NOTE', $t);
+            $this->assertStringContainsString($inv['number'], $t);
+            foreach (['IGST', 'CGST', 'SGST', 'GST charged', 'Place of supply'] as $nope) {
+                $this->assertStringNotContainsString($nope, $t, "a credit note against a bill of supply must not print '{$nope}'");
+            }
+            $this->assertStringContainsString('not registered under GST', $t);
+        }
+    }
+
     public function testIncompleteProfileAndMismatchedTotalsAreRefused(): void
     {
         db_connect()->table('business_profiles')->where('tenant_id', 1)->update(['address_line1' => null, 'pincode' => null]);
