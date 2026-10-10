@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import LoadFailed from '../components/LoadFailed'
 
 // Render the right input for a field type. Value is always stored as a string.
 export function DynamicField({ field, value, onChange, disabled }) {
@@ -55,16 +56,18 @@ export default function RecordsPage() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
 
+  const [loadErr, setLoadErr] = useState('')
   async function load() {
     setLoading(true)
     try {
       const [o, r] = await Promise.all([crm.getObject(id), crm.listRecords(id)])
       setObject(o.data); setRecords(r.data ?? [])
-    } catch (e) { toast.error('Failed to load', e.message) }
+    } catch (e) { setLoadErr(e?.message || 'Not found'); toast.error('Failed to load', e.message) }
     finally { setLoading(false) }
   }
   useEffect(() => { load() }, [id])
 
+  if (!object && loadErr) return <LoadFailed what="object" message={loadErr} backTo="/objects" backLabel="Back to objects" />
   if (!object) return <div className="page" style={{ maxWidth: 820 }}><div style={{ height: 120, borderRadius: 12, background: '#f3f4f6' }} /></div>
   const fields = object.fields ?? []
   const preview = fields.slice(0, 2)

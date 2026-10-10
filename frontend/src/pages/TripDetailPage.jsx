@@ -4,6 +4,7 @@ import { travel, inr, TRIP_STATUS } from '../api/travel'
 import { toast } from '../components/Toast'
 import Pill from '../components/Pill'
 import ReserveSeatsModal from '../components/travel/ReserveSeatsModal'
+import LoadFailed from '../components/LoadFailed'
 
 const fmt = (d) => d ? new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
 const IT_STATUS = { draft: { label: 'Draft', bg: '#f1f5f9', color: '#475569' }, sent: { label: 'Sent', bg: '#dbeafe', color: '#1d4ed8' }, viewed: { label: 'Viewed', bg: '#fef9c3', color: '#a16207' }, accepted: { label: 'Accepted', bg: '#dcfce7', color: '#15803d' }, rejected: { label: 'Rejected', bg: '#fee2e2', color: '#b91c1c' }, expired: { label: 'Expired', bg: '#f1f5f9', color: '#475569' }, superseded: { label: 'Superseded', bg: '#f1f5f9', color: '#94a3b8' } }
@@ -15,7 +16,8 @@ export default function TripDetailPage() {
   const [busy, setBusy] = useState('')
   const [reserve, setReserve] = useState(false)
 
-  const load = useCallback(() => travel.trip(id).then(setTrip).catch(e => toast.error('Could not load trip', e.message)), [id])
+  const [loadErr, setLoadErr] = useState('')
+  const load = useCallback(() => travel.trip(id).then(t => { setTrip(t); setLoadErr('') }).catch(e => { setLoadErr(e.message || 'Not found'); toast.error('Could not load trip', e.message) }), [id])
   useEffect(() => { load() }, [load])
 
   async function run(key, fn, ok) {
@@ -23,6 +25,7 @@ export default function TripDetailPage() {
     try { const r = await fn(); if (ok) toast.success(ok); return r } catch (e) { toast.error('Failed', e.message) } finally { setBusy('') }
   }
 
+  if (!trip && loadErr) return <LoadFailed what="trip" message={loadErr} backTo="/trips" backLabel="Back to trips" />
   if (!trip) return <div className="page">Loading…</div>
   const row = (k, v) => v ? <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)' }}><span style={{ color: 'var(--text-3)' }}>{k}</span><b>{v}</b></div> : null
 

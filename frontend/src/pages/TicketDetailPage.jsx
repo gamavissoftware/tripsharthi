@@ -5,6 +5,7 @@ import { toast } from '../components/Toast'
 import { TimelinePanel, NotesPanel, TasksPanel } from '../components/crm/RecordPanels'
 import DocumentsPanel from '../components/crm/DocumentsPanel'
 import { api } from '../api/client'
+import LoadFailed from '../components/LoadFailed'
 
 const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18, padding: '1.4rem 1.5rem', marginBottom: '1.25rem' }
 const PR_TINT = { high: { bg: '#fee2e2', c: '#b91c1c' }, urgent: { bg: '#fee2e2', c: '#b91c1c' }, medium: { bg: '#fef3c7', c: '#92400e' }, low: { bg: '#f1f5f9', c: '#64748b' } }
@@ -38,7 +39,8 @@ export default function TicketDetailPage() {
   const [tlKey, setTlKey] = useState(0)
   const [agents, setAgents] = useState([])
 
-  async function load() { try { const r = await crm.getTicket(id); setTicket(r.data) } catch { /* noop */ } }
+  const [loadErr, setLoadErr] = useState('')
+  async function load() { try { const r = await crm.getTicket(id); setTicket(r.data) } catch (e) { setLoadErr(e?.message || 'Not found') } }
   useEffect(() => { load() }, [id])
   useEffect(() => { api.get('/team').then(r => setAgents(r.data ?? [])).catch(() => {}) }, [])
 
@@ -47,6 +49,7 @@ export default function TicketDetailPage() {
     catch (e) { toast.error('Could not update', e.message) }
   }
 
+  if (!ticket && loadErr) return <LoadFailed what="ticket" message={loadErr} backTo="/tickets" backLabel="Back to tickets" />
   if (!ticket) return <div className="page" style={{ maxWidth: 760 }}><div style={{ ...card, height: 160, background: '#f3f4f6' }} /></div>
   const st = STATUS[ticket.status] ?? STATUS.open
   const pr = PRIORITY[ticket.priority] ?? PRIORITY.medium

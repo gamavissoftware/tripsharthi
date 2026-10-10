@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom'
 import { travel, inr, toPaise } from '../api/travel'
 import { toast } from '../components/Toast'
 import { toMinor, toMajor, fmt, toInrPaise } from '../lib/currency'
+import LoadFailed from '../components/LoadFailed'
 
 const TYPE_ICON = { hotel: '🏨', flight: '✈️', train: '🚆', transfer: '🚗', sightseeing: '📸', activity: '🎯', meal: '🍽️', visa: '🛂', insurance: '🛡️', other: '•' }
 
@@ -55,7 +56,8 @@ export default function ItineraryBuilderPage() {
   const [sup, setSup] = useState({})
   const [share, setShare] = useState(null)
   const [fx, setFx] = useState([])
-  const load = useCallback(() => travel.itinerary(id).then(setIt).catch(e => toast.error('Could not load', e.message)), [id])
+  const [loadErr, setLoadErr] = useState('')
+  const load = useCallback(() => travel.itinerary(id).then(x => { setIt(x); setLoadErr('') }).catch(e => { setLoadErr(e.message || 'Not found'); toast.error('Could not load', e.message) }), [id])
   useEffect(() => { load() }, [load])
   useEffect(() => {
     Promise.all([travel.list('rates'), travel.list('suppliers'), travel.fxRates().catch(() => ({ rates: [] }))]).then(([r, s, f]) => {
@@ -67,6 +69,7 @@ export default function ItineraryBuilderPage() {
   async function patch(body, msg) {
     try { setIt(await travel.updateItinerary(id, body)); if (msg) toast.success(msg) } catch (e) { toast.error('Update failed', e.message) }
   }
+  if (!it && loadErr) return <LoadFailed what="itinerary" message={loadErr} backTo="/trips" backLabel="Back to trips" />
   if (!it) return <div className="page">Loading…</div>
 
   const lock = !['draft', 'sent', 'viewed'].includes(it.status)

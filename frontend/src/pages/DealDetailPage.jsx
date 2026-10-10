@@ -163,8 +163,11 @@ export default function DealDetailPage() {
     setLi(s => ({ ...s, product_id: p.id, name: p.name, unit_price: (Number(p.price_paise || 0) / 100).toString() }))
   }
 
+  const [loadError, setLoadError] = useState('')
   async function load() {
-    const r = await crm.getDeal(id)
+    let r
+    try { r = await crm.getDeal(id) } catch (e) { setLoadError(e?.message || 'Deal not found'); return }
+    setLoadError('')
     setDeal(r.data)
     try {
       const p = await crm.listPipelines()
@@ -207,6 +210,7 @@ export default function DealDetailPage() {
   }
   async function delLi(itemId) { try { await crm.deleteLineItem(id, itemId); await load() } catch { /* noop */ } }
 
+  if (loadError && !deal) return <div className="page" style={{ maxWidth: 900 }}><div style={{ ...card, padding: '2rem', textAlign: 'center' }}><h3 style={{ marginTop: 0 }}>Deal not found</h3><p style={{ color: '#6b7280' }}>{loadError.replace(/\.$/, '')}. It may have been deleted or you may not have access.</p><a className="btn btn-primary" href="#/deals">Back to deals</a></div></div>
   if (!deal) return <div className="page" style={{ maxWidth: 900 }}><div style={{ ...card, height: 160, background: '#f3f4f6' }} /></div>
   const st = STATUS[deal.status] ?? STATUS.open
 

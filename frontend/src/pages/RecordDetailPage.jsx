@@ -4,6 +4,7 @@ import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { DynamicField } from './RecordsPage'
 import { TimelinePanel, NotesPanel, TasksPanel } from '../components/crm/RecordPanels'
+import LoadFailed from '../components/LoadFailed'
 
 const card = { background: '#fff', border: '1px solid #e5e7eb', borderRadius: 18, padding: '1.4rem 1.5rem', marginBottom: '1.25rem' }
 
@@ -15,8 +16,10 @@ export default function RecordDetailPage() {
   const [saving, setSaving] = useState(false)
   const [tlKey, setTlKey] = useState(0)
 
+  const [loadErr, setLoadErr] = useState('')
   async function load() {
-    const r = await crm.getRecord(recordId)
+    let r
+    try { r = await crm.getRecord(recordId) } catch (e) { setLoadErr(e?.message || 'Not found'); return }
     setRecord(r.data)
     setForm({ name: r.data.name ?? '', data: r.data.data ?? {} })
   }
@@ -29,6 +32,7 @@ export default function RecordDetailPage() {
     finally { setSaving(false) }
   }
 
+  if (!record && loadErr) return <LoadFailed what="record" message={loadErr} backTo="/objects" backLabel="Back to objects" />
   if (!record) return <div className="page" style={{ maxWidth: 760 }}><div style={{ ...card, height: 160, background: '#f3f4f6' }} /></div>
   const obj = record.object ?? {}
   const fields = record.fields ?? []

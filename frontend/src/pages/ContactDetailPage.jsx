@@ -11,6 +11,7 @@ import DocumentsPanel from '../components/crm/DocumentsPanel'
 import AiScriptPanel from '../components/crm/AiScriptPanel'
 import EmailPanel from '../components/crm/EmailPanel'
 import { TierBadge } from '../components/CrmListView'
+import LoadFailed from '../components/LoadFailed'
 
 const SCORE_LABELS = { lifecycle: 'Lifecycle stage', source: 'Source quality', email: 'Has email', account: 'Has account', deal: 'Linked deal value', engagement: 'WhatsApp engagement', tasks: 'Task completion', decay: 'Recency decay' }
 
@@ -131,6 +132,7 @@ export default function ContactDetailPage() {
   const [errors, setErrors]   = useState({})
   const [saving, setSaving]   = useState(false)
   const [loading, setLoading] = useState(!isNew)
+  const [loadErr, setLoadErr] = useState('')
   const [confirmDel, setConfirmDel] = useState(false)
 
   const [timelineKey, setTimelineKey] = useState(0)
@@ -159,7 +161,7 @@ export default function ContactDetailPage() {
           })
           setLoading(false)
         })
-        .catch(() => setLoading(false))
+        .catch(e => { setLoadErr(e?.message || 'Not found'); setLoading(false) })
     }
   }, [id])
 
@@ -259,6 +261,7 @@ export default function ContactDetailPage() {
     } catch (err) { toast.error('Update failed', err.message) }
   }
 
+  if (loadErr && !isNew) return <LoadFailed what="contact" message={loadErr} backTo="/contacts" backLabel="Back to contacts" />
   if (loading) {
     return <div className="page" style={{ maxWidth: 760 }}><div className="lp-cd-card" style={{ height: 200, background: '#f3f4f6', border: 'none' }} /></div>
   }
