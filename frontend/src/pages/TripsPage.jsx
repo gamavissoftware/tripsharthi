@@ -5,6 +5,7 @@ import { contacts as contactsApi } from '../api/contacts'
 import { toast } from '../components/Toast'
 import Pill from '../components/Pill'
 import TripBoard from '../components/travel/TripBoard'
+import { activityState } from '../components/travel/tripActivity'
 import { LayoutGrid, List } from 'lucide-react'
 
 const TYPES = ['leisure', 'honeymoon', 'family', 'friends', 'solo', 'pilgrimage', 'adventure', 'corporate', 'group_departure', 'student', 'umrah_hajj', 'visa_only', 'flight_only', 'hotel_only', 'other']
@@ -101,6 +102,7 @@ export default function TripsPage() {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
+  const [act, setAct] = useState('all')   // board filter: all | overdue | none (nothing scheduled)
   // Board (pipeline columns) is the default; the choice is remembered in this browser.
   const [view, setView] = useState(() => { try { return localStorage.getItem('ts_trips_view') === 'list' ? 'list' : 'board' } catch { return 'board' } })
   function pickView(v) { setView(v); try { localStorage.setItem('ts_trips_view', v) } catch { /* private mode */ } }
@@ -112,6 +114,13 @@ export default function TripsPage() {
     travel.trips(qs.toString()).then(setRows).catch(e => toast.error('Could not load trips', e.message))
   }, [filter, q, view])
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load])
+
+  // Counts for the filter chips, and the rows the board shows. Booked-and-later trips carry no activity chip, so they only appear under "All".
+  const now = new Date()
+  const states = (rows || []).map(r => activityState(r, now))
+  const nOverdue = states.filter(x => x === 'overdue').length
+  const nNone = states.filter(x => x === 'none').length
+  const boardRows = rows && (act === 'all' ? rows : rows.filter((r, i) => states[i] === (act === 'overdue' ? 'overdue' : 'none')))
 
   // Move a card: show it in the new column at once, then tell the server; put it back if the server says no.
   async function moveTrip(trip, status, reason) {
@@ -142,9 +151,17 @@ export default function TripsPage() {
         {view === 'list' && FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
         <input className="form-input" style={{ maxWidth: 240, marginLeft: 'auto' }} placeholder="Search destination or title…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
+      {view === 'board' && rows !== null && (
+        <div className="tboard-filters" role="group" aria-label="Filter by activity">
+          <button className={'btn btn-sm ' + (act === 'all' ? 'btn-primary' : 'btn-ghost')} onClick={() => setAct('all')}>All trips</button>
+          <button className={'btn btn-sm ' + (act === 'overdue' ? 'btn-primary' : 'btn-ghost')} onClick={() => setAct('overdue')}>Overdue activity <span className={'tboard-fcount' + (nOverdue ? ' is-red' : '')}>{nOverdue}</span></button>
+          <button className={'btn btn-sm ' + (act === 'none' ? 'btn-primary' : 'btn-ghost')} onClick={() => setAct('none')}>No activity scheduled <span className={'tboard-fcount' + (nNone ? ' is-amber' : '')}>{nNone}</span></button>
+          {act !== 'all' && <span className="text-muted">Showing open enquiries that need a next step</span>}
+        </div>
+      )}
       {view === 'board' && (rows === null
         ? <div style={{ padding: 24, textAlign: 'center' }}>Loading…</div>
-        : <TripBoard rows={rows} onMove={moveTrip} onBooked={(trip, b) => nav(`/bookings/${b.id}`)} onChanged={load} />)}
+        : <TripBoard rows={boardRows} onMove={moveTrip} onBooked={(trip, b) => nav(`/bookings/${b.id}`)} onChanged={load} />)}
       {view === 'list' && <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>

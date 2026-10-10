@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Phone, MessageCircle, Mail, CalendarDays, CheckSquare, TriangleAlert, Check } from 'lucide-react'
 import { crm } from '../../api/crm'
 import { toast } from '../Toast'
+import { dueInfo } from './tripActivity'
 
 // Pipedrive-style activity indicator for a trip card + the panel to schedule / complete activities.
 // Activities are CRM tasks on the trip's deal (related_type 'deal'), so they also show on the deal and in Tasks.
@@ -11,22 +12,6 @@ const TYPES = {
   email:    { label: 'Email',    icon: Mail },
   meeting:  { label: 'Meeting',  icon: CalendarDays },
   todo:     { label: 'To-do',    icon: CheckSquare },
-}
-
-// Task times are stored as typed (no time zone), so they are read as local time, like the Tasks page does.
-const parse = (s) => (s ? new Date(String(s).replace(' ', 'T')) : null)
-
-function dueInfo(due, now = new Date()) {
-  const d = parse(due)
-  if (!d || isNaN(d)) return { txt: 'No date', overdue: false, dated: false }
-  const day0 = new Date(now); day0.setHours(0, 0, 0, 0)
-  const day = new Date(d); day.setHours(0, 0, 0, 0)
-  const diff = Math.round((day - day0) / 86400000)
-  let txt = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-  if (diff === 0) txt = 'Today'
-  else if (diff === 1) txt = 'Tomorrow'
-  else if (diff === -1) txt = 'Yesterday'
-  return { txt, overdue: d < now, dated: true, diff }
 }
 
 /** The small status on a card: red = overdue, green = planned, amber = nothing scheduled. */
