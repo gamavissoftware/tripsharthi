@@ -1,5 +1,8 @@
-B=http://localhost:8731/api/v1; J='Content-Type: application/json'
-TOK=$(curl -s -XPOST $B/auth/login -H "$J" -d '{"email":"demo@travelpilot.test","password":"Demo@12345"}' | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
+# Local by default. Against a live server use YOUR OWN TEST ACCOUNT (this creates a test trip, quote, booking and payment in it):
+#   BASE=https://app.tripsarthi.com/api/v1 SMOKE_EMAIL=you@x.com SMOKE_PASSWORD='…' bash scripts/smoke-travel.sh
+B="${BASE:-http://localhost:8731/api/v1}"; J='Content-Type: application/json'
+SMOKE_EMAIL="${SMOKE_EMAIL:-demo@travelpilot.test}"; SMOKE_PASSWORD="${SMOKE_PASSWORD:-Demo@12345}"
+TOK=$(curl -s -XPOST $B/auth/login -H "$J" -d "{\"email\":\"$SMOKE_EMAIL\",\"password\":\"$SMOKE_PASSWORD\"}" | python3 -c "import sys,json;print(json.load(sys.stdin).get('token',''))")
 echo TOK=${TOK:0:6}
 A="Authorization: Bearer $TOK"
 c(){ curl -s -X"$1" "$B$2" -H "$J" -H "$A" ${3:+-d "$3"}; }
