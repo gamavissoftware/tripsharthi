@@ -445,6 +445,16 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
+        // Offers: coupon codes, plan promotions, free-day grants
+        $routes->get('coupons',                    'Api\AdminOffersController::coupons');
+        $routes->post('coupons',                   'Api\AdminOffersController::createCoupon');
+        $routes->put('coupons/(:num)',             'Api\AdminOffersController::updateCoupon/$1');
+        $routes->get('coupons/(:num)/redemptions', 'Api\AdminOffersController::couponRedemptions/$1');
+        $routes->get('promotions',                 'Api\AdminOffersController::promotions');
+        $routes->post('promotions',                'Api\AdminOffersController::createPromotion');
+        $routes->put('promotions/(:num)',          'Api\AdminOffersController::updatePromotion/$1');
+        $routes->get('grants',                     'Api\AdminOffersController::grants');
+        $routes->post('grants',                    'Api\AdminOffersController::grant');
         $routes->get('enquiries',                  'Api\PlatformAdminController::enquiries');
         $routes->put('enquiries/(:num)',           'Api\PlatformAdminController::enquiryStatus/$1');
         $routes->get('chats',                      'Api\PlatformAdminController::chats');
@@ -627,6 +637,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('subscribe',       'Api\BillingController::subscribe');
         $routes->post('cancel',          'Api\BillingController::cancel');
         $routes->get('status',           'Api\BillingController::status');
+        $routes->post('quote',           'Api\BillingController::quote');
         $routes->get('history',          'Api\BillingController::history');
         $routes->post('create-order',    'Api\BillingController::createOrder');
         $routes->post('verify-payment',  'Api\BillingController::verifyPayment');

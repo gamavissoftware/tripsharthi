@@ -59,7 +59,7 @@ class BillingService
      * Create a Razorpay Order for embedded checkout (no redirect).
      * Returns order_id, amount (paise), currency, key_id, and plan metadata.
      */
-    public function createOrder(int $tenantId, string $plan, string $billing = 'monthly'): array
+    public function createOrder(int $tenantId, string $plan, string $billing = 'monthly', ?string $coupon = null): array
     {
         if (! in_array($plan, self::VALID_PLANS, true)) {
             throw new \InvalidArgumentException("Invalid plan '{$plan}'.");
@@ -67,9 +67,13 @@ class BillingService
 
         $billingType = ($billing === 'annual') ? 'annual' : 'monthly';
 
-        // Amount in INR from env override or list-price fallback
-        $amountInr   = $this->resolveAmountInr($plan, $billingType);
-        $amountPaise = $amountInr * 100; // Razorpay uses smallest currency unit
+        // List price (INR) from env override or the built-in list, then the platform's offers. The SERVER decides the amount:
+        // a coupon/promotion is priced here and the Razorpay Order is created for exactly that figure.
+        $listPaise   = $this->resolveAmountInr($plan, $billingType) * 100;
+        $offers      = new OfferService();
+        $quote       = $offers->quote($tenantId, $plan, $billingType, $listPaise, $coupon);   // \DomainException = a typed code that cannot be used
+        $amountPaise = $quote['charged_paise'];                                                // Razorpay uses the smallest currency unit
+        $amountInr   = (int) round($amountPaise / 100);
 
         $periodDays = ($billingType === 'annual') ? 365 : 30;
         $receipt    = 'tp_' . $tenantId . '_' . $plan . '_' . time();
@@ -86,6 +90,7 @@ class BillingService
                     'tenant_id'    => (string) $tenantId,
                     'plan'         => $plan,
                     'billing_type' => $billingType,
+                    'offer'        => (string) ($quote['coupon_code'] ?? ($quote['source'] === 'promotion' ? 'promo-' . $quote['promotion_id'] : '')),
                 ],
             ]);
             $orderId = $result['id'];
@@ -109,6 +114,7 @@ class BillingService
             'created_at'      => date('Y-m-d H:i:s'),
             'updated_at'      => date('Y-m-d H:i:s'),
         ]);
+        $offers->reserve($tenantId, (int) $db->insertID(), $plan, $billingType, $quote);
 
         return [
             'order_id'     => $orderId,
@@ -121,6 +127,11 @@ class BillingService
             'period_days'  => $periodDays,
             'description'  => $note,
             'mock'         => $this->isMockMode(),
+            'list_amount'  => $quote['list_paise'],
+            'discount'     => $quote['discount_paise'],
+            'offer_label'  => $quote['label'],
+            'coupon_code'  => $quote['coupon_code'],
+            'notice'       => $quote['notice'],
         ];
     }
 
@@ -191,6 +202,11 @@ class BillingService
             'updated_at' => $now->format('Y-m-d H:i:s'),
         ]);
 
+        // The reserved coupon (if any) now counts as used. The customer has ALREADY paid and the plan is active, so a bookkeeping
+        // problem here must never undo or fail the activation - log it loudly instead.
+        try { (new OfferService())->confirm($tenantId, (int) $order['id']); }
+        catch (\Throwable $e) { log_message('critical', "BillingService: could not record the coupon redemption for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
+
         log_message('info', "BillingService: tenant#{$tenantId} activated plan={$plan} via payment={$paymentId}");
     }
 
@@ -199,6 +215,13 @@ class BillingService
      * RAZORPAY_AMOUNT_<PLAN>_<CYCLE> env override if set, else the list price.
      * Single source of truth shared by order creation and payment verification.
      */
+    /** List price of a plan/cycle in PAISE (before any offer). */
+    public function listPricePaise(string $plan, string $billingType): int
+    {
+        if (! in_array($plan, self::VALID_PLANS, true)) { throw new \InvalidArgumentException("Invalid plan '{$plan}'."); }
+        return $this->resolveAmountInr($plan, $billingType === 'annual' ? 'annual' : 'monthly') * 100;
+    }
+
     private function resolveAmountInr(string $plan, string $billingType): int
     {
         $key = 'RAZORPAY_AMOUNT_' . strtoupper($plan) . '_' . strtoupper($billingType);

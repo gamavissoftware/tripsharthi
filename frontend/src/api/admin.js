@@ -17,4 +17,15 @@ export const admin = {
   chat:          (id, after = 0) => api.get(`/admin/chats/${id}?after=${after}`).then(unwrap),
   chatReply:     (id, body)  => api.post(`/admin/chats/${id}/reply`, { body }).then(unwrap),
   chatClose:     (id)        => api.post(`/admin/chats/${id}/close`, {}).then(unwrap),
+
+  // Offers
+  coupons:            ()        => api.get('/admin/coupons').then(unwrap),
+  createCoupon:       (b)       => api.post('/admin/coupons', b).then(unwrap),
+  updateCoupon:       (id, b)   => api.put(`/admin/coupons/${id}`, b).then(unwrap),
+  couponRedemptions:  (id)      => api.get(`/admin/coupons/${id}/redemptions`).then(unwrap),
+  promotions:         ()        => api.get('/admin/promotions').then(unwrap),
+  createPromotion:    (b)       => api.post('/admin/promotions', b).then(unwrap),
+  updatePromotion:    (id, b)   => api.put(`/admin/promotions/${id}`, b).then(unwrap),
+  grants:             ()        => api.get('/admin/grants').then(unwrap),
+  grant:              (b)       => api.post('/admin/grants', b).then(unwrap),
 }

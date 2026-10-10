@@ -15,8 +15,12 @@ export const billing = {
     api.post('/billing/cancel'),
 
   // Razorpay embedded checkout
-  createOrder: (plan, billingType) =>
-    api.post('/billing/create-order', { plan, billing: billingType }),
+  createOrder: (plan, billingType, coupon = '') =>
+    api.post('/billing/create-order', { plan, billing: billingType, ...(coupon ? { coupon } : {}) }),
+
+  // What each plan costs THIS customer now (promotions + an optional typed code). Display only; the server re-prices at checkout.
+  quote: (billingType, code = '') =>
+    api.post('/billing/quote', { billing: billingType, ...(code ? { code } : {}) }),
 
   verifyPayment: (data) =>
     api.post('/billing/verify-payment', data),

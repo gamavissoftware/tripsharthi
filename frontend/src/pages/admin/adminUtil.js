@@ -7,6 +7,8 @@ export const STATUS_COLOR = { active: 'var(--success)', suspended: 'var(--danger
 
 // The API stores UTC "YYYY-MM-DD HH:MM:SS" — read it as UTC, show it in the viewer's time zone.
 const parse = (s) => new Date(String(s).replace(' ', 'T') + 'Z')
+// Date inputs are India (IST) days: show a stored UTC timestamp as its IST calendar date (for editing).
+export const istDate = (s) => (s ? new Date(parse(s).getTime() + 19_800_000).toISOString().slice(0, 10) : '')
 export const fmtDate = (s) => (s ? parse(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')
 export const fmtDateTime = (s) => (s ? parse(s).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—')
 export const ago = (s) => {

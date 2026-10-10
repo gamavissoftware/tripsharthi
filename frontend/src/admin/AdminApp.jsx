@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -9,6 +9,7 @@ import AdminOverviewPage from '../pages/admin/AdminOverviewPage'
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage'
 import AdminSubscriptionsPage from '../pages/admin/AdminSubscriptionsPage'
 import AdminInboxPage from '../pages/admin/AdminInboxPage'
+import AdminOffersPage from '../pages/admin/AdminOffersPage'
 
 // One place to add sections as the admin grows (offers, partners, WhatsApp, ...).
 const NAV = [
@@ -16,6 +17,7 @@ const NAV = [
     { to: '/admin',               label: 'Overview',      icon: LayoutDashboard, end: true },
     { to: '/admin/customers',     label: 'Customers',     icon: Building2 },
     { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+    { to: '/admin/offers',        label: 'Offers',        icon: Tag },
     { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
   ] },
 ]
@@ -66,6 +68,7 @@ function Shell({ user, onLogout }) {
           <Route path="/admin" element={<AdminOverviewPage />} />
           <Route path="/admin/customers" element={<AdminCustomersPage />} />
           <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+          <Route path="/admin/offers" element={<AdminOffersPage />} />
           <Route path="/admin/inbox" element={<AdminInboxPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

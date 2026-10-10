@@ -235,11 +235,15 @@ function UsageBar({ icon, label, current, limit, color }) {
 }
 
 // ── Plan Card ─────────────────────────────────────────────────────────────
-function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing }) {
+function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer }) {
   const isCurrent = currentPlan === plan.key
   const price = isAnnual ? plan.annual : plan.monthly
   const saving = plan.monthly - plan.annual
   const isLoading = subscribing === plan.key
+  // A promotion or coupon from the server: show what is actually charged (per month, plus the amount due today).
+  const hasOffer = Boolean(offer && offer.discount_paise > 0)
+  const dueToday = hasOffer ? Math.round(offer.charged_paise / 100) : 0
+  const shownPrice = hasOffer ? Math.round(isAnnual ? dueToday / 12 : dueToday) : price
 
   return (
     <div
@@ -290,11 +294,18 @@ function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing }) {
       {/* Price */}
       <div style={{ marginBottom:'1.2rem' }}>
         <div style={{ display:'flex', alignItems:'flex-end', gap:'.25rem' }}>
+          {hasOffer && <span style={{ fontSize:16, fontWeight:600, color:'#9ca3af', textDecoration:'line-through', marginBottom:3 }}>{fmtINR(price)}</span>}
           <span style={{ fontSize:32, fontWeight:900, color: plan.color, lineHeight:1 }}>
-            {fmtINR(price)}
+            {fmtINR(shownPrice)}
           </span>
           <span style={{ fontSize:13, color:'#9ca3af', marginBottom:4 }}>/mo</span>
         </div>
+        {hasOffer && (
+          <div style={{ marginTop:6 }}>
+            <span style={{ background:'linear-gradient(135deg,#fef3c7,#fde68a)', color:'#92400e', fontSize:11, fontWeight:800, padding:'.15rem .55rem', borderRadius:999 }}>{offer.label}</span>
+            <div style={{ fontSize:12, color:'#374151', marginTop:5 }}>You pay <b>{fmtINR(dueToday)}</b> {isAnnual ? 'today for the year' : 'today'}{offer.continuing ? ' (your code continues)' : ''}</div>
+          </div>
+        )}
         {isAnnual && (
           <div style={{ fontSize:11.5, color:'#16a34a', fontWeight:600, marginTop:3 }}>
             Save {fmtINR(saving * 12)}/year vs monthly
@@ -545,6 +556,15 @@ function BillingPanel() {
   const [showCancel, setShowCancel]       = useState(false)
   const [actionError, setActionError]     = useState('')
   const [isAnnual, setIsAnnual]           = useState(false)
+  // Offers: promotions apply automatically; a typed coupon is only used if the server's quote says it applied.
+  const [couponInput, setCouponInput]     = useState('')
+  const [appliedCode, setAppliedCode]     = useState('')
+  const [offers, setOffers]               = useState(null)
+  useEffect(() => {
+    let alive = true
+    billingApi.quote(isAnnual ? 'annual' : 'monthly', appliedCode).then(r => { if (alive) setOffers(r.data ?? null) }).catch(() => { if (alive) setOffers(null) })
+    return () => { alive = false }
+  }, [isAnnual, appliedCode])
   const [analyticsData, setAnalyticsData] = useState(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [history, setHistory]             = useState([])
@@ -580,7 +600,8 @@ function BillingPanel() {
 
       // 2. Create order on backend
       const billingType = isAnnual ? 'annual' : 'monthly'
-      const { data: order } = await billingApi.createOrder(plan, billingType)
+      const { data: order } = await billingApi.createOrder(plan, billingType, offers?.code?.applied ? appliedCode : '')
+      if (order.notice) toast.info('Offer applied', order.notice)
 
       // Mock mode: just reload billing status without payment
       if (order.mock) {
@@ -777,6 +798,24 @@ function BillingPanel() {
           </div>
         </div>
 
+        {/* Coupon code */}
+        <form onSubmit={e => { e.preventDefault(); setAppliedCode(couponInput.trim()) }} style={{ display:'flex', alignItems:'center', gap:'.6rem', flexWrap:'wrap', marginBottom:'1.2rem' }}>
+          <input
+            value={couponInput} onChange={e => setCouponInput(e.target.value.toUpperCase())} placeholder="Have a coupon code?" maxLength={30} aria-label="Coupon code"
+            style={{ padding:'.5rem .8rem', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13.5, width:210, textTransform:'uppercase', letterSpacing:'.04em' }}
+          />
+          <button type="submit" disabled={!couponInput.trim()} style={{ padding:'.5rem 1rem', borderRadius:10, border:'1.5px solid #0a6cc4', background:'#fff', color:'#0a6cc4', fontWeight:700, fontSize:13, cursor:'pointer' }}>Apply</button>
+          {offers?.code?.applied && (
+            <span style={{ fontSize:13, color:'#16a34a', fontWeight:600 }}>
+              ✓ Code {offers.code.code} applied
+              <button type="button" onClick={() => { setAppliedCode(''); setCouponInput('') }} style={{ marginLeft:8, background:'none', border:'none', color:'#6b7280', cursor:'pointer', fontSize:12, textDecoration:'underline' }}>Remove</button>
+            </span>
+          )}
+          {appliedCode && offers?.code && !offers.code.applied && (
+            <span style={{ fontSize:13, color:'#dc2626' }}>{offers.code.message || 'This code cannot be used.'}</span>
+          )}
+        </form>
+
         {/* Plan cards */}
         <div style={{ display:'flex', gap:'1.25rem', flexWrap:'wrap', alignItems:'flex-start' }}>
           {PLANS.map((plan, i) => (
@@ -787,6 +826,7 @@ function BillingPanel() {
               currentPlan={currentPlan}
               onSubscribe={handleSubscribe}
               subscribing={subscribing}
+              offer={offers?.plans?.[plan.key]}
             />
           ))}
         </div>

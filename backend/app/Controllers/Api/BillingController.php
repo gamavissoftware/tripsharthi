@@ -89,6 +89,7 @@ class BillingController extends ResourceController
         $rules = [
             'plan'    => 'required|in_list[starter,growth,pro]',
             'billing' => 'permit_empty|in_list[monthly,annual]',
+            'coupon'  => 'permit_empty|max_length[30]',
         ];
         if (! $this->validate($rules)) {
             return $this->fail($this->validator->getErrors(), 422);
@@ -99,13 +100,43 @@ class BillingController extends ResourceController
         $billing  = $this->request->getJsonVar('billing') ?? 'monthly';
 
         try {
-            $order = (new BillingService())->createOrder($tenantId, $plan, $billing);
+            $order = (new BillingService())->createOrder($tenantId, $plan, $billing, (string) ($this->request->getJsonVar('coupon') ?? ''));
+        } catch (\DomainException $e) {
+            return $this->fail($e->getMessage(), 422);       // a coupon that cannot be used: say why (never 401 - the SPA logs out on 401)
         } catch (\Exception $e) {
             log_message('error', "BillingController::createOrder tenant#{$tenantId}: " . $e->getMessage());
             return $this->fail('Failed to create order: ' . $e->getMessage(), 500);
         }
 
         return $this->respond(['success' => true, 'data' => $order]);
+    }
+
+    // POST /api/v1/billing/quote { billing?, code? }
+    // What each plan would cost THIS customer right now (active promotions, plus the code if one is typed). Display only:
+    // create-order recomputes everything on the server. Throttled so codes cannot be guessed.
+    public function quote(): ResponseInterface
+    {
+        if (! FeatureGate::isBillingEnabled()) {
+            return $this->fail('Billing is not available in self-hosted mode.', 403);
+        }
+        $tenantId = CurrentUser::tenantId();
+        if (! service('throttler')->check('billquote_' . $tenantId, 20, MINUTE)) {
+            return $this->respond(['success' => false, 'message' => 'Too many tries. Please wait a minute.'], 429);
+        }
+        $billing = $this->request->getJsonVar('billing') === 'annual' ? 'annual' : 'monthly';
+        $code    = (string) ($this->request->getJsonVar('code') ?? '');
+        $billingSvc = new BillingService(); $offers = new \App\Services\Billing\OfferService();
+        $plans = []; $codeApplied = false; $codeError = null; $notice = null;
+        foreach (\App\Services\Billing\OfferService::PLANS as $plan) {
+            $list = $billingSvc->listPricePaise($plan, $billing);
+            try { $q = $offers->quote($tenantId, $plan, $billing, $list, $code); }
+            catch (\DomainException $e) { if ($codeError === null || str_contains($codeError, 'not valid for this plan')) { $codeError = $e->getMessage(); } $q = $offers->quote($tenantId, $plan, $billing, $list, null); }   // keep the most specific reason ("already used" beats the generic one)
+            $codeApplied = $codeApplied || $q['source'] === 'coupon';
+            $notice ??= $q['notice'];
+            $plans[$plan] = ['list_paise' => $q['list_paise'], 'charged_paise' => $q['charged_paise'], 'discount_paise' => $q['discount_paise'], 'source' => $q['source'], 'label' => $q['label'], 'continuing' => $q['continuing']];
+        }
+        return $this->respond(['success' => true, 'data' => ['billing' => $billing, 'plans' => $plans,
+            'code' => $code === '' ? null : ['code' => \App\Services\Billing\OfferService::normalizeCode($code), 'applied' => $codeApplied, 'message' => $codeApplied ? null : ($codeError ?? $notice)]]]);
     }
 
     // POST /api/v1/billing/verify-payment
