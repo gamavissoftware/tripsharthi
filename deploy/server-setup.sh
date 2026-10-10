@@ -112,6 +112,8 @@ fi
 git config --global --add safe.directory "$APP_DIR" || true
 
 # ---------------------------------------------------------------------------------------------------- dependencies, database + .env
+mkdir -p "$APP_DIR/backend/writable"/{cache,logs,session,uploads,debugbar}     # CodeIgniter refuses to start without it
+chown -R www-data:www-data "$APP_DIR/backend/writable"
 log "Installing backend dependencies"
 (cd "$APP_DIR/backend" && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-interaction --quiet)
 ENV_FILE="$APP_DIR/backend/.env"
