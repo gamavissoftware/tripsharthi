@@ -1,0 +1,73 @@
+# TripSarthi — Caddy config template. deploy/server-setup.sh fills in the {$…} placeholders and installs it as /etc/caddy/Caddyfile.
+# Caddy obtains and renews HTTPS certificates by itself (the domain names must point at this server).
+{
+	email {$ACME_EMAIL}
+}
+
+(security) {
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options SAMEORIGIN
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}
+
+# www -> one canonical host (the page canonical tags assume https://{$DOMAIN})
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
+
+# ---- marketing website (static) ------------------------------------------------------------------
+{$DOMAIN} {
+	import security
+	encode zstd gzip
+	root * {$APP_DIR}/website
+	header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self' https://{$APP_HOST}; frame-src https://www.google.com; base-uri 'self'; form-action 'self' mailto:; frame-ancestors 'self'"
+
+	redir /index.html / permanent
+
+	@static path /assets/*
+	header @static Cache-Control "public, max-age=31536000"
+	@pages path *.html / /sitemap.xml /robots.txt /llms.txt
+	header @pages Cache-Control "public, max-age=0, must-revalidate"
+
+	# don't serve the build tooling or notes
+	@private path /build.py /build_content.py /*.md /_headers
+	respond @private 404
+
+	handle_errors {
+		rewrite * /404.html
+		file_server
+	}
+	file_server
+}
+
+# ---- the product: web app + API ------------------------------------------------------------------
+{$APP_HOST} {
+	import security
+	encode zstd gzip
+	header X-Robots-Tag "noindex, nofollow"
+	request_body {
+		max_size 12MB
+	}
+
+	# API, webhooks (WhatsApp, Meta, Razorpay, …), hosted forms, embed script, meeting links -> PHP (CodeIgniter)
+	@backend path /api/* /webhooks/* /forms/* /embed/* /meet /meet/*
+	handle @backend {
+		root * {$APP_DIR}/backend/public
+		php_fastcgi unix//run/php/php{$PHP_V}-fpm.sock
+	}
+
+	# everything else -> the React app (hash routes, so index.html is the only page)
+	handle {
+		root * {$APP_DIR}/frontend/dist
+		@hashed path /assets/*
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

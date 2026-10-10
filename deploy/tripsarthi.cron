@@ -1,0 +1,25 @@
+# TripSarthi scheduled jobs. deploy/server-setup.sh installs this as /etc/cron.d/tripsarthi (the {$APP_DIR} placeholder is filled in).
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# every minute: automation flows, queued jobs, push notifications, scheduled WhatsApp campaigns, meeting reminders
+* * * * *    www-data  cd {$APP_DIR}/backend && php spark flow:work                  >> /dev/null 2>&1
+* * * * *    www-data  cd {$APP_DIR}/backend && php spark jobs:run                   >> /dev/null 2>&1
+* * * * *    www-data  cd {$APP_DIR}/backend && php spark push:run                   >> /dev/null 2>&1
+* * * * *    www-data  cd {$APP_DIR}/backend && php spark campaigns:dispatch-scheduled >> /dev/null 2>&1
+* * * * *    www-data  cd {$APP_DIR}/backend && php spark meetings:remind            >> /dev/null 2>&1
+# every 5 minutes: ad-platform conversion feedback, inbound email
+*/5 * * * *  www-data  cd {$APP_DIR}/backend && php spark conversions:send          >> /dev/null 2>&1
+*/5 * * * *  www-data  cd {$APP_DIR}/backend && php spark email:poll-imap           >> /dev/null 2>&1
+# every 15 minutes: payment reminders, website contact notifications that failed
+*/15 * * * * www-data  cd {$APP_DIR}/backend && php spark bookings:dunning          >> /dev/null 2>&1
+*/15 * * * * www-data  cd {$APP_DIR}/backend && php spark contact:list --retry      >> /dev/null 2>&1
+# hourly: travel triggers (departure soon, quote stale, GST filing reminders…), ad sync + rules
+0 * * * *    www-data  cd {$APP_DIR}/backend && php spark travel:triggers           >> /dev/null 2>&1
+0 * * * *    www-data  cd {$APP_DIR}/backend && php spark ads:run                   >> /dev/null 2>&1
+# daily: exchange rates (after the ECB publishes, ~17:00 IST), subscriptions past their grace period / manual plans that ended, WABA billing
+30 12 * * *  www-data  cd {$APP_DIR}/backend && php spark fx:refresh                 >> /dev/null 2>&1
+15 2 * * *   www-data  cd {$APP_DIR}/backend && php spark subscription:check        >> /dev/null 2>&1
+0 5 * * *    www-data  cd {$APP_DIR}/backend && php spark waba:billing-sync         >> /dev/null 2>&1
+# nightly backup of the database + uploaded files (kept 14 days in /var/backups/tripsarthi)
+30 1 * * *   root      {$APP_DIR}/deploy/backup.sh >> /var/log/tripsarthi-backup.log 2>&1
