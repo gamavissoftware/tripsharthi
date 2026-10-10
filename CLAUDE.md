@@ -27,6 +27,12 @@ Dev note: with no SMTP server the send attempt takes ~4 s and PHP's built-in sin
 - **Production must set `TRUSTED_PROXIES`** (e.g. `127.0.0.1`) when the API sits behind nginx/a load balancer, otherwise every visitor shares one IP and the per-IP limits (login, contact form, live chat, lead webhooks) throttle everyone together. nginx must send `X-Forwarded-For` (`proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`).
 - Test gotcha fixed: `DepartureServiceTest` used a fixed clock while `BookingService` reads the real one — it started failing when the calendar moved on; its clocks are now relative to `time()`.
 
+## Production deployment (Caddy on Ubuntu; kit in `deploy/`)
+Server 103.209.146.108 (Utho), DNS for `tripsarthi.com`, `www`, `app` already points at it; Caddy already runs there. `deploy/server-setup.sh` (idempotent; run as root on the server; `TEST_MODE=1` for containers) installs PHP 8.3 + MySQL 8 + Composer + Node 20 + Caddy, clones the PUBLIC GitHub repo, builds backend + web app, generates the DB password and `encryption.key` into `backend/.env` (never printed; existing `.env` is kept), migrates, writes `/etc/caddy/Caddyfile` from `deploy/Caddyfile` (old one backed up), installs `/etc/cron.d/tripsarthi` (from `deploy/tripsarthi.cron`) and nightly `deploy/backup.sh`, enables ufw. `deploy/update.sh` = later deploys. Step-by-step for the owner: `deploy/DEPLOY.md`.
+- Website at `https://tripsarthi.com` (static `website/`), product at `https://app.tripsarthi.com`: Caddy sends `/api/*`, `/webhooks/*`, `/forms/*`, `/embed/*`, `/meet*` to PHP-FPM (`backend/public`), everything else to `frontend/dist` (hash routes). Caddy is the edge, so `REMOTE_ADDR` is the real client IP and `TRUSTED_PROXIES` is NOT needed (it is for nginx/load balancers in front).
+- Credentials are NEVER stored in the repo, memory or docs. The server root password was shared in chat once — it must be changed and SSH key login used (DEPLOY.md §5). The assistant does not type passwords into SSH; the owner runs the setup command themselves.
+- All mock modes default to false in the generated `.env`; email (SMTP), Razorpay, WhatsApp, Meta/Google, `ANTHROPIC_API_KEY` still need real values. The first `deploy/server-setup.sh` run on the real server has not happened yet — it was tested in an Ubuntu 24.04 container only.
+
 ## Stack
 PHP 8.3 + CodeIgniter 4 · MySQL 8 · React 19 + Vite · DB-backed queue (`php spark flow:work` via cron). No Redis.
 

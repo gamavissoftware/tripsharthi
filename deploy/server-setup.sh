@@ -85,13 +85,15 @@ if ! command -v node >/dev/null 2>&1 || [ "$(node -p 'process.versions.node.spli
   apt-get install -y nodejs
 fi
 
-if ! command -v caddy >/dev/null 2>&1; then
+if [ "$TEST_MODE" != 1 ] && ! command -v caddy >/dev/null 2>&1; then
   log "Installing Caddy"
-  apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-  curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
-  apt-get update -y
-  apt-get install -y caddy
+  {
+    apt-get install -y debian-keyring debian-archive-keyring apt-transport-https
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor --yes -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+    curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list >/dev/null
+    apt-get update -y
+    apt-get install -y caddy
+  } || die "Could not install Caddy from its package repository. Install it by hand (https://caddyserver.com/docs/install), then run this script again."
 fi
 
 # ---------------------------------------------------------------------------------------------------- code
