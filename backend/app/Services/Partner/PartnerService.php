@@ -104,15 +104,15 @@ final class PartnerService
         return $raw;
     }
 
-    /** @return array{name:string,email:string} for the set-password screen */
+    /** @return array{name:string,email:string,has_phone:bool} for the set-password screen */
     public function inviteInfo(string $raw): array
     {
         $p = $this->byInvite($raw);
-        return ['name' => $p['name'], 'email' => $p['email']];
+        return ['name' => $p['name'], 'email' => $p['email'], 'has_phone' => \App\Services\Marketing\PlatformConsent::normalizePhone($p['phone']) !== null];
     }
 
     /** Sets the password from an invite link, activates an invited partner and ends their old sessions. */
-    public function acceptInvite(string $raw, string $password, string $ip = ''): array
+    public function acceptInvite(string $raw, string $password, string $ip = '', bool $waOptIn = false): array
     {
         $p = $this->byInvite($raw);
         if (mb_strlen($password) < self::MIN_PASSWORD || strlen($password) > 200) { throw new \InvalidArgumentException('Use a password of at least ' . self::MIN_PASSWORD . ' characters.'); }
@@ -120,6 +120,10 @@ final class PartnerService
             'status' => $p['status'] === 'invited' ? 'active' : $p['status'], 'updated_at' => $this->stamp()]);
         (new PartnerSessionService($this->now))->revokeAll((int) $p['id']);
         $this->log((int) $p['id'], 'partner', (int) $p['id'], 'password.set', null, $ip);
+        if ($waOptIn && \App\Services\Marketing\PlatformConsent::normalizePhone($p['phone']) !== null) {     // only ever SET here: a reset link never silently withdraws a yes
+            db_connect()->table('partners')->where('id', (int) $p['id'])->update(['wa_marketing_opt_in' => 1]);
+            $this->log((int) $p['id'], 'partner', (int) $p['id'], 'whatsapp_consent.given', 'at invite', $ip);
+        }
         return $this->row((int) $p['id']);
     }
 
@@ -141,6 +145,16 @@ final class PartnerService
         if (mb_strlen($new) < self::MIN_PASSWORD || strlen($new) > 200) { throw new \InvalidArgumentException('Use a password of at least ' . self::MIN_PASSWORD . ' characters.'); }
         db_connect()->table('partners')->where('id', $partnerId)->update(['password_hash' => password_hash($new, PASSWORD_DEFAULT), 'updated_at' => $this->stamp()]);
         $this->log($partnerId, 'partner', $partnerId, 'password.changed', null, $ip);
+    }
+
+    /** The partner's own WhatsApp number + whether they agreed to hear from TripSarthi about the program on WhatsApp. */
+    public function savePreferences(int $partnerId, ?string $phone, ?bool $optIn, string $ip = ''): array
+    {
+        $p = $this->row($partnerId);
+        $f = \App\Services\Marketing\PlatformConsent::fields($phone !== null ? $phone : (string) $p['phone'], $optIn ?? (bool) $p['wa_marketing_opt_in'], $this->ts());
+        db_connect()->table('partners')->where('id', $partnerId)->update(['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'], 'updated_at' => $this->stamp()]);
+        $this->log($partnerId, 'partner', $partnerId, $f['wa_marketing_opt_in'] === 1 ? 'whatsapp_consent.given' : 'whatsapp_consent.withdrawn', null, $ip);
+        return ['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'] === 1];
     }
 
     // ================================================================================================================================
@@ -389,7 +403,8 @@ final class PartnerService
         $payouts = $db->table('partner_payouts')->select('id,amount_paise,method,reference,commissions,paid_at')->where('partner_id', $partnerId)->orderBy('id', 'DESC')->get()->getResultArray();
         return ['partner' => ['name' => $p['name'], 'company' => $p['company'], 'email' => $p['email'], 'commission_pct' => (float) $p['commission_pct'], 'commission_months' => (int) $p['commission_months'], 'hold_days' => (int) $p['hold_days']],
                 'links' => $this->referralLinks($p['code']), 'balances' => $this->balances($partnerId), 'referred' => $referred, 'commissions' => $commissions, 'payouts' => $payouts,
-                'payout_details' => $this->maskedPayout($this->payoutDetails($partnerId)), 'min_payout_paise' => self::MIN_PAYOUT_PAISE];
+                'payout_details' => $this->maskedPayout($this->payoutDetails($partnerId)), 'min_payout_paise' => self::MIN_PAYOUT_PAISE,
+                'preferences' => ['phone' => $p['phone'], 'wa_marketing_opt_in' => (bool) $p['wa_marketing_opt_in']]];
     }
 
     // ================================================================================================================================

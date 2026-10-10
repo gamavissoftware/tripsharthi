@@ -112,6 +112,14 @@ class AuthController extends ResourceController
             return $this->failServerError('Failed to create organisation.');
         }
 
+        // Optional WhatsApp number + an UNTICKED-by-default consent to hear from TripSarthi on WhatsApp (policy + DPDP: never assumed).
+        try {
+            $consent = \App\Services\Marketing\PlatformConsent::fields((string) ($this->request->getJsonVar('phone') ?? ''), filter_var($this->request->getJsonVar('wa_opt_in'), FILTER_VALIDATE_BOOLEAN));
+        } catch (\InvalidArgumentException $e) {
+            $tenantModel->delete($tenantId, true);
+            return $this->fail(['phone' => $e->getMessage()], 422);
+        }
+
         // Create owner user
         $userId = $userModel->insert([
             'tenant_id'     => $tenantId,
@@ -119,6 +127,9 @@ class AuthController extends ResourceController
             'email'         => $email,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'role'          => 'owner',
+            'phone'               => $consent['phone'],
+            'wa_marketing_opt_in' => $consent['wa_marketing_opt_in'],
+            'wa_opt_in_at'        => $consent['wa_opt_in_at'],
         ], true);
 
         if (! $userId) {
@@ -188,6 +199,18 @@ class AuthController extends ResourceController
 
         $userId    = CurrentUser::id();
         $userModel = new UserModel();
+
+        // WhatsApp number + marketing consent (either can be sent alone; withdrawing is just wa_marketing_opt_in = false).
+        $consentPayload = [];
+        $phoneIn = $this->request->getJsonVar('phone'); $optIn = $this->request->getJsonVar('wa_marketing_opt_in');
+        if ($phoneIn !== null || $optIn !== null) {
+            $cur = $userModel->withoutTenantScope()->find($userId);
+            $cur = is_array($cur) ? $cur : (array) $cur;
+            try {
+                $f = \App\Services\Marketing\PlatformConsent::fields($phoneIn !== null ? (string) $phoneIn : (string) ($cur['phone'] ?? ''), $optIn !== null ? filter_var($optIn, FILTER_VALIDATE_BOOLEAN) : (bool) ($cur['wa_marketing_opt_in'] ?? 0));
+            } catch (\InvalidArgumentException $e) { return $this->fail(['phone' => $e->getMessage()], 422); }
+            $consentPayload = ['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'], 'wa_opt_in_at' => ((int) ($cur['wa_marketing_opt_in'] ?? 0) === 1 && $f['wa_marketing_opt_in'] === 1) ? ($cur['wa_opt_in_at'] ?? $f['wa_opt_in_at']) : $f['wa_opt_in_at']];
+        }
         $payload   = array_filter([
             'name'  => $this->request->getJsonVar('name'),
             'email' => $this->request->getJsonVar('email'),
@@ -202,6 +225,7 @@ class AuthController extends ResourceController
             }
         }
 
+        $payload += $consentPayload;
         if (! empty($payload)) {
             $userModel->withoutTenantScope()->update($userId, $payload);
         }
@@ -329,6 +353,8 @@ class AuthController extends ResourceController
             'email'     => $u['email'] ?? null,
             'role'      => $u['role'] ?? null,
             'is_platform_admin' => (int) ($u['is_platform_admin'] ?? 0) === 1,
+            'phone'               => $u['phone'] ?? null,
+            'wa_marketing_opt_in' => (int) ($u['wa_marketing_opt_in'] ?? 0) === 1,
         ];
     }
 

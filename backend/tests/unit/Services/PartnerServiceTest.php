@@ -107,7 +107,7 @@ final class PartnerServiceTest extends CIUnitTestCase
     public function testTheInviteLinkSetsAPasswordOnceActivatesAndEndsOldSessions(): void
     {
         $r = $this->svc()->create(['name' => 'Priya', 'email' => 'priya@partner.test'], 1);
-        $this->assertSame(['name' => 'Priya', 'email' => 'priya@partner.test'], $this->svc()->inviteInfo($r['invite_token']));
+        $this->assertSame(['name' => 'Priya', 'email' => 'priya@partner.test', 'has_phone' => false], $this->svc()->inviteInfo($r['invite_token']));
         try { $this->svc()->acceptInvite($r['invite_token'], 'short'); $this->fail('weak password accepted'); } catch (\InvalidArgumentException) { /* expected */ }
         $p = $this->svc()->acceptInvite($r['invite_token'], self::PW);
         $this->assertSame('active', $p['status']);

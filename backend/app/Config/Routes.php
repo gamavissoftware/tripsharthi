@@ -447,6 +447,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->group('partner', ['filter' => 'partnerauth'], static function (RouteCollection $routes): void {
         $routes->get('dashboard',      'Api\PartnerPortalController::dashboard');
         $routes->put('payout-details', 'Api\PartnerPortalController::savePayout');
+        $routes->put('preferences',    'Api\PartnerPortalController::savePreferences');
         $routes->put('password',       'Api\PartnerPortalController::changePassword');
     });
     $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollection $routes): void {
@@ -456,6 +457,14 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
+        // WhatsApp: oversight of every workspace + TripSarthi's own marketing
+        $routes->get('whatsapp/overview',                          'Api\AdminWhatsappController::overview');
+        $routes->get('whatsapp/workspaces/(:num)',                 'Api\AdminWhatsappController::workspace/$1');
+        $routes->post('whatsapp/workspaces/(:num)/marketing-pause', 'Api\AdminWhatsappController::pause/$1');
+        $routes->get('whatsapp/marketing',                         'Api\AdminWhatsappController::marketing');
+        $routes->put('whatsapp/marketing',                         'Api\AdminWhatsappController::setMarketing');
+        $routes->get('whatsapp/marketing/segments/(:segment)',     'Api\AdminWhatsappController::segment/$1');
+        $routes->post('whatsapp/marketing/segments/(:segment)/sync', 'Api\AdminWhatsappController::sync/$1');
         // Partner program
         $routes->get('partners',                   'Api\AdminPartnersController::index');
         $routes->post('partners',                  'Api\AdminPartnersController::create');

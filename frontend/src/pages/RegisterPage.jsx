@@ -6,6 +6,8 @@ import { readReferral, clearReferral } from '../lib/referral'
 export default function RegisterPage({ onLogin, onShowLogin }) {
   const [name, setName]         = useState('')
   const [company, setCompany]   = useState('')
+  const [phone, setPhone]       = useState('')
+  const [waOptIn, setWaOptIn]   = useState(false)   // never pre-ticked: consent has to be a choice
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState(null)
@@ -21,7 +23,7 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
     setLoading(true)
     try {
       const ref = readReferral()
-      const data = await api.post('/auth/register', { name, company, email, password, ...(ref ? { ref } : {}) })
+      const data = await api.post('/auth/register', { name, company, email, password, ...(phone.trim() ? { phone: phone.trim() } : {}), wa_opt_in: waOptIn, ...(ref ? { ref } : {}) })
       clearReferral()
       saveToken(data.token)
       onLogin?.(data.user)
@@ -101,6 +103,23 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
                 minLength={8}
                 autoComplete="new-password"
               />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label" htmlFor="phone">WhatsApp number <span style={{ fontWeight: 400, color: '#9ca3af' }}>(optional)</span></label>
+              <input
+                id="phone"
+                type="tel"
+                className="form-input"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+91 98765 43210"
+                autoComplete="tel"
+              />
+              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 8, fontSize: 12.5, color: '#4b5563', lineHeight: 1.4, cursor: 'pointer' }}>
+                <input type="checkbox" checked={waOptIn} onChange={e => setWaOptIn(e.target.checked)} style={{ marginTop: 2 }} />
+                <span>Send me product updates and offers from TripSarthi on WhatsApp. You can turn this off any time in your profile, or reply STOP.</span>
+              </label>
             </div>
 
             {error && <div className="form-error">{error}</div>}

@@ -47,7 +47,7 @@ class PartnerAuthController extends ResourceController
     {
         if (! service('throttler')->check('partnerinvite_' . md5($this->request->getIPAddress()), 30, 600)) { return $this->respond(['success' => false, 'message' => 'Too many tries. Please wait a few minutes.'], 429); }
         try {
-            $p = (new PartnerService())->acceptInvite((string) $this->request->getJsonVar('token'), (string) $this->request->getJsonVar('password'), $this->request->getIPAddress());
+            $p = (new PartnerService())->acceptInvite((string) $this->request->getJsonVar('token'), (string) $this->request->getJsonVar('password'), $this->request->getIPAddress(), filter_var($this->request->getJsonVar('wa_opt_in'), FILTER_VALIDATE_BOOLEAN));
         } catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 404);
         } catch (\InvalidArgumentException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 422); }
         if ($p['status'] !== 'active') { return $this->respond(['success' => true, 'token' => null, 'partner' => $this->brief($p)]); }       // suspended partners can set a password but not sign in

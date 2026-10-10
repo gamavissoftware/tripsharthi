@@ -64,6 +64,18 @@ final class SendingGate
             return null;
         }
 
+        // The TripSarthi team can stop a workspace's MARKETING (abuse, spam reports) from the admin app. Same fail-open rule as below.
+        try {
+            $p = db_connect()->table('tenants')->select('wa_marketing_paused, wa_marketing_paused_reason')->where('id', $tenantId)->get()->getRowArray();
+            if ($p && (int) ($p['wa_marketing_paused'] ?? 0) === 1) {
+                $why = trim((string) ($p['wa_marketing_paused_reason'] ?? ''));
+
+                return 'Marketing paused by TripSarthi' . ($why !== '' ? ': ' . $why : '.') . ' Utility messages (such as booking confirmations) are not affected. Contact TripSarthi support to resume.';
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[SendingGate] pause lookup failed, allowing send: ' . $e->getMessage());
+        }
+
         try {
             $rows = $this->numbers->withoutTenantScope()
                 ->where('tenant_id', $tenantId)

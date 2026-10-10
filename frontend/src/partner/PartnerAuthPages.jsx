@@ -55,6 +55,7 @@ export function PartnerSetPasswordPage({ token, onDone }) {
   const [problem, setProblem] = useState(null)
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
+  const [wa, setWa] = useState(false)          // never pre-ticked
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   useEffect(() => { partnerApi.inviteInfo(token).then(setInfo).catch(e => setProblem(e.message || 'This link is not valid.')) }, [token])
@@ -62,7 +63,7 @@ export function PartnerSetPasswordPage({ token, onDone }) {
     e.preventDefault(); setError(null)
     if (pw !== pw2) { setError('The two passwords do not match.'); return }
     setLoading(true)
-    try { const r = await partnerApi.accept(token, pw); onDone(r.partner, Boolean(r.token)) }
+    try { const r = await partnerApi.accept(token, pw, wa && Boolean(info?.has_phone)); onDone(r.partner, Boolean(r.token)) }
     catch (err) { setError(err.message || 'Could not set the password.') } finally { setLoading(false) }
   }
   return (
@@ -74,6 +75,11 @@ export function PartnerSetPasswordPage({ token, onDone }) {
           <p style={{ marginTop: 0, color: '#374151', fontSize: '.9rem' }}>Welcome, <b>{info.name}</b>. Choose a password for <b>{info.email}</b>.</p>
           <div className="form-group"><label className="form-label" htmlFor="n1">New password</label><input id="n1" type="password" className="form-input" value={pw} onChange={e => setPw(e.target.value)} required minLength={10} autoComplete="new-password" autoFocus /><div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>At least 10 characters. A few random words work well.</div></div>
           <div className="form-group"><label className="form-label" htmlFor="n2">Repeat the password</label><input id="n2" type="password" className="form-input" value={pw2} onChange={e => setPw2(e.target.value)} required autoComplete="new-password" /></div>
+          {info.has_phone && (
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', margin: '0 0 12px', fontSize: 12.5, color: '#4b5563', lineHeight: 1.4, cursor: 'pointer' }}>
+              <input type="checkbox" checked={wa} onChange={e => setWa(e.target.checked)} style={{ marginTop: 2 }} />
+              <span>Send me partner program updates on WhatsApp (optional). You can change this any time in your dashboard.</span>
+            </label>)}
           {error && <div className="form-error">{error}</div>}
           <button type="submit" disabled={loading} className="btn btn-primary w-full" style={{ padding: '.7rem', justifyContent: 'center' }}>{loading ? 'Saving…' : 'Set password and continue'}</button>
         </form>)}

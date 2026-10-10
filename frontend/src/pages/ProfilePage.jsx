@@ -96,6 +96,8 @@ export default function ProfilePage() {
   // Profile form
   const [name, setName]   = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [waOptIn, setWaOptIn] = useState(false)
   const [pErrors, setPErrors] = useState({})
   const [pSaving, setPSaving] = useState(false)
 
@@ -113,12 +115,14 @@ export default function ProfilePage() {
         setUser(u)
         setName(u?.name || '')
         setEmail(u?.email || '')
+        setPhone(u?.phone || '')
+        setWaOptIn(Boolean(u?.wa_marketing_opt_in))
       })
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
 
-  const profileDirty = user && (name !== (user.name || '') || email !== (user.email || ''))
+  const profileDirty = user && (name !== (user.name || '') || email !== (user.email || '') || phone !== (user.phone || '') || waOptIn !== Boolean(user.wa_marketing_opt_in))
   const pwScore = useMemo(() => scorePassword(newPw), [newPw])
 
   async function handleProfileSave(e) {
@@ -132,10 +136,10 @@ export default function ProfilePage() {
 
     setPSaving(true)
     try {
-      const res = await api.put('/auth/profile', { name: name.trim(), email: email.trim() })
+      const res = await api.put('/auth/profile', { name: name.trim(), email: email.trim(), phone: phone.trim(), wa_marketing_opt_in: waOptIn })
       const u = res?.user ?? null
       setUser(u)
-      setName(u?.name || ''); setEmail(u?.email || '')
+      setName(u?.name || ''); setEmail(u?.email || ''); setPhone(u?.phone || ''); setWaOptIn(Boolean(u?.wa_marketing_opt_in))
       toast.success('Profile updated', 'Your account details have been saved.')
     } catch (err) {
       if (err.errors && typeof err.errors === 'object') setPErrors(err.errors)
@@ -246,6 +250,22 @@ export default function ProfilePage() {
             placeholder="you@company.com"
           />
           {pErrors.email && <div className="lp-prof-err">{pErrors.email}</div>}
+        </div>
+
+        <div style={{ marginBottom: '1.25rem' }}>
+          <label className="lp-prof-label">WhatsApp number</label>
+          <input
+            type="tel"
+            className={`lp-prof-input ${pErrors.phone ? 'invalid' : ''}`}
+            value={phone}
+            onChange={e => { setPhone(e.target.value); if (pErrors.phone) setPErrors(x => ({ ...x, phone: null })) }}
+            placeholder="+91 98765 43210"
+          />
+          {pErrors.phone && <div className="lp-prof-err">{pErrors.phone}</div>}
+          <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 9, fontSize: 13, color: '#4b5563', lineHeight: 1.45, cursor: 'pointer' }}>
+            <input type="checkbox" checked={waOptIn} onChange={e => setWaOptIn(e.target.checked)} style={{ marginTop: 3 }} />
+            <span>Send me product updates and offers from TripSarthi on WhatsApp. Untick to stop — or reply STOP to any message. Account and billing messages are not affected.</span>
+          </label>
         </div>
 
         <button

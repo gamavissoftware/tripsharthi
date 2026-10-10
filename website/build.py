@@ -230,6 +230,7 @@ def contact_page():
 <ul class="bul"><li>See the product on your own use case</li><li>Get help connecting WhatsApp and importing rates</li><li>Ask about plans, teams and migration</li></ul></div>
 <form class="card cform" id="contact-form" novalidate><div class="two-f"><label>Your name *<input name="name" required autocomplete="name"></label><label>Email *<input type="email" name="email" required autocomplete="email"></label></div>
 <div class="two-f"><label>Phone<input name="phone" type="tel" autocomplete="tel"></label><label>Agency / company<input name="company" autocomplete="organization"></label></div>
+<label class="chk" style="display:flex;gap:.55rem;align-items:flex-start;font-size:.86rem;line-height:1.4;margin:.2rem 0 .6rem"><input name="wa_opt_in" type="checkbox" style="margin-top:.2rem"><span>WhatsApp me about TripSarthi (optional — needs the phone number above). Reply STOP any time.</span></label>
 <label>I’d like to<select name="topic"><option value="demo">Book a demo</option><option value="pricing">Ask about pricing</option><option value="support">Get help or support</option><option value="partner">Discuss a partnership</option><option value="other">Something else</option></select></label>
 <label>Message<textarea name="message" rows="5" placeholder="How many agents are on your team? Which tools do you use today?"></textarea></label>
 <div class="hp" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>

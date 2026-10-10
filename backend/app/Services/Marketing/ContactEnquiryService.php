@@ -40,6 +40,9 @@ final class ContactEnquiryService
         $digits = preg_replace('/\D/', '', $phone) ?? '';
         if ($phone !== '' && (strlen($digits) < 7 || strlen($digits) > 15 || ! preg_match('/^[0-9 +\-().]{7,30}$/', $phone))) { $e['phone'] = 'That phone number does not look right.'; }
         $c['phone'] = $phone;
+        // Optional, never pre-ticked: "WhatsApp me about TripSarthi". Only valid with a usable number.
+        $c['wa_opt_in'] = filter_var($in['wa_opt_in'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+        if ($c['wa_opt_in'] === 1 && \App\Services\Marketing\PlatformConsent::normalizePhone($phone) === null) { $e['phone'] = 'Add your WhatsApp number to hear from us on WhatsApp, or untick the box.'; }
         $c['company'] = mb_substr($one((string) ($in['company'] ?? '')), 0, 160);
         $topic = (string) ($in['topic'] ?? 'other');
         $c['topic'] = isset(self::TOPICS[$topic]) ? $topic : 'other';

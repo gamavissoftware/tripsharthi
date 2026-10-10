@@ -54,6 +54,27 @@ function PayoutForm({ current, onSaved }) {
   )
 }
 
+function PreferencesForm({ prefs, onSaved }) {
+  const [phone, setPhone] = useState(prefs?.phone || '')
+  const [wa, setWa] = useState(Boolean(prefs?.wa_marketing_opt_in))
+  const [busy, setBusy] = useState(false)
+  async function save(e) {
+    e.preventDefault(); setBusy(true)
+    try { await partnerApi.savePreferences({ phone, wa_marketing_opt_in: wa }); toast.success('Saved'); onSaved() }
+    catch (err) { toast.error('Not saved', err.message) } finally { setBusy(false) }
+  }
+  return (
+    <form onSubmit={save} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
+      <div className="form-group" style={{ margin: 0 }}><label className="form-label">Your WhatsApp number</label><input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" /></div>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.4, cursor: 'pointer' }}>
+        <input type="checkbox" checked={wa} onChange={e => setWa(e.target.checked)} style={{ marginTop: 3 }} />
+        <span>Send me partner program updates on WhatsApp. Untick to stop — or reply STOP to any message.</span>
+      </label>
+      <div style={{ gridColumn: '1/-1' }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
+    </form>
+  )
+}
+
 function PasswordForm() {
   const [f, setF] = useState({ current: '', next: '' })
   const [busy, setBusy] = useState(false)
@@ -131,6 +152,11 @@ export default function PartnerDashboard({ d, reload }) {
           ? <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-3)' }}>Saved: <b style={{ color: 'var(--text)' }}>{d.payout_details.method === 'upi' ? `UPI ${d.payout_details.upi}` : `${d.payout_details.account_name} · A/c ${d.payout_details.account_no} · ${d.payout_details.ifsc}`}</b>{d.payout_details.pan ? ` · PAN ${d.payout_details.pan}` : ''}. Saving again replaces it.</p>
           : <p style={{ margin: '0 0 12px', fontSize: 13, color: '#d97706' }}>Add your payout details so we can pay you. They are stored encrypted and only the TripSarthi finance team can read them.</p>}
         <PayoutForm current={d.payout_details} onSaved={reload} />
+      </div>
+
+      <div className="card card-body">
+        <h2 style={{ margin: '0 0 12px', fontSize: '1.05rem' }}>Contact preferences</h2>
+        <PreferencesForm prefs={d.preferences} onSaved={reload} />
       </div>
 
       <div className="card card-body">

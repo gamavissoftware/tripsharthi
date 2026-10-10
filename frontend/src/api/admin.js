@@ -18,6 +18,15 @@ export const admin = {
   chatReply:     (id, body)  => api.post(`/admin/chats/${id}/reply`, { body }).then(unwrap),
   chatClose:     (id)        => api.post(`/admin/chats/${id}/close`, {}).then(unwrap),
 
+  // WhatsApp: oversight + TripSarthi's own marketing
+  waOverview:         (p = {})  => api.get('/admin/whatsapp/overview?' + qs(p)).then(unwrap),
+  waWorkspace:        (id)      => api.get(`/admin/whatsapp/workspaces/${id}`).then(unwrap),
+  waPause:            (id, paused, reason) => api.post(`/admin/whatsapp/workspaces/${id}/marketing-pause`, { paused, reason }).then(unwrap),
+  waMarketing:        ()        => api.get('/admin/whatsapp/marketing').then(unwrap),
+  waSetMarketing:     (tenantId) => api.put('/admin/whatsapp/marketing', { tenant_id: tenantId }).then(unwrap),
+  waSegment:          (key)     => api.get(`/admin/whatsapp/marketing/segments/${key}`).then(unwrap),
+  waSync:             (key)     => api.post(`/admin/whatsapp/marketing/segments/${key}/sync`, {}).then(unwrap),
+
   // Partner program
   partners:           ()        => api.get('/admin/partners').then(unwrap),
   partner:            (id)      => api.get(`/admin/partners/${id}`).then(unwrap),

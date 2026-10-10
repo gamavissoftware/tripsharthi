@@ -85,7 +85,7 @@
   }
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var v = { name: form.name.value.trim(), email: form.email.value.trim(), phone: form.phone.value.trim(), company: form.company.value.trim(), topic: form.topic.value, message: form.message.value.trim(), website: form.website.value, source: location.pathname.replace(/^\//, '') || 'contact.html', t: loaded };
+    var v = { name: form.name.value.trim(), email: form.email.value.trim(), phone: form.phone.value.trim(), company: form.company.value.trim(), topic: form.topic.value, message: form.message.value.trim(), wa_opt_in: !!(form.wa_opt_in && form.wa_opt_in.checked), website: form.website.value, source: location.pathname.replace(/^\//, '') || 'contact.html', t: loaded };
     var ok = true;
     [['name', v.name.length < 2], ['email', !/^\S+@\S+\.\S+$/.test(v.email)]].forEach(function (c) { form[c[0]].classList.toggle('bad', c[1]); if (c[1]) ok = false; });
     if (!ok) { say('Please add your name and a valid email address.', 'err'); return; }

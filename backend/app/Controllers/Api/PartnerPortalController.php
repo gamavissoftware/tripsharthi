@@ -35,6 +35,13 @@ class PartnerPortalController extends ResourceController
         return $this->run(fn () => (new PartnerService())->savePayoutDetails(CurrentPartner::id(), $b, (string) ($b['current_password'] ?? ''), $this->request->getIPAddress()));
     }
 
+    /** PUT /partner/preferences { phone?, wa_marketing_opt_in? } */
+    public function savePreferences()
+    {
+        $b = $this->body();
+        return $this->run(fn () => (new PartnerService())->savePreferences(CurrentPartner::id(), array_key_exists('phone', $b) ? (string) $b['phone'] : null, array_key_exists('wa_marketing_opt_in', $b) ? filter_var($b['wa_marketing_opt_in'], FILTER_VALIDATE_BOOLEAN) : null, $this->request->getIPAddress()));
+    }
+
     /** PUT /partner/password { current, new } */
     public function changePassword()
     {

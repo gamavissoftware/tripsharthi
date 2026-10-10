@@ -27,6 +27,9 @@ class UserModel extends BaseModel
         'reset_token',
         'reset_token_expires_at',
         'last_login_at',
+        'phone',
+        'wa_marketing_opt_in',
+        'wa_opt_in_at',
     ];
 
     protected $hidden = ['password_hash', 'api_token'];
