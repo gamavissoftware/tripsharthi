@@ -49,6 +49,8 @@ class Filters extends BaseFilters
         'role'          => RoleFilter::class,
         // Platform (TripSarthi team) admin: users.is_platform_admin = 1
         'platformadmin' => \App\Filters\PlatformAdminFilter::class,
+        // Separate admin app: only a live admin session (admin_sessions) is accepted
+        'adminauth'     => \App\Filters\AdminAuthFilter::class,
     ];
 
     /**

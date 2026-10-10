@@ -6,10 +6,15 @@
  * CORS configuration is needed during local development.
  */
 
+/* global __ADMIN_APP__ */
 const BASE = '/api/v1'
 
+// The platform-admin app is a separate build (vite.admin.config.js defines __ADMIN_APP__) with its OWN storage key,
+// so a customer session and an admin session in the same browser can never overwrite each other.
+const TOKEN_KEY = typeof __ADMIN_APP__ !== 'undefined' && __ADMIN_APP__ ? 'tp_admin_token' : 'tp_token'
+
 function getToken() {
-  return localStorage.getItem('tp_token')
+  return localStorage.getItem(TOKEN_KEY)
 }
 
 async function request(method, path, body = null) {
@@ -45,7 +50,7 @@ async function request(method, path, body = null) {
 
     // Auto-logout on 401 — expired token or revoked session
     if (res.status === 401) {
-      localStorage.removeItem('tp_token')
+      localStorage.removeItem(TOKEN_KEY)
       window.dispatchEvent(new CustomEvent('tp:unauthorized'))
     }
 
@@ -104,11 +109,11 @@ export const api = {
 // ------------------------------------------------------------------
 
 export function saveToken(token) {
-  localStorage.setItem('tp_token', token)
+  localStorage.setItem(TOKEN_KEY, token)
 }
 
 export function clearToken() {
-  localStorage.removeItem('tp_token')
+  localStorage.removeItem(TOKEN_KEY)
 }
 
 export function isLoggedIn() {

@@ -434,7 +434,11 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->get('public/chat/(:alphanum)/poll',       'Public\ChatController::poll/$1');
     $routes->options('public/chat/(:any)',             static function (): void {});
     // Platform (TripSarthi team) admin: every customer workspace, subscriptions, website enquiries and live chat
-    $routes->group('admin', ['filter' => ['auth', 'platformadmin']], static function (RouteCollection $routes): void {
+    // Separate admin app (admin.tripsarthi.com): its own login + session store; customer-app tokens are NOT accepted under /admin
+    $routes->post('admin-auth/login',  'Api\AdminAuthController::login');
+    $routes->get('admin-auth/me',      'Api\AdminAuthController::me',     ['filter' => 'adminauth']);
+    $routes->post('admin-auth/logout', 'Api\AdminAuthController::logout', ['filter' => 'adminauth']);
+    $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollection $routes): void {
         $routes->get('overview',                   'Api\PlatformAdminController::overview');
         $routes->get('tenants',                    'Api\PlatformAdminController::tenants');
         $routes->get('tenants/(:num)',             'Api\PlatformAdminController::tenant/$1');

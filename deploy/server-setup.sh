@@ -165,8 +165,8 @@ log "Running database migrations"
 (cd "$APP_DIR/backend" && runuser -u www-data -- php spark migrate --all) 2>&1 | tail -3
 
 log "Building the web app (this takes a minute)"
-(cd "$APP_DIR/frontend" && NODE_OPTIONS=--max-old-space-size=1024 npm ci --no-audit --no-fund --silent && NODE_OPTIONS=--max-old-space-size=1024 npm run build --silent)
-chmod -R a+rX "$APP_DIR/frontend/dist" "$APP_DIR/website"
+(cd "$APP_DIR/frontend" && NODE_OPTIONS=--max-old-space-size=1024 npm ci --no-audit --no-fund --silent && NODE_OPTIONS=--max-old-space-size=1024 npm run build:all --silent)
+chmod -R a+rX "$APP_DIR/frontend/dist" "$APP_DIR/frontend/dist-admin" "$APP_DIR/website"
 
 # ---------------------------------------------------------------------------------------------------- PHP-FPM, Caddy
 svc "php${PHP_V}-fpm" restart || svc "php${PHP_V}-fpm" start
