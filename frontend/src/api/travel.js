@@ -20,6 +20,9 @@ export const travel = {
 
   // home dashboard (managers may pass a user id to focus on one person)
   home:        (userId)       => api.get(`/home${userId ? `?user=${userId}` : ''}`).then(unwrap),
+  // monthly sales targets (owners/admins): revenue in paise, bookings as a count
+  targets:     (month)        => api.get(`/targets?month=${month}`).then(unwrap),
+  saveTargets: (month, items) => api.put('/targets', { month, items }).then(unwrap),
   // trips
   trips:       (q = '')       => api.get(`/trips${q ? `?${q}` : ''}`).then(unwrap),
   trip:        (id)           => api.get(`/trips/${id}`).then(unwrap),

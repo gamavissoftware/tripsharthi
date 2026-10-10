@@ -456,6 +456,10 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('(:num)/events',         'Api\LeadSourcesController::events/$1');
         $routes->delete('(:num)',             'Api\LeadSourcesController::remove/$1');
     });
+    $routes->group('targets', ['filter' => ['auth', 'role:owner,admin']], static function (RouteCollection $routes): void {
+        $routes->get('', 'Api\TravelTargetsController::index');
+        $routes->put('', 'Api\TravelTargetsController::save');
+    });
     $routes->group('fx', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->get('',                      'Api\FxController::index');
         $routes->post('',                     'Api\FxController::add',     ['filter' => 'role:owner,admin']);

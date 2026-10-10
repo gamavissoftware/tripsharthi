@@ -5,6 +5,7 @@ import { travel, inr, TRIP_STATUS } from '../api/travel'
 import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import TargetBar from '../components/travel/TargetBar'
 import CrmDashboardPage from './CrmDashboardPage'
 import './HomeDashboardPage.css'
 
@@ -18,6 +19,7 @@ const daysFromToday = (d) => { const a = new Date(d + 'T00:00'); const t = new D
 const dueText = (d) => { const n = daysFromToday(d); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : n === -1 ? 'yesterday' : n < 0 ? `${-n} days ago` : `in ${n} days` }
 const shortDate = (d) => new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 const timeOf = (s) => { const d = parseLocal(s); return d ? d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '' }
+const monthName = (m) => (m ? new Date(m + '-01T00:00').toLocaleDateString('en-IN', { month: 'long' }) : '')
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 
 function Kpi({ label, value, prev, money = true, sub, to }) {
@@ -224,6 +226,17 @@ export default function HomeDashboardPage({ user }) {
           </div>
 
           <div className="hd-col">
+            {!everyone && (
+              <Card title={focus && manager ? 'Target — this month' : 'My target — this month'} link={manager ? 'Set targets →' : undefined} to="/settings/targets">
+                {d.target ? (<>
+                  <TargetBar label="Revenue (ex-tax)" p={d.target.revenue} daysLeft={d.month_progress.days_left} />
+                  <TargetBar label="Bookings" p={d.target.bookings} money={false} daysLeft={d.month_progress.days_left} />
+                  <p className="hd-muted" style={{ marginTop: 6 }}>{d.target.source === 'carried' ? `Carried over from ${monthName(d.target.from)}. ` : ''}The tick marks where you would be today on an even pace.</p>
+                </>) : (
+                  <div className="hd-empty">{manager ? <>No target set for {focus ? 'this person' : 'you'}. <Link to="/settings/targets">Set targets →</Link></> : 'No target set for you yet. Your manager can set one under Settings → Sales targets.'}</div>
+                )}
+              </Card>
+            )}
             <Card title={everyone ? 'Tasks due today and overdue' : 'My day'} link="All tasks →" to="/tasks">
               {d.tasks.length === 0 ? <div className="hd-empty">Nothing due. Use the spare time to follow up on open enquiries below.</div> : d.tasks.map(t => <TaskRow key={t.id} t={t} onDone={completeTask} />)}
             </Card>
@@ -273,15 +286,22 @@ export default function HomeDashboardPage({ user }) {
 
         {everyone && d.team && d.team.length > 0 && (
           <div style={{ marginTop: '1rem' }}>
-            <Card title="Team — this month" link="Leaderboard →" to="/leaderboard">
+            <Card title="Team and targets — this month" link="Set targets →" to="/settings/targets">
+              {d.team_target ? (
+                <div className="hd-two" style={{ marginBottom: '.9rem' }}>
+                  <TargetBar label={`Team revenue (${d.team_target.people} with a target)`} p={d.team_target.revenue} daysLeft={d.month_progress.days_left} />
+                  <TargetBar label="Team bookings" p={d.team_target.bookings} money={false} daysLeft={d.month_progress.days_left} />
+                </div>
+              ) : <p className="hd-muted" style={{ marginBottom: '.6rem' }}>No targets set yet — <Link to="/settings/targets">set them</Link> to see progress bars here and on each agent's own dashboard.</p>}
               <table className="hd-table">
-                <thead><tr><th>Person</th><th className="r">Open trips</th><th className="r">New enquiries</th><th className="r">Bookings</th><th className="r">Revenue</th><th className="r">Overdue tasks</th></tr></thead>
+                <thead><tr><th>Person</th><th className="r">Open trips</th><th className="r">New enquiries</th><th className="r">Bookings</th><th className="r">Revenue</th><th style={{ minWidth: 150 }}>Revenue vs target</th><th className="r">Overdue tasks</th></tr></thead>
                 <tbody>
                   {d.team.map(m => (
                     <tr key={m.id} className="is-click" onClick={() => setFocus(String(m.id))} title="Show this person's dashboard">
                       <td><b style={{ fontWeight: 500 }}>{m.name}</b> <span className="hd-muted">{m.role}</span></td>
                       <td className="r">{m.open_trips}</td><td className="r">{m.enquiries}</td><td className="r">{m.bookings}</td>
                       <td className="r">{inr(m.revenue, true)}</td>
+                      <td>{m.target && m.target.revenue.status !== 'none' ? <TargetBar compact p={m.target.revenue} label={m.name} /> : <span className="hd-muted">no target</span>}</td>
                       <td className="r">{m.overdue_tasks > 0 ? <span className="hd-tag bad">{m.overdue_tasks}</span> : '—'}</td>
                     </tr>
                   ))}

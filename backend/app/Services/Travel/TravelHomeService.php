@@ -69,6 +69,11 @@ final class TravelHomeService
         foreach ($cur as $k => $v) { $kpis[$k] = ['value' => $v, 'prev' => $prev[$k] ?? 0]; }
         if ($manager) { $kpis['margin']['pct'] = self::pct((int) $cur['margin'], (int) $cur['revenue']); }
 
+        // ---- sales target (one person: an agent, or a manager focused on someone) + the days left in the month
+        $targets = (new SalesTargetService())->forMonth($tenantId, $now->format('Y-m'));
+        $day = (int) $now->format('j'); $dim = (int) $now->format('t');
+        $targetBlock = $own !== null && isset($targets[$own]) ? self::targetBlock($targets[$own], (int) $cur['revenue'], (int) $cur['bookings'], $day, $dim) : null;
+
         // ---- pipeline: open trips by stage (value = what the customer said they would spend), plus what is already booked / travelling
         $stale = $this->dt('-7 days')->format('Y-m-d H:i:s');
         $rows = $db->query("SELECT t.status, COUNT(*) n, COALESCE(SUM(t.budget_max),0) value, SUM(t.updated_at < ?) stale
@@ -145,21 +150,40 @@ final class TravelHomeService
         $out = [
             'as_of' => $now->format('c'), 'month' => $now->format('F Y'),
             'scope' => ['manager' => $manager, 'user_id' => $own, 'everyone' => $own === null],
-            'kpis' => $kpis, 'pipeline' => $pipeline, 'attention' => $attention,
+            'kpis' => $kpis, 'target' => $targetBlock, 'month_progress' => ['day' => $day, 'days_in_month' => $dim, 'days_left' => $dim - $day], 'pipeline' => $pipeline, 'attention' => $attention,
             'tasks' => $tasks, 'followups' => $followups, 'quotes_to_chase' => $chase, 'collections' => $collections, 'departures' => $departures,
             'trend' => $trend,
             'sources' => array_map(static fn ($s) => ['source' => $s['source'], 'enquiries' => (int) $s['enquiries'], 'booked' => (int) $s['booked']], $sources),
         ];
 
         if ($manager) {
-            $out['payables'] = (new SupplierPayableService($this->now))->payables($tenantId)['totals'];
-            if ($own === null) { $out['team'] = $this->team($tenantId, $m0, $m1, $nowS); }
+            if ($own === null) {   // business-wide figures: only in the Everyone view (they would mislead next to one person's numbers)
+                $out['payables'] = (new SupplierPayableService($this->now))->payables($tenantId)['totals'];
+                $out['team'] = $this->team($tenantId, $m0, $m1, $nowS, $targets, $day, $dim); $out['team_target'] = self::teamTarget($out['team'], $day, $dim);
+            }
         }
         return $out;
     }
 
+    /** @param array{revenue:int,bookings:int,source:string,from?:?string} $t */
+    private static function targetBlock(array $t, int $revenue, int $bookings, int $day, int $dim): array
+    {
+        return ['source' => $t['source'], 'from' => $t['from'] ?? null, 'revenue' => SalesTargetService::pace($revenue, $t['revenue'], $day, $dim), 'bookings' => SalesTargetService::pace($bookings, $t['bookings'], $day, $dim)];
+    }
+
+    /** The team as a whole: only people who HAVE a target count, on both sides, so the bar compares like with like. */
+    private static function teamTarget(array $team, int $day, int $dim): ?array
+    {
+        $rt = $ra = $bt = $ba = 0; $n = 0;
+        foreach ($team as $m) {
+            if (! $m['target']) { continue; }
+            $n++; $rt += $m['target']['revenue']['target']; $ra += $m['revenue']; $bt += $m['target']['bookings']['target']; $ba += $m['bookings'];
+        }
+        return $n === 0 ? null : ['people' => $n, 'revenue' => SalesTargetService::pace($ra, $rt, $day, $dim), 'bookings' => SalesTargetService::pace($ba, $bt, $day, $dim)];
+    }
+
     /** Everyone's month at a glance - manager only. */
-    private function team(int $tenantId, string $m0, string $m1, string $nowS): array
+    private function team(int $tenantId, string $m0, string $m1, string $nowS, array $targets = [], int $day = 1, int $dim = 30): array
     {
         $db = db_connect(); $by = [];
         foreach ($db->query("SELECT id, name, role FROM users WHERE tenant_id = ? AND deleted_at IS NULL ORDER BY name", [$tenantId])->getResultArray() as $u) {
@@ -169,6 +193,8 @@ final class TravelHomeService
         foreach ($db->query("SELECT owner_id, COUNT(*) n FROM trips WHERE tenant_id = ? AND deleted_at IS NULL AND owner_id IS NOT NULL AND status IN " . self::OPEN . " GROUP BY owner_id", [$tenantId])->getResultArray() as $r) { if (isset($by[(int) $r['owner_id']])) { $by[(int) $r['owner_id']]['open_trips'] = (int) $r['n']; } }
         foreach ($db->query("SELECT owner_id, COUNT(*) n, COALESCE(SUM(subtotal),0) revenue FROM bookings WHERE tenant_id = ? AND deleted_at IS NULL AND status <> 'cancelled' AND owner_id IS NOT NULL AND created_at >= ? AND created_at < ? GROUP BY owner_id", [$tenantId, $m0, $m1])->getResultArray() as $r) { if (isset($by[(int) $r['owner_id']])) { $by[(int) $r['owner_id']]['bookings'] = (int) $r['n']; $by[(int) $r['owner_id']]['revenue'] = (int) $r['revenue']; } }
         foreach ($db->query("SELECT assigned_user_id, COUNT(*) n FROM tasks WHERE tenant_id = ? AND deleted_at IS NULL AND status = 'open' AND due_at IS NOT NULL AND due_at < ? AND assigned_user_id IS NOT NULL GROUP BY assigned_user_id", [$tenantId, $nowS])->getResultArray() as $r) { if (isset($by[(int) $r['assigned_user_id']])) { $by[(int) $r['assigned_user_id']]['overdue_tasks'] = (int) $r['n']; } }
+        foreach ($by as $id => &$m) { $m['target'] = isset($targets[$id]) ? self::targetBlock($targets[$id], $m['revenue'], $m['bookings'], $day, $dim) : null; }
+        unset($m);
         $rows = array_values($by);
         usort($rows, static fn ($a, $b) => [$b['revenue'], $b['bookings'], $b['enquiries']] <=> [$a['revenue'], $a['bookings'], $a['enquiries']]);
         return $rows;

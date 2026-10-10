@@ -27,7 +27,7 @@ final class TravelHomeServiceTest extends CIUnitTestCase
         parent::setUp();
         $db = db_connect();
         $db->query('SET FOREIGN_KEY_CHECKS=0');
-        foreach (['booking_checklist_items', 'booking_payments', 'booking_services', 'bookings', 'itineraries', 'tasks', 'trips', 'contacts', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
+        foreach (['sales_targets', 'booking_checklist_items', 'booking_payments', 'booking_services', 'bookings', 'itineraries', 'tasks', 'trips', 'contacts', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
         $db->query('SET FOREIGN_KEY_CHECKS=1');
         foreach ([1, 2] as $t) { $db->table('tenants')->insert(['id' => $t, 'name' => "T$t", 'slug' => "t$t", 'plan' => 'pro', 'status' => 'active', 'mode' => 'saas', 'created_at' => '2026-01-01 00:00:00']); }
         foreach ([[9, 1, 'Anita', 'owner'], [10, 1, 'Ravi', 'agent'], [11, 2, 'Other', 'owner']] as [$id, $t, $n, $r]) {
@@ -95,7 +95,8 @@ final class TravelHomeServiceTest extends CIUnitTestCase
         $this->seed();
         $d = (new TravelHomeService(self::NOW))->build(1, 9, true, 10);
         $this->assertSame([3, 1, 500_000, 100_000], [$d['kpis']['enquiries']['value'], $d['kpis']['bookings']['value'], $d['kpis']['revenue']['value'], $d['kpis']['margin']['value']]);
-        $this->assertArrayNotHasKey('team', $d);                                        // the team table is for the "everyone" view
+        $this->assertArrayNotHasKey('team', $d);                                        // the team table and supplier payables are for the "everyone" view
+        $this->assertArrayNotHasKey('payables', $d);
     }
 
     public function testPipelineAndFollowUpsCountOnlyOpenTripsWithNoNextStep(): void
@@ -104,5 +105,51 @@ final class TravelHomeServiceTest extends CIUnitTestCase
         $d = (new TravelHomeService(self::NOW))->build(1, 9, true);
         $this->assertSame(['enquiry' => 3, 'quoted' => 1, 'negotiating' => 1], array_column(array_slice($d['pipeline'], 0, 3), 'count', 'status'));
         $this->assertSame(0, $d['attention']['no_activity']);                           // seeded trips have no deal, so they are not "missing a next step"
+    }
+
+    private function target(int $user, int $revenue, int $bookings, string $month = '2026-10'): void
+    {
+        (new \App\Services\Travel\SalesTargetService())->save(1, $month, [['user_id' => $user, 'revenue' => $revenue, 'bookings' => $bookings]], 9);
+    }
+
+    public function testAgentSeesOwnTargetProgressAndNobodyElses(): void
+    {
+        $this->seed();
+        $this->target(10, 1_000_000, 4); $this->target(9, 5_000_000, 10);
+        $d = (new TravelHomeService(self::NOW))->build(1, 10, false);
+        $this->assertSame([500_000, 1_000_000, 50], [$d['target']['revenue']['actual'], $d['target']['revenue']['target'], $d['target']['revenue']['pct']]);
+        $this->assertSame([1, 4, 25], [$d['target']['bookings']['actual'], $d['target']['bookings']['target'], $d['target']['bookings']['pct']]);
+        $this->assertSame(['day' => 8, 'days_in_month' => 31, 'days_left' => 23], $d['month_progress']);
+        $this->assertStringNotContainsString('5000000', json_encode($d));                                    // the owner's target is nowhere in the agent's payload
+        $this->assertArrayNotHasKey('team_target', $d);
+    }
+
+    public function testAnAgentWithNoTargetGetsNullNotAnError(): void
+    {
+        $this->seed();
+        $this->assertNull((new TravelHomeService(self::NOW))->build(1, 10, false)['target']);
+    }
+
+    public function testManagerSeesEachPersonsProgressAndATeamBarThatComparesLikeWithLike(): void
+    {
+        $this->seed();
+        $this->target(10, 1_000_000, 4);                                       // Ravi has a target, Anita (owner) has none
+        $d = (new TravelHomeService(self::NOW))->build(1, 9, true);
+        $by = array_column($d['team'], null, 'name');
+        $this->assertNull($by['Anita']['target']);
+        $this->assertSame(50, $by['Ravi']['target']['revenue']['pct']);
+        $this->assertSame(1, $d['team_target']['people']);                                                     // only people WITH a target
+        $this->assertSame([500_000, 1_000_000], [$d['team_target']['revenue']['actual'], $d['team_target']['revenue']['target']]);   // Anita's 1,000,000 revenue is not counted
+        $this->assertNull($d['target']);                                                                      // the "everyone" view has no single person's target
+        $f = (new TravelHomeService(self::NOW))->build(1, 9, true, 10);
+        $this->assertSame(50, $f['target']['revenue']['pct']);                                                // focusing on Ravi shows his bar
+    }
+
+    public function testCarriedTargetShowsOnTheDashboardInALaterMonth(): void
+    {
+        $this->seed();
+        $this->target(10, 1_000_000, 4, '2026-09');
+        $d = (new TravelHomeService(self::NOW))->build(1, 10, false);
+        $this->assertSame(['carried', '2026-09'], [$d['target']['source'], $d['target']['from']]);
     }
 }

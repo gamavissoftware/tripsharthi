@@ -67,3 +67,17 @@
 
 @media (max-width: 1050px) { .hd-grid { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 640px) { .hd { padding: 1rem .8rem 2rem; } .hd-kpis { grid-template-columns: 1fr 1fr; gap: .5rem; } .hd-kpi { padding: .6rem .7rem; } .hd-kpi-val { font-size: 1.2rem; } .hd-kpi-foot { font-size: .7rem; } .hd-two { grid-template-columns: 1fr; } .hd-stage { grid-template-columns: 88px 1fr 90px; } }
+
+/* sales target bars */
+.tbar { margin-bottom: .8rem; }
+.tbar:last-child { margin-bottom: 0; }
+.tbar-head { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; font-size: .86rem; margin-bottom: .3rem; }
+.tbar-label { font-weight: 500; }
+.tbar-nums { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.tbar-track { position: relative; height: 12px; background: #eceef1; border-radius: 6px; overflow: visible; }
+.tbar-track i { position: absolute; inset: 0 auto 0 0; border-radius: 6px; transition: width .4s ease; }
+.tbar-track u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #26292c; opacity: .55; text-decoration: none; border-radius: 1px; }
+.tbar-foot { display: flex; justify-content: space-between; align-items: center; gap: .5rem; margin-top: .35rem; }
+.tbar.is-compact { margin: 0; min-width: 120px; }
+.tbar.is-compact .tbar-track { height: 16px; }
+.tbar-in { position: absolute; inset: 0; text-align: center; font-size: .7rem; line-height: 16px; font-weight: 600; color: #26292c; mix-blend-mode: normal; text-shadow: 0 0 3px rgba(255,255,255,.9); }

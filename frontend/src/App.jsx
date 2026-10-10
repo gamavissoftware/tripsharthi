@@ -29,6 +29,7 @@ import DealDetailPage    from './pages/DealDetailPage'
 import TicketsPage       from './pages/TicketsPage'
 import TicketDetailPage  from './pages/TicketDetailPage'
 import HomeDashboardPage  from './pages/HomeDashboardPage'
+import SalesTargetsPage   from './pages/SalesTargetsPage'
 import CustomObjectsPage from './pages/CustomObjectsPage'
 import RecordsPage       from './pages/RecordsPage'
 import RecordDetailPage  from './pages/RecordDetailPage'
@@ -191,6 +192,7 @@ const SETTINGS_GROUPS = [
     { to: '/settings/profile',       label: 'My Profile',    icon: CircleUser },
     { to: '/settings/team',          label: 'Team',          icon: UsersRound },
     { to: '/settings/teams',         label: 'Teams',         icon: Users },
+    { to: '/settings/targets',       label: 'Sales targets', icon: Target },
     { to: '/settings/business',      label: 'Business & Invoicing', icon: Building2 },
     { to: '/settings/lead-sources',  label: 'Travel portal leads', icon: Building2 },
     { to: '/settings/gst-exports',   label: 'GST & Tally exports', icon: Building2 },
@@ -403,6 +405,7 @@ function Layout({ user, onLogout }) {
           <Route path="/recycle"                element={<RecycleBinPage />} />
           <Route path="/duplicates"             element={<DuplicatesPage />} />
           <Route path="/settings/mobile"        element={<MobileNotificationsPage />} />
+          <Route path="/settings/targets"       element={<SalesTargetsPage user={user} />} />
           <Route path="/settings/business"      element={<BusinessProfilePage />} />
           <Route path="/settings/lead-sources"  element={<LeadSourcesPage />} />
           <Route path="/settings/gst-exports"   element={<GstExportsPage />} />
