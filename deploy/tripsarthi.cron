@@ -22,4 +22,4 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 15 2 * * *   www-data  cd {$APP_DIR}/backend && php spark subscription:check        >> /dev/null 2>&1
 0 5 * * *    www-data  cd {$APP_DIR}/backend && php spark waba:billing-sync         >> /dev/null 2>&1
 # nightly backup of the database + uploaded files (kept 14 days in /var/backups/tripsarthi)
-30 1 * * *   root      {$APP_DIR}/deploy/backup.sh >> /var/log/tripsarthi-backup.log 2>&1
+30 1 * * *   root      APP_DIR={$APP_DIR} {$APP_DIR}/deploy/backup.sh >> /var/log/tripsarthi-backup.log 2>&1
