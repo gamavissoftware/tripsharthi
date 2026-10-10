@@ -4,6 +4,8 @@ import { travel, inr, toPaise, TRIP_STATUS } from '../api/travel'
 import { contacts as contactsApi } from '../api/contacts'
 import { toast } from '../components/Toast'
 import Pill from '../components/Pill'
+import TripBoard from '../components/travel/TripBoard'
+import { LayoutGrid, List } from 'lucide-react'
 
 const TYPES = ['leisure', 'honeymoon', 'family', 'friends', 'solo', 'pilgrimage', 'adventure', 'corporate', 'group_departure', 'student', 'umrah_hajj', 'visa_only', 'flight_only', 'hotel_only', 'other']
 const FILTERS = ['all', 'enquiry', 'quoted', 'negotiating', 'booked', 'travelling', 'completed', 'lost']
@@ -99,26 +101,51 @@ export default function TripsPage() {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
+  // Board (pipeline columns) is the default; the choice is remembered in this browser.
+  const [view, setView] = useState(() => { try { return localStorage.getItem('ts_trips_view') === 'list' ? 'list' : 'board' } catch { return 'board' } })
+  function pickView(v) { setView(v); try { localStorage.setItem('ts_trips_view', v) } catch { /* private mode */ } }
 
   const load = useCallback(() => {
     const qs = new URLSearchParams()
-    if (filter !== 'all') qs.set('status', filter)
+    if (view === 'list' && filter !== 'all') qs.set('status', filter)
     if (q.trim()) qs.set('q', q.trim())
     travel.trips(qs.toString()).then(setRows).catch(e => toast.error('Could not load trips', e.message))
-  }, [filter, q])
+  }, [filter, q, view])
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load])
+
+  // Move a card: show it in the new column at once, then tell the server; put it back if the server says no.
+  async function moveTrip(trip, status, reason) {
+    const before = rows
+    setRows(r => r.map(t => t.id === trip.id ? { ...t, status } : t))
+    try {
+      await travel.setTripStatus(trip.id, status, reason)
+      toast.success(`Moved to ${TRIP_STATUS[status].label}`)
+    } catch (e) {
+      setRows(before)
+      toast.error('Could not move the trip', e.message)
+    }
+  }
 
   return (
     <div className="page">
       <div className="page-header">
         <h1 className="page-title">Trips &amp; Enquiries</h1>
-        <button className="btn btn-primary" onClick={() => setShowNew(true)}>+ New enquiry</button>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div className="view-switch" role="group" aria-label="View">
+            <button className={view === 'board' ? 'is-on' : ''} onClick={() => pickView('board')} aria-pressed={view === 'board'}><LayoutGrid size={14} /> Board</button>
+            <button className={view === 'list' ? 'is-on' : ''} onClick={() => pickView('list')} aria-pressed={view === 'list'}><List size={14} /> List</button>
+          </div>
+          <button className="btn btn-primary" onClick={() => setShowNew(true)}>+ New enquiry</button>
+        </div>
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
-        {FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
+        {view === 'list' && FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
         <input className="form-input" style={{ maxWidth: 240, marginLeft: 'auto' }} placeholder="Search destination or title…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
-      <div className="card" style={{ overflowX: 'auto' }}>
+      {view === 'board' && (rows === null
+        ? <div style={{ padding: 24, textAlign: 'center' }}>Loading…</div>
+        : <TripBoard rows={rows} onMove={moveTrip} />)}
+      {view === 'list' && <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>
             {['Trip', 'Destination', 'Dates', 'Pax', 'Budget', 'Status'].map(h => <th key={h} style={{ padding: '10px 14px' }}>{h}</th>)}</tr></thead>
@@ -137,7 +164,7 @@ export default function TripsPage() {
             ))}
           </tbody>
         </table>
-      </div>
+      </div>}
       {showNew && <NewTripModal onClose={() => setShowNew(false)} onCreated={(t) => { setShowNew(false); nav(`/trips/${t.id}`) }} />}
     </div>
   )
