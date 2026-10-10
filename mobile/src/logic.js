@@ -67,4 +67,28 @@ function templateVarCount(body) {
   return nums.length ? Math.max(...nums) : 0
 }
 
-module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount }
+// ---- sales targets (the numbers come from the server; these only decide how to show them) ----
+
+/** Bar width: 0-100 even when the person is over target (the label still says 130%). */
+function clampPct(p) { const n = Number(p); return Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0 }
+
+const TARGET_STATUS = {
+  achieved: { label: 'Target hit', tone: 'ok' },
+  ahead:    { label: 'Ahead of pace', tone: 'ok' },
+  on_track: { label: 'On track', tone: 'info' },
+  behind:   { label: 'Behind pace', tone: 'bad' },
+}
+/** Label + colour tone for a server pace status; unknown / none -> null (nothing to draw). */
+function targetStatus(status) { return TARGET_STATUS[status] || null }
+
+/** "₹1.9L to go · 21 days left" — fmt formats one amount (money) or is String for counts. */
+function toGoText(p, fmt, daysLeft) {
+  const left = Number(daysLeft)
+  const days = Number.isFinite(left) ? ' · ' + (left <= 0 ? 'last day' : left + (left === 1 ? ' day left' : ' days left')) : ''
+  return (p && p.to_go > 0 ? fmt(p.to_go) + ' to go' : 'Over target') + days
+}
+
+/** True when a pace block has something to draw. */
+function hasTarget(p) { return !!p && p.status !== 'none' && Number(p.target) > 0 }
+
+module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget }

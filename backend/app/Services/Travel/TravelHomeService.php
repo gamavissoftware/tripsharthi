@@ -165,6 +165,37 @@ final class TravelHomeService
         return $out;
     }
 
+    /**
+     * Just the target progress (for the phone app): the dashboard's numbers without the other ~25 queries.
+     * Same scoping rules as build(): an agent gets only their own bars (`$focusUser` is ignored); a manager gets the whole team, or one person when focused.
+     * Both use SalesTargetService::actuals / forMonth, and a test keeps this equal to the dashboard.
+     *
+     * @return array{month:string, scope:array, month_progress:array, target:?array, team_target:?array, team:?array}
+     */
+    public function targets(int $tenantId, int $userId, bool $manager, ?int $focusUser = null): array
+    {
+        $own = $manager ? $focusUser : $userId;
+        $now = $this->dt(); $month = $now->format('Y-m');
+        $from = $month . '-01 00:00:00'; $to = $this->dt('first day of next month')->format('Y-m-01 00:00:00');
+        $day = (int) $now->format('j'); $dim = (int) $now->format('t');
+        $svc = new SalesTargetService(); $targets = $svc->forMonth($tenantId, $month);
+        $out = ['as_of' => $now->format('c'), 'month' => $now->format('F Y'), 'scope' => ['manager' => $manager, 'user_id' => $own, 'everyone' => $own === null],
+            'month_progress' => ['day' => $day, 'days_in_month' => $dim, 'days_left' => $dim - $day], 'target' => null, 'team_target' => null, 'team' => null];
+        if ($own !== null) {
+            if (isset($targets[$own])) { $a = $svc->actuals($tenantId, $own, $from, $to); $out['target'] = self::targetBlock($targets[$own], $a['revenue'], $a['bookings'], $day, $dim); }
+            return $out;
+        }
+        $team = [];
+        foreach (db_connect()->query("SELECT id, name, role FROM users WHERE tenant_id = ? AND deleted_at IS NULL ORDER BY name", [$tenantId])->getResultArray() as $u) {
+            $id = (int) $u['id']; $a = $svc->actuals($tenantId, $id, $from, $to);
+            $team[] = ['id' => $id, 'name' => $u['name'], 'role' => $u['role'], 'revenue' => $a['revenue'], 'bookings' => $a['bookings'],
+                'target' => isset($targets[$id]) ? self::targetBlock($targets[$id], $a['revenue'], $a['bookings'], $day, $dim) : null];
+        }
+        usort($team, static fn ($a, $b) => [$b['target'] !== null, $b['revenue']] <=> [$a['target'] !== null, $a['revenue']]);   // people with a target first, then by revenue
+        $out['team'] = $team; $out['team_target'] = self::teamTarget($team, $day, $dim);
+        return $out;
+    }
+
     /** @param array{revenue:int,bookings:int,source:string,from?:?string} $t */
     private static function targetBlock(array $t, int $revenue, int $bookings, int $day, int $dim): array
     {

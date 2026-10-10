@@ -152,4 +152,42 @@ final class TravelHomeServiceTest extends CIUnitTestCase
         $d = (new TravelHomeService(self::NOW))->build(1, 10, false);
         $this->assertSame(['carried', '2026-09'], [$d['target']['source'], $d['target']['from']]);
     }
+
+    public function testPhoneTargetsEqualTheDashboardForAnAgentAndNeverShowOthers(): void
+    {
+        $this->seed();
+        $this->target(10, 1_000_000, 4); $this->target(9, 5_000_000, 10);
+        $svc = new TravelHomeService(self::NOW);
+        $t = $svc->targets(1, 10, false, 9);                                     // an agent asking for the owner's numbers: ignored
+        $this->assertSame(10, $t['scope']['user_id']);
+        $this->assertNull($t['team']); $this->assertNull($t['team_target']);
+        $this->assertSame($svc->build(1, 10, false)['target'], $t['target']);   // identical to what the dashboard shows
+        $this->assertSame(['day' => 8, 'days_in_month' => 31, 'days_left' => 23], $t['month_progress']);
+        $this->assertStringNotContainsString('5000000', json_encode($t));        // the owner's target never reaches the agent
+        $this->assertStringNotContainsString('cost', strtolower(json_encode($t)));
+    }
+
+    public function testPhoneTargetsForAManagerListTheTeamAndCanFocusOnOnePerson(): void
+    {
+        $this->seed();
+        $this->target(10, 1_000_000, 4);
+        $svc = new TravelHomeService(self::NOW);
+        $all = $svc->targets(1, 9, true);
+        $this->assertNull($all['target']);
+        $by = array_column($all['team'], null, 'name');
+        $this->assertSame(['Ravi', 'Anita'], array_column($all['team'], 'name'));    // people with a target first
+        $this->assertNull($by['Anita']['target']);
+        $this->assertSame($svc->build(1, 9, true)['team_target'], $all['team_target']);
+        $this->assertCount(2, $all['team']);                                        // not the other workspace's user
+        $one = $svc->targets(1, 9, true, 10);
+        $this->assertNull($one['team']);
+        $this->assertSame($svc->build(1, 9, true, 10)['target'], $one['target']);
+    }
+
+    public function testPhoneTargetsWithNoTargetAreEmptyNotAnError(): void
+    {
+        $this->seed();
+        $t = (new TravelHomeService(self::NOW))->targets(1, 10, false);
+        $this->assertNull($t['target']);
+    }
 }

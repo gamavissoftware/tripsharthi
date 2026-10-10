@@ -85,6 +85,7 @@ final class TargetPushTest extends CIUnitTestCase
         $this->assertStringContainsString('19 days left', $m['body']);
         $this->assertSame(['target', 'target_behind'], [$m['channelId'], $m['data']['event']]);     // Android channel id == category key
         $this->assertStringStartsWith('🎯', $m['title']);
+        $this->assertSame('Targets', $m['data']['screen']);                                          // tapping it opens the phone's Targets tab
         $again = $this->nudge($now + 600);                                                           // the job runs every minute: no second push
         $this->assertSame(0, $again['sent']);
         $this->assertCount(1, $this->sent);

@@ -9,6 +9,7 @@ import LoginScreen from './src/screens/LoginScreen'
 import TripsScreen from './src/screens/TripsScreen'
 import TripScreen from './src/screens/TripScreen'
 import DuesScreen from './src/screens/DuesScreen'
+import TargetsScreen from './src/screens/TargetsScreen'
 import BookingScreen from './src/screens/BookingScreen'
 import ContactScreen from './src/screens/ContactScreen'
 import NotificationsScreen from './src/screens/NotificationsScreen'
@@ -36,7 +37,8 @@ function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut }) {
       <Tabs.Screen name="Chats" options={{ tabBarIcon: () => <Text>💬</Text>, tabBarBadge: chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined }}>
         {(props) => <ChatsScreen {...props} onUnread={setChatUnread} />}
       </Tabs.Screen>
-      <Tabs.Screen name="Dues" component={DuesScreen} options={{ title: 'Payments due', tabBarIcon: () => <Text>💰</Text> }} />
+      <Tabs.Screen name="Dues" component={DuesScreen} options={{ title: 'Payments due', tabBarLabel: 'Dues', tabBarIcon: () => <Text>💰</Text> }} />
+      <Tabs.Screen name="Targets" component={TargetsScreen} options={{ title: 'Sales targets', tabBarIcon: () => <Text>🎯</Text> }} />
       <Tabs.Screen name="Inbox" options={{ tabBarIcon: () => <Text>🔔</Text>, tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined }}>
         {(props) => <NotificationsScreen {...props} onUnread={setUnread} />}
       </Tabs.Screen>

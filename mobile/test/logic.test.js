@@ -57,3 +57,38 @@ test('template variables are counted by the highest placeholder', () => {
   assert.equal(L.templateVarCount('No variables'), 0)
   assert.equal(L.templateVarCount('{{ 2 }} only'), 2)
 })
+
+test('target bar width never leaves 0-100 and survives bad input', () => {
+  assert.equal(L.clampPct(37), 37)
+  assert.equal(L.clampPct(130), 100)
+  assert.equal(L.clampPct(-5), 0)
+  assert.equal(L.clampPct(undefined), 0)
+  assert.equal(L.clampPct('abc'), 0)
+  assert.equal(L.clampPct('42'), 42)
+})
+
+test('target status labels match the server statuses and unknown ones draw nothing', () => {
+  assert.deepEqual(L.targetStatus('behind'), { label: 'Behind pace', tone: 'bad' })
+  assert.deepEqual(L.targetStatus('achieved'), { label: 'Target hit', tone: 'ok' })
+  assert.equal(L.targetStatus('ahead').tone, 'ok')
+  assert.equal(L.targetStatus('on_track').tone, 'info')
+  assert.equal(L.targetStatus('none'), null)
+  assert.equal(L.targetStatus('whatever'), null)
+})
+
+test('"to go" text', () => {
+  const money = (n) => '₹' + n
+  assert.equal(L.toGoText({ to_go: 190000 }, money, 21), '₹190000 to go · 21 days left')
+  assert.equal(L.toGoText({ to_go: 2 }, String, 1), '2 to go · 1 day left')
+  assert.equal(L.toGoText({ to_go: 0 }, money, 5), 'Over target · 5 days left')
+  assert.equal(L.toGoText({ to_go: 10 }, String, 0), '10 to go · last day')
+  assert.equal(L.toGoText({ to_go: 10 }, String, undefined), '10 to go')
+  assert.equal(L.toGoText(null, String, 3), 'Over target · 3 days left')
+})
+
+test('a pace block is drawn only when there is a real target', () => {
+  assert.equal(L.hasTarget({ status: 'behind', target: 100 }), true)
+  assert.equal(L.hasTarget({ status: 'none', target: 0 }), false)
+  assert.equal(L.hasTarget({ status: 'ahead', target: 0 }), false)
+  assert.equal(L.hasTarget(null), false)
+})

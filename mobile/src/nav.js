@@ -6,6 +6,8 @@ let pending = null   // a tap that arrived before the navigator (or the login) w
 
 /** Screens a notification may open. Anything else falls back to the inbox. */
 const STACK = { Trip: 'Trip', Booking: 'Booking', Contact: 'Contact' }
+/** Bottom-tab screens a notification may open (no id needed). */
+const TABS = { Targets: 'Targets' }
 
 export function openTarget(data) {
   const screen = data?.screen
@@ -13,6 +15,7 @@ export function openTarget(data) {
   if (!navRef.isReady()) { pending = data; return }
   pending = null
   if (screen && STACK[screen] && params.id) navRef.navigate(STACK[screen], { id: Number(params.id) })
+  else if (screen && TABS[screen]) navRef.navigate('Home', { screen: TABS[screen] })
   else navRef.navigate('Home', { screen: 'Inbox' })
 }
 

@@ -95,7 +95,7 @@ final class TargetPush
                 $body = implode(' · ', $parts) . ' — ' . $left . ' day' . ($left === 1 ? '' : 's') . ' left.';
                 $idle = $this->idleEnquiries($tenant, $uid);
                 if ($idle > 0) { $body .= ' ' . $idle . ' open enquir' . ($idle === 1 ? 'y has' : 'ies have') . ' no next step — a quick follow-up can help.'; }
-                $r = $n->notify($tenant, $uid, 'target', 'target_behind', '🎯 A little behind on your target', $body, ['screen' => 'Notifications', 'params' => new \stdClass()], 'target:' . $month . ':cp' . $cp, '/dashboard');
+                $r = $n->notify($tenant, $uid, 'target', 'target_behind', '🎯 A little behind on your target', $body, ['screen' => 'Targets', 'params' => new \stdClass()], 'target:' . $month . ':cp' . $cp, '/dashboard');
                 if ($r['status'] === 'queued') { $out['sent']++; }
             }
 
@@ -110,7 +110,7 @@ final class TargetPush
             $title = '🎯 ' . count($late) . ' agent' . (count($late) === 1 ? '' : 's') . ' behind pace on targets';
             foreach ($db->query("SELECT id FROM users WHERE tenant_id = ? AND role IN ('owner','admin') AND deleted_at IS NULL", [$tenant])->getResultArray() as $m) {
                 if (! isset($phones[(int) $m['id']])) { continue; }
-                $r = $n->notify($tenant, (int) $m['id'], 'target', 'target_team', $title, $body, ['screen' => 'Notifications', 'params' => new \stdClass()], 'target-team:' . $month . ':cp' . $cp, '/dashboard');
+                $r = $n->notify($tenant, (int) $m['id'], 'target', 'target_team', $title, $body, ['screen' => 'Targets', 'params' => new \stdClass()], 'target-team:' . $month . ':cp' . $cp, '/dashboard');
                 if ($r['status'] === 'queued') { $out['managers_sent']++; }
             }
         }

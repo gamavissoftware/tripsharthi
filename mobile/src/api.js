@@ -40,6 +40,8 @@ export const api = {
   updateItinerary: (id, b) => request('PUT', `/itineraries/${id}`, b).then(r => r.data),
   bookingC: (id) => cached(`booking:${id}`, () => request('GET', `/bookings/${id}`).then(r => r.data)),
   duesC: () => cached('dues', async () => { const [d, b] = await Promise.all([request('GET', '/bookings/dashboard').then(r => r.data), request('GET', '/bookings').then(r => r.data)]); return { dash: d, bookings: b } }),
+  // sales targets (cached like the other reads). Agents get their own bars; owners/admins get the team, or one person with a user id.
+  targetsC: (userId) => cached(`targets:${userId || 'all'}`, () => request('GET', `/home/targets${userId ? `?user=${userId}` : ''}`).then(r => r.data)),
   setTripStatus: (id, status) => request('POST', `/trips/${id}/status`, { status }).then(r => r.data),
   shareItinerary: (id) => request('POST', `/itineraries/${id}/share`).then(r => r.data),
   aiParse: (text) => request('POST', '/trips/ai-parse', { text }).then(r => r.data),

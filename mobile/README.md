@@ -12,6 +12,7 @@ Everything except push works in Expo Go.
 ## Offline & privacy
 - Lists and details you have opened (enquiries, a trip, payments due, chats) are saved on the phone. With no signal you see them under an amber "Offline — showing saved data from …" banner, and sending is disabled until you are back online. Errors you must act on (expired login, a rejected form) are never hidden behind saved data.
 - Saved data is wiped when you sign out. Settings → "Lock the app" asks for Face ID / fingerprint / passcode on open and after 60 s in the background, and hides the app in the app switcher. It cannot be turned on unless biometrics/passcode are set up on the phone and you pass the check once.
+- **Targets tab** (🎯): month-to-date progress against the monthly sales target, same bars and "even pace" tick as the web dashboard. Agents see their own revenue + bookings bars; owners/admins see the team bar and each person (tap to open one). Reads `GET /api/v1/home/targets[?user=ID]` (offline-cached, stale data is labelled). Targets are SET on the web (Settings → Sales targets). The "behind pace" push opens this tab.
 - `npm test` runs the pure-logic tests (cache rules, lock timing, validation). Everything else was bundled (`npx expo export`) but **not run on a device** — test the chat, lock and offline flows on a real phone before rollout.
 
 ## Push notifications — what you must set up (one time)

@@ -136,7 +136,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
 
     // --- CRM: Dashboard (reporting) ---
     $routes->get('crm/dashboard', 'Api\CrmDashboardController::index', ['filter' => 'auth']);
-    $routes->get('home', 'Api\HomeDashboardController::index', ['filter' => 'auth']);   // travel bird's-eye dashboard (agents: own numbers only)
+    $routes->get('home', 'Api\HomeDashboardController::index', ['filter' => 'auth']);
+    $routes->get('home/targets', 'Api\HomeDashboardController::targets', ['filter' => 'auth']);   // lean version for the phone app   // travel bird's-eye dashboard (agents: own numbers only)
 
     // --- CRM: Saved views + unified filterable list (Phase G) ---
     $routes->group('crm/views', ['filter' => 'auth'], static function (RouteCollection $routes): void {
