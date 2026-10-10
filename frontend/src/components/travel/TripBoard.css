@@ -41,3 +41,7 @@
 .view-switch button { appearance: none; border: 0; background: none; padding: .3rem .7rem; font: inherit; font-size: .85rem; color: var(--text-2); cursor: pointer; display: inline-flex; align-items: center; gap: .35rem; }
 .view-switch button + button { border-left: 1px solid var(--border-strong); }
 .view-switch button.is-on { background: var(--primary); color: #fff; }
+
+/* "Mark as won" drop zone: appears at the bottom of the screen while an open trip is being dragged */
+.tboard-won { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 150; background: #1f8f55; color: #fff; font-weight: 600; padding: .9rem 2.2rem; border-radius: 8px; box-shadow: var(--shadow-lg); border: 2px dashed rgba(255,255,255,.7); }
+.tboard-won.is-over { background: #15703f; transform: translateX(-50%) scale(1.04); border-style: solid; }
