@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { travel, inr, toPaise, TRIP_STATUS } from '../api/travel'
 import { contacts as contactsApi } from '../api/contacts'
+import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import Pill from '../components/Pill'
 import TripBoard from '../components/travel/TripBoard'
@@ -102,9 +103,17 @@ export default function TripsPage({ user }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
-  // "Only my trips": narrows both views to trips I own. Remembered in this browser.
-  const [mine, setMine] = useState(() => { try { return localStorage.getItem('ts_trips_mine') === '1' } catch { return false } })
-  function toggleMine() { setMine(m => { const n = !m; try { localStorage.setItem('ts_trips_mine', n ? '1' : '0') } catch { /* private mode */ } return n }) }
+  // Whose trips to show: 'all' | 'me' | 'none' (no owner) | 'u:<id>' (a teammate - managers only). Remembered in this browser.
+  const [owner, setOwner] = useState(() => { try { return localStorage.getItem('ts_trips_owner') || (localStorage.getItem('ts_trips_mine') === '1' ? 'me' : 'all') } catch { return 'all' } })
+  function pickOwner(v) { setOwner(v); try { localStorage.setItem('ts_trips_owner', v) } catch { /* private mode */ } }
+  const isManager = !!user && ['owner', 'admin'].includes(user.role)
+  const [team, setTeam] = useState([])
+  useEffect(() => {
+    if (!isManager) return undefined
+    let alive = true
+    api.get('/team').then(r => { if (alive) setTeam(r.data ?? []) }).catch(() => {})   // owners/admins only; an agent never calls this
+    return () => { alive = false }
+  }, [isManager])
   const [act, setAct] = useState('all')   // board filter: all | overdue | none (nothing scheduled)
   // Board (pipeline columns) is the default; the choice is remembered in this browser.
   const [view, setView] = useState(() => { try { return localStorage.getItem('ts_trips_view') === 'list' ? 'list' : 'board' } catch { return 'board' } })
@@ -119,10 +128,15 @@ export default function TripsPage({ user }) {
   useEffect(() => { const t = setTimeout(load, 200); return () => clearTimeout(t) }, [load])
 
   // Counts for the filter chips, and the rows the board shows. Booked-and-later trips carry no activity chip, so they only appear under "All".
-  const isMine = (r) => !!user && Number(r.owner_id) === Number(user.id)
+  const uid = user ? Number(user.id) : null
+  const isMine = (r) => uid !== null && Number(r.owner_id) === uid
   const nMine = (rows || []).filter(isMine).length
   const nUnowned = (rows || []).filter(r => !r.owner_id).length
-  const scoped = rows && (mine && user ? rows.filter(isMine) : rows)
+  // Agents can only use "mine"; a saved teammate choice from a manager session is ignored for them.
+  const eff = (!user || (!isManager && owner !== 'me')) ? (owner === 'me' && user ? 'me' : 'all') : owner
+  const match = (r) => eff === 'all' ? true : eff === 'me' ? isMine(r) : eff === 'none' ? !r.owner_id : Number(r.owner_id) === Number(eff.slice(2))
+  const scoped = rows && rows.filter(match)
+  const countFor = (id) => (rows || []).filter(r => Number(r.owner_id) === Number(id)).length
   const now = new Date()
   const states = (scoped || []).map(r => activityState(r, now))
   const nOverdue = states.filter(x => x === 'overdue').length
@@ -156,9 +170,18 @@ export default function TripsPage({ user }) {
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
         {view === 'list' && FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
-        <button className={'btn btn-sm ' + (mine && user ? 'btn-primary' : 'btn-ghost')} onClick={toggleMine} disabled={!user} aria-pressed={mine && !!user}
-          title={user ? 'Show only the trips you own' : 'Loading your profile…'}>Only my trips{rows ? <span className="tboard-fcount">{nMine}</span> : null}</button>
-        {mine && user && nUnowned > 0 && <span className="text-muted">{nUnowned} trip{nUnowned === 1 ? '' : 's'} with no owner hidden</span>}
+        {isManager ? (
+          <select className="form-select" style={{ width: 'auto', maxWidth: 230 }} value={eff} onChange={e => pickOwner(e.target.value)} aria-label="Show trips owned by">
+            <option value="all">Owner: everyone{rows ? ` (${rows.length})` : ''}</option>
+            <option value="me">Only my trips{rows ? ` (${nMine})` : ''}</option>
+            {team.filter(m => Number(m.id) !== uid).map(m => <option key={m.id} value={'u:' + m.id}>{m.name}{rows ? ` (${countFor(m.id)})` : ''}</option>)}
+            <option value="none">No owner{rows ? ` (${nUnowned})` : ''}</option>
+          </select>
+        ) : (
+          <button className={'btn btn-sm ' + (eff === 'me' ? 'btn-primary' : 'btn-ghost')} onClick={() => pickOwner(eff === 'me' ? 'all' : 'me')} disabled={!user} aria-pressed={eff === 'me'}
+            title={user ? 'Show only the trips you own' : 'Loading your profile…'}>Only my trips{rows ? <span className="tboard-fcount">{nMine}</span> : null}</button>
+        )}
+        {eff === 'me' && nUnowned > 0 && <span className="text-muted">{nUnowned} trip{nUnowned === 1 ? '' : 's'} with no owner hidden</span>}
         <input className="form-input" style={{ maxWidth: 240, marginLeft: 'auto' }} placeholder="Search destination or title…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
       {view === 'board' && rows !== null && (
@@ -178,7 +201,7 @@ export default function TripsPage({ user }) {
             {['Trip', 'Destination', 'Dates', 'Pax', 'Budget', 'Status'].map(h => <th key={h} style={{ padding: '10px 14px' }}>{h}</th>)}</tr></thead>
           <tbody>
             {rows === null && <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center' }}>Loading…</td></tr>}
-            {scoped?.length === 0 && <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>{mine && user && rows?.length ? 'None of the trips in this view are yours.' : 'No trips yet — create your first enquiry.'}</td></tr>}
+            {scoped?.length === 0 && <tr><td colSpan={6} style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)' }}>{eff !== 'all' && rows?.length ? 'No trips match this owner.' : 'No trips yet — create your first enquiry.'}</td></tr>}
             {scoped?.map(t => (
               <tr key={t.id} onClick={() => nav(`/trips/${t.id}`)} style={{ cursor: 'pointer', borderTop: '1px solid var(--border)' }}>
                 <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.title}</td>
