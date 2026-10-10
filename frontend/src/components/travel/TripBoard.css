@@ -45,3 +45,19 @@
 /* "Mark as won" drop zone: appears at the bottom of the screen while an open trip is being dragged */
 .tboard-won { position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 150; background: #1f8f55; color: #fff; font-weight: 600; padding: .9rem 2.2rem; border-radius: 8px; box-shadow: var(--shadow-lg); border: 2px dashed rgba(255,255,255,.7); }
 .tboard-won.is-over { background: #15703f; transform: translateX(-50%) scale(1.04); border-style: solid; }
+
+/* activity indicator (Pipedrive-style): red = overdue, green = planned, amber = nothing scheduled */
+.tcard-foot { margin-top: .5rem; padding-right: 1.9rem; }
+.tact { appearance: none; display: inline-flex; align-items: center; gap: .3rem; border: 1px solid transparent; border-radius: 3px; padding: .1rem .45rem; font: inherit; font-size: .76rem; font-weight: 500; cursor: pointer; }
+.tact b { font-weight: 600; opacity: .8; }
+.tact-planned { background: #e6f4ec; color: #17683d; }
+.tact-overdue { background: #fde4e1; color: #b3261e; border-color: #f3b5af; }
+.tact-none { background: #fff3cf; color: #8a5a00; border-color: #efd486; }
+.tact:hover { filter: brightness(.96); }
+.tact-row { display: flex; align-items: center; gap: .55rem; padding: .45rem 0; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.tact-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tact-due { font-size: .8rem; color: var(--text-3); white-space: nowrap; }
+.tact-due.is-overdue { color: #b3261e; font-weight: 500; }
+.tact-done { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--border-strong); background: #fff; color: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.tact-done:hover { border-color: #1f8f55; color: #1f8f55; background: #e6f4ec; }
+.tact-types { display: flex; gap: .35rem; flex-wrap: wrap; }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { travel, inr, TRIP_STATUS } from '../../api/travel'
 import { toast } from '../Toast'
+import { ActivityChip, ActivityModal } from './TripActivities'
 import './TripBoard.css'
 
 // Board columns, left to right. `drop` = a card may be dropped here by hand.
@@ -129,13 +130,14 @@ function WonModal({ trip, onCancel, onBooked }) {
   )
 }
 
-export default function TripBoard({ rows, onMove, onBooked }) {
+export default function TripBoard({ rows, onMove, onBooked, onChanged }) {
   const nav = useNavigate()
   const [dragId, setDragId] = useState(null)
   const [over, setOver] = useState(null)
   const [lostFor, setLostFor] = useState(null)
   const [wonFor, setWonFor] = useState(null)
   const [overWon, setOverWon] = useState(false)
+  const [actFor, setActFor] = useState(null)
 
   const dragTrip = dragId ? rows.find(t => t.id === dragId) : null
   const canWin = (t) => !!t && OPEN.includes(t.status)
@@ -195,6 +197,7 @@ export default function TripBoard({ rows, onMove, onBooked }) {
                         {t.budget_max ? <span className="tcard-budget">{inr(t.budget_max, true)}</span> : null}
                         {age != null && <span className="tcard-age" title={age === 0 ? 'Updated today' : `No update for ${age} day${age === 1 ? '' : 's'}`}>{age}d</span>}
                       </div>
+                      {OPEN.includes(t.status) && <div className="tcard-foot"><ActivityChip trip={t} onOpen={setActFor} /></div>}
                       <span className={'tcard-owner' + (t.owner_name ? '' : ' is-none')} title={t.owner_name ? `Owner: ${t.owner_name}` : 'No owner assigned'}>{t.owner_name ? initialsOf(t.owner_name) : '?'}</span>
                       {movable && (
                         <select className="tcard-move form-select" value="" aria-label={`Move ${t.title}`}
@@ -221,6 +224,7 @@ export default function TripBoard({ rows, onMove, onBooked }) {
           Drop here to mark as won — create booking
         </div>
       )}
+      {actFor && <ActivityModal trip={actFor} onClose={() => setActFor(null)} onChanged={onChanged} />}
       {wonFor && <WonModal trip={wonFor} onCancel={() => setWonFor(null)} onBooked={(t, b) => { setWonFor(null); onBooked(t, b) }} />}
       {lostFor && <LostModal trip={lostFor} onCancel={() => setLostFor(null)} onConfirm={reason => { const t = lostFor; setLostFor(null); onMove(t, 'lost', reason) }} />}
     </>

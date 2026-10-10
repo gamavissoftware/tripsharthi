@@ -45,7 +45,13 @@ class TripsController extends TravelBaseController
                 $names[(int) $u['id']] = $u['name'];
             }
         }
-        foreach ($rows as &$r) { $r['owner_name'] = $names[(int) ($r['owner_id'] ?? 0)] ?? null; }
+        $tasks = (new TripService())->taskSummary(CurrentUser::tenantId(), array_map(static fn ($r) => (int) ($r['deal_id'] ?? 0), $rows));
+        foreach ($rows as &$r) {
+            $r['owner_name'] = $names[(int) ($r['owner_id'] ?? 0)] ?? null;
+            $t = $tasks[(int) ($r['deal_id'] ?? 0)] ?? null;
+            $r['task_open'] = $t['open'] ?? 0;
+            $r['task_next'] = $t['next'] ?? null;
+        }
         unset($r);
         return $this->ok($rows);
     }

@@ -60,6 +60,31 @@ final class TripService
         return (new TripModel())->setTenant($tenantId)->find($tripId);
     }
 
+    /**
+     * Open tasks ("activities") per CRM deal, for the pipeline board: how many are open and which one is next.
+     * "Next" = the earliest due date (tasks with no date come last). Whether it is overdue is decided by the browser, because
+     * task due times are stored exactly as the person typed them (no time zone).
+     *
+     * @param  list<int> $dealIds
+     * @return array<int, array{open:int, next:array{id:int,title:string,type:string,due_at:?string}}>  keyed by deal id; deals with no open task are absent
+     */
+    public function taskSummary(int $tenantId, array $dealIds): array
+    {
+        $dealIds = array_values(array_unique(array_filter(array_map('intval', $dealIds))));
+        if (! $dealIds) { return []; }
+        $rows = db_connect()->table('tasks')->select('id, title, type, due_at, related_id')
+            ->where('tenant_id', $tenantId)->where('related_type', 'deal')->whereIn('related_id', $dealIds)
+            ->where('status', 'open')->where('deleted_at', null)
+            ->orderBy('due_at IS NULL', 'ASC', false)->orderBy('due_at', 'ASC')->orderBy('id', 'ASC')->get()->getResultArray();
+        $out = [];
+        foreach ($rows as $r) {
+            $d = (int) $r['related_id'];
+            if (! isset($out[$d])) { $out[$d] = ['open' => 0, 'next' => ['id' => (int) $r['id'], 'title' => (string) $r['title'], 'type' => (string) $r['type'], 'due_at' => $r['due_at']]]; }
+            $out[$d]['open']++;
+        }
+        return $out;
+    }
+
     /** Move the trip + its deal to a new status/stage. */
     public function setStatus(int $tenantId, int $tripId, string $status, ?string $lostReason = null): array
     {
