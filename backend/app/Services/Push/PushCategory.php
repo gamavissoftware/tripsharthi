@@ -18,7 +18,7 @@ final class PushCategory
         'booking' => ['label' => 'Bookings & trips',           'hint' => 'Confirmed bookings and trip alerts.',                                 'importance' => 'default', 'staff_only' => false],
         'task'    => ['label' => 'Tasks & mentions',           'hint' => 'Tasks due and when a teammate mentions you.',                         'importance' => 'default', 'staff_only' => false],
         'ads'     => ['label' => 'Ad campaign alerts',         'hint' => 'A rule paused a campaign, or an ad account needs attention.',         'importance' => 'default', 'staff_only' => true],
-        'target'  => ['label' => 'Sales target nudges',        'hint' => 'A friendly nudge when you are behind pace on your monthly target.',     'importance' => 'default', 'staff_only' => false],
+        'target'  => ['label' => 'Sales target nudges',        'hint' => 'A nudge when you are behind pace on your monthly target. Owners and admins get a team summary instead.',     'importance' => 'default', 'staff_only' => false],
         'digest'  => ['label' => 'Morning briefing',           'hint' => 'One summary each morning: departures, dues and tasks for today.',     'importance' => 'low', 'staff_only' => false],
     ];
 

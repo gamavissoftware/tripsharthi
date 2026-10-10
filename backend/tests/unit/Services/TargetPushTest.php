@@ -57,7 +57,8 @@ final class TargetPushTest extends CIUnitTestCase
 
     private function device(int $user): void
     {
-        db_connect()->table('mobile_devices')->insert(['tenant_id' => 1, 'user_id' => $user, 'expo_token' => 'ExponentPushToken[' . str_pad((string) $user, 22, 'x') . ']', 'platform' => 'android', 'created_at' => '2026-01-01 00:00:00', 'updated_at' => '2026-01-01 00:00:00']);
+        $tenant = (int) db_connect()->table('users')->select('tenant_id')->where('id', $user)->get()->getRowArray()['tenant_id'];
+        db_connect()->table('mobile_devices')->insert(['tenant_id' => $tenant, 'user_id' => $user, 'expo_token' => 'ExponentPushToken[' . str_pad((string) $user, 22, 'x') . ']', 'platform' => 'android', 'created_at' => '2026-01-01 00:00:00', 'updated_at' => '2026-01-01 00:00:00']);
     }
 
     /** a target set long enough ago that it counts */
@@ -104,6 +105,9 @@ final class TargetPushTest extends CIUnitTestCase
         foreach ([1, 2, 3] as $u) { $this->device($u); $this->target($u, 30_000_000, 6); }
         $r = $this->nudge($this->ist('2026-10-12 11:10:00'));
         $this->assertSame([1, 1], [$r['agents'], $r['sent']]);                                      // owner and admin are behind too but are not agents
+        $this->assertSame(2, $r['managers_sent']);                                                  // ...they get the team summary instead
+        foreach ([1, 2] as $mgr) { foreach ($this->bodiesFor($mgr) as $push) { $this->assertStringNotContainsString('A little behind on your target', $push['title']); } }   // never the agent nudge
+        $this->assertSame('🎯 1 agent behind pace on targets', $this->bodiesFor(1)[0]['title']);
     }
 
     public function testTimingOnlyInTheWindowAndOnCheckpointDays(): void
@@ -158,5 +162,100 @@ final class TargetPushTest extends CIUnitTestCase
         $a = (new SalesTargetService())->actuals(1, 3, '2026-10-01 00:00:00', '2026-11-01 00:00:00');
         $this->assertSame([$a['revenue'], $a['bookings']], [$dash['revenue']['actual'], $dash['bookings']['actual']]);
         $this->assertSame('behind', $dash['revenue']['status']);
+    }
+
+    private function moreAgents(int ...$ids): void
+    {
+        foreach ($ids as $id) {
+            db_connect()->table('users')->insert(['id' => $id, 'tenant_id' => 1, 'name' => "Agent{$id}", 'email' => "a{$id}@t.test", 'password_hash' => 'x', 'role' => 'agent', 'created_at' => '2026-01-01 00:00:00']);
+        }
+    }
+
+    /** every push body that went to this user */
+    private function bodiesFor(int $user): array
+    {
+        $tok = 'ExponentPushToken[' . str_pad((string) $user, 22, 'x') . ']';
+        $out = [];
+        foreach ($this->sent as $batch) { foreach ($batch as $m) { if ($m['to'] === $tok) { $out[] = $m; } } }
+        return $out;
+    }
+
+    public function testManagersGetOneSummaryNamingWhoIsBehindIncludingAgentsWithoutAPhone(): void
+    {
+        $this->moreAgents(5, 6);
+        $this->device(1); $this->device(2);                                      // owner and admin have phones
+        $this->device(3);                                                         // agent 3 has a phone; agents 4, 5, 6 do not
+        foreach ([3, 4, 5, 6] as $u) { $this->target($u, 30_000_000, 0); }                  // revenue-only targets
+        $this->booking(3, 12_000_000);                                            // agent 3: 40% by day 12 (expected 39%) -> on pace
+        $this->booking(5, 2_000_000);                                             // agent 5: 7%
+        $r = $this->nudge($this->ist('2026-10-12 11:10:00'));
+        $this->assertSame([3, 2], [$r['team_behind'], $r['managers_sent']]);      // 4, 5, 6 are behind; both managers told
+        $m = $this->bodiesFor(1)[0];
+        $this->assertSame('🎯 3 agents behind pace on targets', $m['title']);
+        $this->assertStringContainsString('U4 0%', $m['body']);                   // an agent with no phone is still counted
+        $this->assertStringContainsString('Agent5 7%', $m['body']);
+        $this->assertStringContainsString('with 19 days left', $m['body']);
+        $this->assertStringNotContainsString('U3 ', $m['body']);                   // the on-pace agent is not named
+        $this->assertSame(0, $r['sent']);                                          // agent 3 is on pace, so no agent nudge
+        $this->assertSame($m['body'], $this->bodiesFor(2)[0]['body']);            // admin sees the same summary
+    }
+
+    public function testTheSummaryListsTheFurthestBehindFirstAndSaysHowManyMore(): void
+    {
+        $this->moreAgents(5, 6);
+        $this->device(1);
+        foreach ([3, 4, 5, 6] as $u) { $this->target($u, 30_000_000, 0); }
+        $this->booking(3, 6_000_000); $this->booking(4, 3_000_000); $this->booking(5, 1_000_000);   // 20%, 10%, 3%, and agent 6 at 0%
+        $this->nudge($this->ist('2026-10-12 11:10:00'));
+        $body = $this->bodiesFor(1)[0]['body'];
+        $this->assertStringStartsWith('Agent6 0% · Agent5 3% · U4 10% · +1 more.', $body);
+    }
+
+    public function testNoSummaryWhenEveryoneIsOnPaceAndNoRepeatInTheWindow(): void
+    {
+        $this->device(1); $this->device(3); $this->target(3, 10_000_000, 0); $this->booking(3, 6_000_000);
+        $r = $this->nudge($this->ist('2026-10-12 11:10:00'));
+        $this->assertSame([0, 0], [$r['team_behind'], $r['managers_sent']]);
+        $this->assertSame([], $this->sent);
+
+        $this->target(3, 90_000_000, 0);                                           // now far behind
+        $this->assertSame(1, $this->nudge($this->ist('2026-10-12 11:20:00'))['managers_sent']);
+        $this->assertSame(0, $this->nudge($this->ist('2026-10-12 11:30:00'))['managers_sent']);   // not again in the same checkpoint
+        db_connect()->table('sales_targets')->where('user_id', 3)->update(['updated_at' => '2026-09-01 00:00:00']);
+        $this->assertSame(1, $this->nudge($this->ist('2026-10-20 11:10:00'))['managers_sent']);   // a new checkpoint, a new summary
+    }
+
+    public function testAgentsWithAFreshTargetAreLeftOutAndManagersCanOptOutOrGoMinimal(): void
+    {
+        $this->moreAgents(5);
+        $this->device(1); $this->device(2);
+        foreach ([3, 4, 5] as $u) { $this->target($u, 30_000_000, 6); }
+        db_connect()->table('sales_targets')->where('user_id', 5)->update(['updated_at' => '2026-10-11 09:00:00']);   // agent 5's target is new: not judged yet
+        (new PushPreferenceService())->save(1, 1, ['categories' => ['target' => false]]);       // the owner switched the category off
+        (new PushPreferenceService())->save(1, 2, ['privacy' => 'minimal']);                    // the admin wants no names on the lock screen
+        $r = $this->nudge($this->ist('2026-10-12 11:10:00'));
+        $this->assertSame(2, $r['team_behind']);                                    // agents 3 and 4 only
+        $this->assertSame(1, $r['managers_sent']);                                  // owner suppressed
+        $this->assertSame('category_off', db_connect()->table('push_log')->where('user_id', 1)->where('event', 'target_team')->get()->getRowArray()['reason']);
+        $this->assertStringNotContainsString('Agent', json_encode($this->bodiesFor(2)));      // generic text for the admin
+        $this->assertStringContainsString('Sales target', $this->bodiesFor(2)[0]['title']);
+    }
+
+    public function testASummaryNeverMentionsAnotherWorkspacesAgents(): void
+    {
+        $db = db_connect();
+        $db->table('tenants')->insert(['id' => 2, 'name' => 'T2', 'slug' => 't2', 'plan' => 'pro', 'status' => 'active', 'mode' => 'saas', 'created_at' => '2026-01-01 00:00:00']);
+        foreach ([[7, 'owner', 'Boss2'], [8, 'agent', 'RivalAgent']] as [$id, $role, $name]) {
+            $db->table('users')->insert(['id' => $id, 'tenant_id' => 2, 'name' => $name, 'email' => "x{$id}@t.test", 'password_hash' => 'x', 'role' => $role, 'created_at' => '2026-01-01 00:00:00']);
+        }
+        $this->device(1); $this->device(7); $this->target(3, 30_000_000, 6);
+        (new SalesTargetService())->save(2, '2026-10', [['user_id' => 8, 'revenue' => 30_000_000, 'bookings' => 6]], 7);
+        $db->table('sales_targets')->where('tenant_id', 2)->update(['updated_at' => '2026-09-01 00:00:00']);
+        $r = $this->nudge($this->ist('2026-10-12 11:10:00'));
+        $this->assertSame(2, $r['managers_sent']);
+        $this->assertStringContainsString('U3', $this->bodiesFor(1)[0]['body']);
+        $this->assertStringNotContainsString('RivalAgent', $this->bodiesFor(1)[0]['body']);
+        $this->assertStringContainsString('RivalAgent', $this->bodiesFor(7)[0]['body']);
+        $this->assertStringNotContainsString('U3', $this->bodiesFor(7)[0]['body']);
     }
 }

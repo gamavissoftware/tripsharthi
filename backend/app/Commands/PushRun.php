@@ -22,6 +22,6 @@ class PushRun extends BaseCommand
         $m = (new PushNotifier())->maintain();
         $d = (new DigestPush())->run();
         $t = (new TargetPush())->run();
-        CLI::write(sprintf('retried=%d receipts=%d disabled_devices=%d purged=%d digest_users=%d digest_sent=%d target_agents=%d target_behind=%d target_sent=%d', $m['retried'], $m['receipts'], $m['disabled'], $m['purged'], $d['users'], $d['sent'], $t['agents'], $t['behind'], $t['sent']));
+        CLI::write(sprintf('retried=%d receipts=%d disabled_devices=%d purged=%d digest_users=%d digest_sent=%d target_agents=%d target_behind=%d target_sent=%d team_behind=%d team_sent=%d', $m['retried'], $m['receipts'], $m['disabled'], $m['purged'], $d['users'], $d['sent'], $t['agents'], $t['behind'], $t['sent'], $t['team_behind'], $t['managers_sent']));
     }
 }
