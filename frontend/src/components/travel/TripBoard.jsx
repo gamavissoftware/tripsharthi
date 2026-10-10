@@ -17,6 +17,10 @@ const COLUMNS = [
 ]
 const MOVABLE = new Set(['enquiry', 'quoted', 'negotiating', 'lost', 'cancelled'])
 const fmtDate = (d) => d ? new Date(d + 'T00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : null
+const OPEN = ['enquiry', 'quoted', 'negotiating']
+// Colour by how long a trip has sat untouched (days since its last update): fresh -> amber -> orange -> red.
+const ageTone = (d) => d >= 14 ? 'hot' : d >= 7 ? 'warm' : d >= 3 ? 'mild' : 'fresh'
+const initialsOf = (n) => String(n || '').trim().split(/\s+/).map(w => w[0]).join('').substring(0, 2).toUpperCase()
 const ageDays = (c) => { if (!c) return null; const d = Math.floor((Date.now() - new Date(String(c).replace(' ', 'T') + 'Z').getTime()) / 86400000); return d < 0 ? 0 : d }
 
 function LostModal({ trip, onCancel, onConfirm }) {
@@ -58,6 +62,13 @@ export default function TripBoard({ rows, onMove }) {
 
   return (
     <>
+      <div className="tboard-legend" aria-label="Card colour legend">
+        <span>Days since last update:</span>
+        <span><i style={{ background: '#2e9d62' }} />0–2</span>
+        <span><i style={{ background: '#e0a526' }} />3–6</span>
+        <span><i style={{ background: '#ee7d1a' }} />7–13</span>
+        <span><i style={{ background: '#d6362d' }} />14+</span>
+      </div>
       <div className="tboard">
         {COLUMNS.map(col => {
           const items = rows.filter(t => col.statuses.includes(t.status))
@@ -81,10 +92,10 @@ export default function TripBoard({ rows, onMove }) {
                 {items.length === 0 && <div className="tboard-empty">{col.drop ? 'Drop a trip here' : 'Nothing here yet'}</div>}
                 {items.map(t => {
                   const movable = MOVABLE.has(t.status)
-                  const age = ageDays(t.created_at)
+                  const age = OPEN.includes(t.status) ? ageDays(t.updated_at || t.created_at) : null
                   return (
                     <article key={t.id}
-                      className={'tcard' + (dragId === t.id ? ' is-dragging' : '')}
+                      className={'tcard' + (age != null ? ' tone-' + ageTone(age) : '') + (dragId === t.id ? ' is-dragging' : '')}
                       draggable={movable}
                       onDragStart={e => { setDragId(t.id); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(t.id)) }}
                       onDragEnd={() => { setDragId(null); setOver(null) }}
@@ -95,8 +106,9 @@ export default function TripBoard({ rows, onMove }) {
                         {fmtDate(t.start_date) && <span>{fmtDate(t.start_date)}{t.nights ? ` · ${t.nights}N` : ''}</span>}
                         <span>{t.adults}A{Number(t.children) ? ` ${t.children}C` : ''}</span>
                         {t.budget_max ? <span className="tcard-budget">{inr(t.budget_max, true)}</span> : null}
-                        {age != null && ['enquiry', 'quoted', 'negotiating'].includes(t.status) && <span className={'tcard-age' + (age >= 7 ? ' is-old' : '')} title="Days since the enquiry came in">{age}d</span>}
+                        {age != null && <span className="tcard-age" title={age === 0 ? 'Updated today' : `No update for ${age} day${age === 1 ? '' : 's'}`}>{age}d</span>}
                       </div>
+                      <span className={'tcard-owner' + (t.owner_name ? '' : ' is-none')} title={t.owner_name ? `Owner: ${t.owner_name}` : 'No owner assigned'}>{t.owner_name ? initialsOf(t.owner_name) : '?'}</span>
                       {movable && (
                         <select className="tcard-move form-select" value="" aria-label={`Move ${t.title}`}
                           onClick={e => e.stopPropagation()}

@@ -36,7 +36,18 @@ class TripsController extends TravelBaseController
         if ($q = trim((string) $this->request->getGet('q'))) {
             $m->groupStart()->like('title', $q)->orLike('destination_text', $q)->groupEnd();
         }
-        return $this->ok($m->orderBy('id', 'DESC')->findAll(500));
+        $rows = $m->orderBy('id', 'DESC')->findAll(500);
+        // The board shows who owns each trip. Names only (no email / role), looked up here so agents need no access to the team list.
+        $ids = array_values(array_unique(array_filter(array_map(static fn ($r) => (int) ($r['owner_id'] ?? 0), $rows))));
+        $names = [];
+        if ($ids) {
+            foreach (db_connect()->table('users')->select('id, name')->where('tenant_id', CurrentUser::tenantId())->whereIn('id', $ids)->get()->getResultArray() as $u) {
+                $names[(int) $u['id']] = $u['name'];
+            }
+        }
+        foreach ($rows as &$r) { $r['owner_name'] = $names[(int) ($r['owner_id'] ?? 0)] ?? null; }
+        unset($r);
+        return $this->ok($rows);
     }
 
     public function show($id = null)
