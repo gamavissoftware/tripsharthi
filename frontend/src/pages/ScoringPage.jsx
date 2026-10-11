@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { Target } from 'lucide-react'
 
 // ── Lead scoring weights editor (Phase H1) ───────────────────────────────────
 // Pro-gated in SaaS (open in self-hosted). Edits per-tenant signal weights +
@@ -63,8 +64,8 @@ export default function ScoringPage() {
     <div className="page" style={{ maxWidth: 720 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🎯 Lead Scoring</h1>
-          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Tune the signals that decide whether a lead is 🔥 Hot, ☀️ Warm, or ❄️ Cold.</p>
+          <h1 className="ps-h1"><span className="ps-ico"><Target size={18} /></span>Lead Scoring</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Tune the signals that decide whether a lead is Hot, Warm, or Cold.</p>
         </div>
         <button onClick={recalc} style={{ background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer', fontSize: 13.5 }}>↻ Recompute now</button>
       </div>
@@ -78,11 +79,11 @@ export default function ScoringPage() {
       <div style={card}>
         <h3 style={{ margin: '0 0 .5rem', fontSize: '.95rem', fontWeight: 800 }}>Tier thresholds</h3>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.3rem 0' }}>
-          <span style={{ fontSize: 13.5, color: '#374151' }}>🔥 Hot at or above</span>
+          <span style={{ fontSize: 13.5, color: '#374151' }}>Hot at or above</span>
           <input style={numInput} type="number" disabled={!editable} value={cfg.hot} onChange={e => setCfg(c => ({ ...c, hot: parseInt(e.target.value || '0', 10) }))} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '.3rem 0' }}>
-          <span style={{ fontSize: 13.5, color: '#374151' }}>☀️ Warm at or above</span>
+          <span style={{ fontSize: 13.5, color: '#374151' }}>Warm at or above</span>
           <input style={numInput} type="number" disabled={!editable} value={cfg.warm} onChange={e => setCfg(c => ({ ...c, warm: parseInt(e.target.value || '0', 10) }))} />
         </div>
       </div>

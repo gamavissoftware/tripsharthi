@@ -102,3 +102,7 @@
 .cx .page-title { letter-spacing: -.3px; }
 .cx .card-body table { max-width: 100%; }
 .cx .btn-sm.btn-ghost:hover { background: #eef5fd; color: var(--primary); border-color: #bcdcf5; }
+
+/* Settings page headings with an icon tile */
+.cx .ps-h1 { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--navy, #0a1f44); letter-spacing: -.3px; }
+.cx .ps-ico { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #0a6cc4, #12a89e); box-shadow: 0 4px 12px rgba(10,108,196,.25); flex-shrink: 0; }

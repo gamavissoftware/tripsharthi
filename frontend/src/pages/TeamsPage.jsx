@@ -3,6 +3,7 @@ import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { settings } from '../api/settings'
 import { toast } from '../components/Toast'
+import { Users } from 'lucide-react'
 
 const VIS_MODES = [
   ['open', 'Open', 'Everyone sees all records (default).'],
@@ -63,7 +64,7 @@ export default function TeamsPage() {
     <div className="page" style={{ maxWidth: 720 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>👥 Teams</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Users size={18} /></span>Teams</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Group reps into teams; lists offer a “My team” scope.</p>
         </div>
         <button onClick={addTeam} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer' }}>+ New team</button>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { ScrollText } from 'lucide-react'
 
 // ── Audit log (Phase K1) ─────────────────────────────────────────────────────
 
@@ -48,7 +49,7 @@ export default function AuditLogPage() {
   return (
     <div className="page" style={{ maxWidth: 980 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>📜 Audit Log</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><ScrollText size={18} /></span>Audit Log</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Who changed what, and when.</p>
       </div>
 

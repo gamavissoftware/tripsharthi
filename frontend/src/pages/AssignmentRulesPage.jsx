@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { UserCheck } from 'lucide-react'
 
 // ── Auto-assignment rules (Phase H2) ─────────────────────────────────────────
 // Per-entity (deal/ticket) rules that route new records to reps by round-robin /
@@ -109,7 +110,7 @@ export default function AssignmentRulesPage() {
     <div className="page" style={{ maxWidth: 820 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🙋 Assignment Rules</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><UserCheck size={18} /></span>Assignment Rules</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Auto-route new deals and tickets to your team.</p>
         </div>
         <button onClick={() => setEditing(null)} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer' }}>+ New rule</button>
