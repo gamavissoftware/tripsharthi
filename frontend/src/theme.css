@@ -106,3 +106,11 @@
 /* Settings page headings with an icon tile */
 .cx .ps-h1 { display: flex; align-items: center; gap: 12px; margin: 0; font-size: 1.5rem; font-weight: 800; color: var(--navy, #0a1f44); letter-spacing: -.3px; }
 .cx .ps-ico { width: 38px; height: 38px; border-radius: 11px; display: inline-flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, #0a6cc4, #12a89e); box-shadow: 0 4px 12px rgba(10,108,196,.25); flex-shrink: 0; }
+
+/* Platform dots and inline icons (replace emoji) */
+.cx .ps-plat { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.cx .ps-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; background: #7a8aa6; }
+.cx .ps-dot.meta { background: #1877f2; }
+.cx .ps-dot.google { background: #ea4335; }
+.cx .ps-dot.direct { background: #c3cde0; border-radius: 50%; }
+.cx .ps-inl { vertical-align: -2px; color: var(--primary); margin-right: 1px; }

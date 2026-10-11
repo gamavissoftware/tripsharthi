@@ -6,7 +6,7 @@ import AdCampaignWizard from '../components/ads/AdCampaignWizard'
 import AdSafeguards from '../components/ads/AdSafeguards'
 import { explain } from '../components/ads/explain'
 
-const PLAT = { meta: '🟦 Meta', google: '🟥 Google' }
+const PLAT = { meta: <span className="ps-plat"><i className="ps-dot meta" />Meta</span>, google: <span className="ps-plat"><i className="ps-dot google" />Google</span> }
 const ST = { ACTIVE: ['#dcfce7', '#15803d', 'Live'], PAUSED: ['#fef9c3', '#a16207', 'Paused'], DELETED: ['#f1f5f9', '#94a3b8', 'Removed'], ARCHIVED: ['#f1f5f9', '#94a3b8', 'Archived'] }
 const money = (p) => (p === null || p === undefined) ? '—' : inr(p)
 
@@ -75,17 +75,17 @@ export default function AdCampaignsPage() {
         </div>
       </div>
 
-      {conn?.mock && <div className="card card-body" style={{ background: '#fef9c3', marginBottom: 12 }}>🧪 <b>Demo mode</b> — Meta and Google are simulated. Nothing here touches a real ad account.</div>}
+      {conn?.mock && <div className="card card-body" style={{ background: '#fef9c3', marginBottom: 12 }}><b>Demo mode</b> — Meta and Google are simulated. Nothing here touches a real ad account.</div>}
       {noCap && <div className="card card-body" style={{ background: '#fee2e2', marginBottom: 12 }}><b>Set a daily spend cap to start.</b> TripSarthi will not create or launch campaigns until you decide the most you are willing to spend per day. <a href="#safeguards">Set it below ↓</a></div>}
       {conn && !conn.meta.connected && !conn.google.connected && <div className="card card-body" style={{ marginBottom: 12 }}>Connect Meta and/or Google first in <Link to="/settings/ads">Settings → Ad Platforms</Link>.</div>}
       {conn?.meta.connected && conn.meta.can_manage === false && <div className="card card-body" style={{ background: '#fef9c3', marginBottom: 12 }}>Meta is connected for reporting only. To create and manage campaigns, reconnect it with campaign permission in <Link to="/settings/ads">Ad Platforms</Link>.</div>}
 
       {data.issues?.length > 0 && (
         <div className="card card-body" style={{ background: '#fee2e2', border: '1px solid #ef4444', marginBottom: 12 }}>
-          <b>⚠ {data.issues.length} ad{data.issues.length > 1 ? 's' : ''} disapproved or limited — {data.issues.length > 1 ? 'they are' : 'it is'} not delivering properly</b>
+          <b>{data.issues.length} ad{data.issues.length > 1 ? 's' : ''} disapproved or limited — {data.issues.length > 1 ? 'they are' : 'it is'} not delivering properly</b>
           {data.issues.slice(0, 6).map(i => {
             const camp = data.campaigns.find(c => c.platform === i.platform && String(c.external_id) === String(i.campaign_external_id))
-            return <div key={i.id} style={{ fontSize: 13.5, marginTop: 4 }}><b>{i.platform === 'meta' ? '🟦' : '🟥'} {camp?.name || 'Campaign'}</b>{i.ad_name ? ` · ${i.ad_name}` : ''} — <span style={{ color: i.kind === 'limited' ? 'var(--warning)' : 'var(--danger)', fontWeight: 700 }}>{i.kind === 'limited' ? 'limited' : 'disapproved'}</span>: {i.reason} <small style={{ color: 'var(--text-3)' }}>(since {i.since})</small></div>
+            return <div key={i.id} style={{ fontSize: 13.5, marginTop: 4 }}><b>{i.platform === 'meta' ? 'Meta' : 'Google'} · {camp?.name || 'Campaign'}</b>{i.ad_name ? ` · ${i.ad_name}` : ''} — <span style={{ color: i.kind === 'limited' ? 'var(--warning)' : 'var(--danger)', fontWeight: 700 }}>{i.kind === 'limited' ? 'limited' : 'disapproved'}</span>: {i.reason} <small style={{ color: 'var(--text-3)' }}>(since {i.since})</small></div>
           })}
           <small style={{ color: 'var(--text-2)', marginTop: 6 }}>Open the ad in {data.issues[0].platform === 'meta' ? 'Meta Ads Manager' : 'Google Ads'}, fix what the reason says (or replace the ad) and request a new review. This list clears itself after the next sync once the platform approves it.</small>
         </div>)}

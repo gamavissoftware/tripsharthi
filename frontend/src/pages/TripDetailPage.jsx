@@ -42,8 +42,8 @@ export default function TripDetailPage() {
           <button className="btn btn-ghost" disabled={busy === 'ai'} onClick={async () => {
             const it = await run('ai', () => travel.aiItinerary(trip.id), 'AI itinerary drafted')
             if (it) nav(`/itineraries/${it.id}`)
-          }}>{busy === 'ai' ? 'Drafting…' : '✨ Draft with AI'}</button>
-          <button className="btn btn-ghost" onClick={() => setReserve(true)} title="Hold seats on a fixed group departure">👥 Group departure</button>
+          }}>{busy === 'ai' ? 'Drafting…' : 'Draft with AI'}</button>
+          <button className="btn btn-ghost" onClick={() => setReserve(true)} title="Hold seats on a fixed group departure">Group departure</button>
           <button className="btn btn-primary" disabled={busy === 'new'} onClick={async () => {
             const it = await run('new', () => travel.createItinerary({ trip_id: trip.id }))
             if (it) nav(`/itineraries/${it.id}`)

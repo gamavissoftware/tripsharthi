@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { User, Tag, UserCheck } from 'lucide-react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { TimelinePanel, NotesPanel, TasksPanel } from '../components/crm/RecordPanels'
@@ -67,10 +68,10 @@ export default function TicketDetailPage() {
             <div style={{ fontSize: 18, fontWeight: 800, color: '#111827' }}>{ticket.subject}</div>
             {ticket.description && <div style={{ fontSize: 13.5, color: '#475569', marginTop: 6, whiteSpace: 'pre-wrap' }}>{ticket.description}</div>}
             <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 8 }}>
-              {ticket.contact?.name && <>👤 <Link to={`/contacts/${ticket.contact_id}`} style={{ color: '#0a6cc4', textDecoration: 'none' }}>{ticket.contact.name}</Link> · </>}
+              {ticket.contact?.name && <><User size={13} className="ps-inl" /> <Link to={`/contacts/${ticket.contact_id}`} style={{ color: '#0a6cc4', textDecoration: 'none' }}>{ticket.contact.name}</Link> · </>}
               <span style={{ textTransform: 'capitalize' }}>{ticket.source}</span>
-              {ticket.category && <> · 🏷️ {String(ticket.category).replace(/_/g, ' ')}</>}
-              {agents.find(a => String(a.id) === String(ticket.owner_id))?.name && <> · 🧑‍💼 {agents.find(a => String(a.id) === String(ticket.owner_id)).name}</>}
+              {ticket.category && <> · <Tag size={13} className="ps-inl" /> {String(ticket.category).replace(/_/g, ' ')}</>}
+              {agents.find(a => String(a.id) === String(ticket.owner_id))?.name && <> · <UserCheck size={13} className="ps-inl" /> {agents.find(a => String(a.id) === String(ticket.owner_id)).name}</>}
               {ticket.sla_due_at && <> · SLA due {fmt(ticket.sla_due_at)}{ticket.sla_breached ? <strong style={{ color: '#dc2626' }}> ⚠ breached</strong> : ''}</>}
             </div>
           </div>
@@ -85,7 +86,7 @@ export default function TicketDetailPage() {
           {['open', 'pending', 'resolved', 'closed'].map(s => (
             <button key={s} onClick={() => setStatus(s)} disabled={s === ticket.status}
               style={{ padding: '.4rem .85rem', borderRadius: 8, border: '1px solid #e5e7eb', background: s === ticket.status ? '#e8f3fc' : '#fff', color: s === ticket.status ? '#08569f' : '#374151', fontWeight: 600, fontSize: '.82rem', cursor: s === ticket.status ? 'default' : 'pointer', textTransform: 'capitalize' }}>
-              {s === 'resolved' ? '✅ ' : ''}{s}
+              {s}
             </button>
           ))}
         </div>
@@ -95,7 +96,7 @@ export default function TicketDetailPage() {
       {ticket.contact && (
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.9rem' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>👤 Customer</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Customer</h3>
             <Link to={`/contacts/${ticket.contact_id}`} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Open contact →</Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '.85rem 1rem' }}>

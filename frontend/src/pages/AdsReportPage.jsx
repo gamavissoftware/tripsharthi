@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { travel, inr } from '../api/travel'
 import { toast } from '../components/Toast'
 
-const ico = { meta: '🟦 Meta', google: '🟥 Google', direct: '⚪ Direct' }
+const ico = { meta: <span className="ps-plat"><i className="ps-dot meta" />Meta</span>, google: <span className="ps-plat"><i className="ps-dot google" />Google</span>, direct: <span className="ps-plat"><i className="ps-dot direct" />Direct</span> }
 export default function AdsReportPage() {
   const [days, setDays] = useState(90)
   const [d, setD] = useState(null)

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { Building2, User, Calendar, UserCheck, Link2 } from 'lucide-react'
 import { crm, rupees } from '../api/crm'
 import { products as productsApi } from '../api/products'
 import { toast } from '../components/Toast'
@@ -80,7 +81,7 @@ function QuotesPanel({ dealId }) {
   return (
     <div style={card}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.9rem' }}>
-        <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>📄 Quotes</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Quotes</h3>
         <button onClick={gen} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 8, padding: '.4rem .85rem', fontWeight: 600, fontSize: '.82rem', cursor: 'pointer' }}>+ Generate from line items</button>
       </div>
       {quotes.length === 0 ? <div style={{ color: '#9ca3af', fontSize: 13.5 }}>No quotes yet.</div>
@@ -133,7 +134,7 @@ function QuotesPanel({ dealId }) {
 
 const STATUS = {
   open: { label: 'Open', bg: '#e8f3fc', color: '#08569f' },
-  won:  { label: 'Won 🏆', bg: '#dcfce7', color: '#15803d' },
+  won:  { label: 'Won', bg: '#dcfce7', color: '#15803d' },
   lost: { label: 'Lost', bg: '#fee2e2', color: '#b91c1c' },
 }
 
@@ -278,11 +279,11 @@ export default function DealDetailPage() {
                 {Number(deal.is_recurring) === 1 && <span style={{ fontSize: 12, fontWeight: 700, color: '#074a8c', background: '#e8f3fc', borderRadius: 999, padding: '.15rem .55rem', marginLeft: 8, verticalAlign: 'middle' }}>🔁 {deal.recurring_interval || 'recurring'}{deal.next_renewal_at ? ` · renews ${deal.next_renewal_at}` : ''}</span>}
               </div>
               <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 4 }}>
-                {deal.account?.name && <>🏢 <Link to="/accounts" style={{ color: '#0a6cc4', textDecoration: 'none' }}>{deal.account.name}</Link> · </>}
-                {deal.contact?.name && <>👤 <Link to={`/contacts/${deal.primary_contact_id}`} style={{ color: '#0a6cc4', textDecoration: 'none' }}>{deal.contact.name}</Link></>}
-                {deal.expected_close_date && <> · 📅 {deal.expected_close_date}</>}
-                {agents.find(a => String(a.id) === String(deal.owner_id))?.name && <> · 🧑‍💼 {agents.find(a => String(a.id) === String(deal.owner_id)).name}</>}
-                {deal.source && <> · 🔗 {String(deal.source).replace(/_/g, ' ')}</>}
+                {deal.account?.name && <><Building2 size={13} className="ps-inl" /> <Link to="/accounts" style={{ color: '#0a6cc4', textDecoration: 'none' }}>{deal.account.name}</Link> · </>}
+                {deal.contact?.name && <><User size={13} className="ps-inl" /> <Link to={`/contacts/${deal.primary_contact_id}`} style={{ color: '#0a6cc4', textDecoration: 'none' }}>{deal.contact.name}</Link></>}
+                {deal.expected_close_date && <> · <Calendar size={13} className="ps-inl" /> {deal.expected_close_date}</>}
+                {agents.find(a => String(a.id) === String(deal.owner_id))?.name && <> · <UserCheck size={13} className="ps-inl" /> {agents.find(a => String(a.id) === String(deal.owner_id)).name}</>}
+                {deal.source && <> · <Link2 size={13} className="ps-inl" /> {String(deal.source).replace(/_/g, ' ')}</>}
               </div>
             </div>
             <div style={{ textAlign: 'right' }}>
@@ -312,7 +313,7 @@ export default function DealDetailPage() {
       {deal.contact && (
         <div style={card}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '.9rem' }}>
-            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>👤 Lead &amp; contact</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Lead &amp; contact</h3>
             <Link to={`/contacts/${deal.primary_contact_id}`} style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Open full lead →</Link>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '.85rem 1rem' }}>
@@ -345,7 +346,7 @@ export default function DealDetailPage() {
       {/* Line items */}
       <div style={card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 .9rem' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>🧾 Line items</h3>
+          <h3 style={{ fontSize: 15, fontWeight: 800, margin: 0 }}>Line items</h3>
           {books.length > 0 && (
             <label style={{ fontSize: 12.5, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 6 }}>
               Price book
