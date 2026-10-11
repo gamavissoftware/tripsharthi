@@ -292,7 +292,7 @@ export default function SocialPage() {
     <div className="page">
       <div className="page-header">
         <div>
-          <h1 className="page-title">Social Planner</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Share2 size={18} /></span>Social Planner</h1>
           <p className="text-muted mt-1">Schedule posts to your Facebook Page and Instagram Business account.</p>
         </div>
         <div className="flex items-center gap-2">

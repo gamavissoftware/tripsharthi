@@ -111,9 +111,10 @@ function NodeShell({ type, children, selected }) {
   const Icon = meta.icon
   return (
     <div style={{
-      border: `2px solid ${selected ? '#1a1a2e' : border}`,
+      border: `2px solid ${selected ? '#0a6cc4' : border}`,
       borderLeft: `4px solid ${border}`,
-      borderRadius: 8,
+      borderRadius: 10,
+      boxShadow: '0 2px 8px rgba(10,31,68,.10)',
       background: bg,
       padding: '8px 12px',
       minWidth: 160,
@@ -255,7 +256,7 @@ export function BookSlotNode({ type, data, selected }) {
 function UnknownNode({ data, type, selected }) {
   return (
     <div style={{
-      border: `2px dashed ${selected ? '#1a1a2e' : '#f59e0b'}`,
+      border: `2px dashed ${selected ? '#0a6cc4' : '#f59e0b'}`,
       borderRadius: 8,
       background: '#fffbeb',
       padding: '8px 12px',
@@ -347,7 +348,7 @@ export const nodeTypes = {
 
     return (
       <div style={{
-        border: `2px solid ${selected ? '#1a1a2e' : border}`,
+        border: `2px solid ${selected ? '#0a6cc4' : border}`,
         borderLeft: `4px solid ${border}`,
         borderRadius: 8,
         background: bg,

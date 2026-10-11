@@ -160,12 +160,12 @@ function CanvasInner({ readOnly, selectedNode, setSelectedNode, onNodesChange, o
     <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
       {/* Palette */}
       <div style={{
-        width: 160, background:'#1a1a2e', overflowY:'auto',
+        width: 168, background:'linear-gradient(180deg,#0a1f44,#0b2a5c)', overflowY:'auto',
         padding:'12px 0', flexShrink:0, userSelect:'none',
       }}>
         {PALETTE_GROUPS.map(group => (
           <div key={group.label}>
-            <div style={{ color:'#475569', fontSize:10, fontWeight:700, padding:'8px 12px 4px', letterSpacing:1 }}>
+            <div style={{ color:'#7f95b8', fontSize:10, fontWeight:700, padding:'10px 12px 4px', letterSpacing:1.2 }}>
               {group.label}
             </div>
             {group.nodes.map(nt => {
