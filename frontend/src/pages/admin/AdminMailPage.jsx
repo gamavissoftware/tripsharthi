@@ -57,6 +57,13 @@ export default function AdminMailPage() {
         <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
           Support replies, plan reminders, password resets and marketing e-mails go out through this. Saving first sends a real test e-mail to <b>you</b>; if the mail server refuses, nothing is saved. The password is never shown again; leave it empty to keep the saved one.
           <br />Using Gmail: server <code>smtp.gmail.com</code>, port <code>465</code> with SSL (this server blocks port 587; on other hosts 587 with TLS also works), username = the Gmail address, password = a Google <b>App Password</b> (Google Account → Security → 2-Step Verification → App passwords), and the same address as “from”.
+          <br />Using Brevo (recommended for customer e-mails): server <code>smtp-relay.brevo.com</code>, port <code>465</code> with SSL, username = the <b>SMTP login</b> shown in Brevo (SMTP &amp; API → SMTP), password = an <b>SMTP key</b> you create there (not your Brevo account password), and a “from” address on <code>tripsarthi.com</code> that you have added as a sender in Brevo after verifying the domain (the DKIM and DMARC records Brevo shows you). Until the domain is verified, Brevo refuses or rewrites the sender.
+        </div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', fontSize: 13 }}>
+          <span style={{ color: 'var(--text-3)' }}>Quick fill:</span>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp-relay.brevo.com', port: 465, crypto: 'ssl', from_email: f.from_email || 'noreply@tripsarthi.com' })}>Brevo</button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp.gmail.com', port: 465, crypto: 'ssl' })}>Gmail</button>
+          <span style={{ color: 'var(--text-3)' }}>fills the server, port and encryption only; you type the login and key yourself.</span>
         </div>
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', maxWidth: 760 }}>
           <label>Mail server<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp.gmail.com" spellCheck={false} required /></label>
