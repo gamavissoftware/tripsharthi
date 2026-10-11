@@ -119,3 +119,13 @@
 .cx .bk-h3 { font-size: 16px; font-weight: 800; color: var(--navy, #0a1f44); display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 2px solid #eef3f9; margin-bottom: 10px !important; }
 .cx .bk-h3::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, #0a6cc4, #12a89e); }
 .cx .btn-sm.btn-ghost svg { vertical-align: -2px; margin-right: 3px; }
+
+/* Flow runs */
+.cx .fl-run-row:hover { background: #f3f8fd; }
+
+/* Social post list */
+.cx .soc-posts-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e6eef8; }
+.cx .soc-posts-head h3 { margin: 0; font-size: 1rem; font-weight: 800; color: #0a1f44; }
+.cx .soc-count { font-size: 12px; font-weight: 700; color: #074a8c; background: #e8f3fc; padding: 3px 10px; border-radius: 999px; }
+.cx .soc-posts .data-table tbody tr:hover { background: #f3f8fd; }
+.cx .soc-posts .data-table { width: 100%; min-width: 560px; }

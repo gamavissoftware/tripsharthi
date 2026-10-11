@@ -26,6 +26,7 @@ function InstagramGlyph({ size = 14, style }) {
 }
 import { social } from '../api/social'
 import { toast } from '../components/Toast'
+import { confirmAsk } from '../components/confirmAsk'
 
 /**
  * Social Planner — schedule Facebook Page / Instagram Business posts.
@@ -234,7 +235,7 @@ export default function SocialPage() {
   }
 
   async function handleRemoveAccount(a) {
-    if (!window.confirm(`Disconnect "${a.page_name}"? Scheduled posts for it will fail.`)) return
+    if (!(await confirmAsk(`Disconnect "${a.page_name}"? Scheduled posts for it will fail.`, { okLabel: 'Disconnect', danger: true }))) return
     try {
       await social.removeAccount(a.id)
       toast.success('Page disconnected', a.page_name)
@@ -275,7 +276,7 @@ export default function SocialPage() {
   }
 
   async function handleRemovePost(p) {
-    if (p.status === 'scheduled' && !window.confirm('Remove this scheduled post?')) return
+    if (p.status === 'scheduled' && !(await confirmAsk('Remove this scheduled post?', { okLabel: 'Remove', danger: true }))) return
     try {
       await social.removePost(p.id)
       load()
@@ -548,7 +549,11 @@ export default function SocialPage() {
       </div>
 
       {/* ── Scheduled & past posts ── */}
-      <div className="card">
+      <div className="card soc-posts">
+        <div className="soc-posts-head">
+          <h3>Scheduled &amp; published posts</h3>
+          <span className="soc-count">{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
+        </div>
         <div style={{ overflowX: 'auto' }}>
         <table className="data-table">
           <thead>

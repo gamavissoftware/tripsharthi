@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { flows as flowsApi } from '../api/flows'
 
 const STATUS_STYLE = {
-  running:   { bg:'#eff6ff', color:'#1d4ed8', label:'running' },
-  waiting:   { bg:'#fff7ed', color:'#c2410c', label:'waiting' },
-  completed: { bg:'#f0fdf4', color:'#15803d', label:'done' },
-  stopped:   { bg:'#f9fafb', color:'#374151', label:'stopped' },
-  failed:    { bg:'#fef2f2', color:'#b91c1c', label:'failed' },
+  running:   { bg:'#e8f3fc', color:'#074a8c', label:'Running' },
+  waiting:   { bg:'#fff4e5', color:'#b45309', label:'Waiting' },
+  completed: { bg:'#e6f6ee', color:'#14753f', label:'Done' },
+  stopped:   { bg:'#eef2f7', color:'#475569', label:'Stopped' },
+  failed:    { bg:'#fdecea', color:'#b3261e', label:'Failed' },
 }
 
 function StatusBadge({ status }) {
@@ -14,9 +14,9 @@ function StatusBadge({ status }) {
   return (
     <span style={{
       background: s.bg, color: s.color,
-      padding:'2px 8px', borderRadius:12, fontSize:11, fontWeight:600,
+      padding:'3px 10px', borderRadius:999, fontSize:11.5, fontWeight:700, display:'inline-flex', alignItems:'center', gap:6,
     }}>
-      {s.label}
+      <i style={{ width:6, height:6, borderRadius:'50%', background:s.color, display:'inline-block' }} />{s.label}
     </span>
   )
 }
@@ -54,40 +54,40 @@ export default function RunsList({ flowId }) {
   }
 
   if (loading) return <div style={{ padding:24, color:'#9ca3af', textAlign:'center' }}>Loading runs…</div>
-  if (runs.length === 0) return <div style={{ padding:24, color:'#9ca3af', textAlign:'center' }}>No runs yet. Activate the flow to see enrollments here.</div>
+  if (runs.length === 0) return <div className="card" style={{ margin:20, padding:'40px 24px', color:'#5b6b86', textAlign:'center' }}><b style={{ display:'block', color:'#0a1f44', fontSize:16, marginBottom:4 }}>No runs yet</b>Activate the flow to see enrollments here.</div>
 
   return (
-    <div style={{ overflow:'auto' }}>
-      <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+    <div className="card" style={{ overflow:'auto', margin:20 }}>
+      <table className="fl-runs" style={{ width:'100%', borderCollapse:'collapse', fontSize:13.5 }}>
         <thead>
-          <tr style={{ background:'#f9fafb', borderBottom:'1px solid #e5e7eb' }}>
+          <tr style={{ background:'#f3f8fd', borderBottom:'1px solid #dbe6f3' }}>
             {['Status','Contact','Current node','Steps','Entered'].map(h => (
-              <th key={h} style={{ textAlign:'left', padding:'8px 12px', color:'#6b7280', fontWeight:500 }}>{h}</th>
+              <th key={h} style={{ textAlign:'left', padding:'11px 14px', color:'#5b6b86', fontWeight:700, fontSize:11.5, textTransform:'uppercase', letterSpacing:.5 }}>{h}</th>
             ))}
           </tr>
         </thead>
         <tbody>
           {runs.map(run => (
-            <>
+            <Fragment key={run.id}>
               <tr
-                key={run.id}
+                className="fl-run-row"
                 style={{ borderBottom:'1px solid #f3f4f6', cursor:'pointer' }}
                 onClick={() => toggleRun(run.id)}
               >
-                <td style={{ padding:'8px 12px' }}><StatusBadge status={run.status} /></td>
-                <td style={{ padding:'8px 12px' }}>
+                <td style={{ padding:'11px 14px' }}><StatusBadge status={run.status} /></td>
+                <td style={{ padding:'11px 14px' }}>
                   <div style={{ fontWeight:500 }}>{run.contact_name || '—'}</div>
                   <div style={{ color:'#9ca3af', fontSize:11 }}>{run.contact_wa}</div>
                 </td>
-                <td style={{ padding:'8px 12px', color:'#6b7280', fontFamily:'monospace', fontSize:11 }}>
+                <td style={{ padding:'11px 14px', color:'#6b7280', fontFamily:'monospace', fontSize:11 }}>
                   {run.current_node_id || (run.status === 'completed' ? '(done)' : '—')}
                 </td>
-                <td style={{ padding:'8px 12px', color:'#6b7280' }}>{run.steps_executed}</td>
-                <td style={{ padding:'8px 12px', color:'#9ca3af' }}>{timeAgo(run.entered_at)}</td>
+                <td style={{ padding:'11px 14px', color:'#6b7280' }}>{run.steps_executed}</td>
+                <td style={{ padding:'11px 14px', color:'#9ca3af' }}>{timeAgo(run.entered_at)}</td>
               </tr>
               {expanded === run.id && logs.length > 0 && (
                 <tr key={`logs-${run.id}`}>
-                  <td colSpan={5} style={{ background:'#f9fafb', padding:'8px 16px' }}>
+                  <td colSpan={5} style={{ background:'#f7fafd', padding:'12px 18px', borderBottom:'1px solid #e6eef8' }}>
                     <div style={{ fontSize:11, color:'#6b7280', marginBottom:4 }}>Execution log:</div>
                     {logs.map(log => (
                       <div key={log.id} style={{ display:'flex', gap:12, padding:'3px 0', fontSize:12 }}>
@@ -103,7 +103,7 @@ export default function RunsList({ flowId }) {
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>
