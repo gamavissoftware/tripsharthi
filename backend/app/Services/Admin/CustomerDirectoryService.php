@@ -24,7 +24,8 @@ final class CustomerDirectoryService
     public const NEAR_LIMIT        = 0.9;
 
     public const SEGMENTS = ['all', 'paying', 'complimentary', 'free', 'lapsed', 'halted', 'expiring', 'inactive', 'not_activated', 'tickets', 'attention', 'suspended', 'referred', 'new'];
-    public const SORTS    = ['newest', 'active', 'contacts', 'revenue', 'renewal', 'name'];
+    public const SORTS    = ['newest', 'active', 'contacts', 'revenue', 'renewal', 'name', 'messages'];
+    public const MESSAGE_DAYS = 30;
 
     public function __construct(private readonly ?int $now = null) {}
 
@@ -89,6 +90,7 @@ final class CustomerDirectoryService
             'revenue'  => fn ($a, $b) => $b['billing']['lifetime_paise'] <=> $a['billing']['lifetime_paise'] ?: $b['id'] <=> $a['id'],
             'renewal'  => fn ($a, $b) => $nullsLast($a['billing']['renews_at'], $b['billing']['renews_at'], false) ?: $b['id'] <=> $a['id'],
             'name'     => fn ($a, $b) => strcasecmp($a['name'], $b['name']),
+            'messages' => fn ($a, $b) => $b['messages']['sent'] <=> $a['messages']['sent'] ?: $b['id'] <=> $a['id'],
             default    => fn ($a, $b) => $b['id'] <=> $a['id'],
         });
     }
@@ -123,6 +125,12 @@ final class CustomerDirectoryService
         foreach ($db->query("SELECT id, tenant_id, plan, amount_paise, billing_cycle, current_period_end, razorpay_sub_id FROM subscriptions WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end >= ?) ORDER BY id", [$nowS])->getResultArray() as $s) { $active[(int) $s['tenant_id']] = $s; }
         $lastStatus = array_column($db->query('SELECT tenant_id, status FROM subscriptions WHERE id IN (SELECT MAX(id) FROM subscriptions GROUP BY tenant_id)')->getResultArray(), 'status', 'tenant_id');
         $life = array_map('intval', array_column($db->query("SELECT tenant_id, SUM(amount_paise) s FROM subscriptions WHERE amount_paise > 0 AND status IN ('active','cancelled','downgraded') GROUP BY tenant_id")->getResultArray(), 's', 'tenant_id'));
+        $lastPay = [];
+        foreach ($db->query("SELECT tenant_id, amount_paise, plan, current_period_start, created_at, razorpay_sub_id FROM subscriptions WHERE id IN (SELECT MAX(id) FROM subscriptions WHERE amount_paise > 0 AND status IN ('active','cancelled','downgraded') GROUP BY tenant_id)")->getResultArray() as $r) { $lastPay[(int) $r['tenant_id']] = $r; }
+        $msgs = [];
+        if ($has('messages')) {
+            foreach ($db->query("SELECT tenant_id, SUM(direction = 'out') sent, SUM(direction = 'in') received, SUM(direction = 'out' AND status = 'failed') failed FROM messages WHERE created_at >= ? GROUP BY tenant_id", [$this->stamp($now - self::MESSAGE_DAYS * 86400)])->getResultArray() as $r) { $msgs[(int) $r['tenant_id']] = $r; }
+        }
         $tickets = $has('support_tickets') ? array_map('intval', array_column($db->query("SELECT tenant_id, COUNT(*) n FROM support_tickets WHERE status IN ('open','pending') GROUP BY tenant_id")->getResultArray(), 'n', 'tenant_id')) : [];
         $waba = [];
         if ($has('waba_accounts')) { foreach ($db->query('SELECT tenant_id, status FROM waba_accounts WHERE deleted_at IS NULL ORDER BY id')->getResultArray() as $w) { $waba[(int) $w['tenant_id']] = $w['status']; } }
@@ -169,6 +177,8 @@ final class CustomerDirectoryService
                 'owner' => ['name' => (string) ($o['name'] ?? ''), 'email' => (string) ($o['email'] ?? ''), 'phone' => (string) ($o['phone'] ?? '')],
                 'billing' => ['state' => $state, 'label' => $label, 'amount_paise' => $amount, 'cycle' => $a['billing_cycle'] ?? null, 'renews_at' => $ends ? $this->stamp($ends) : null, 'manual' => $manual, 'lifetime_paise' => $lifetime],
                 'usage' => ['users' => $nUsers, 'contacts' => $nContacts, 'trips' => (int) ($trips[$id] ?? 0), 'bookings' => (int) ($bookings[$id] ?? 0), 'contacts_limit' => $cLimit, 'users_limit' => $uLimit],
+                'last_payment' => isset($lastPay[$id]) ? ['amount_paise' => (int) $lastPay[$id]['amount_paise'], 'plan' => (string) $lastPay[$id]['plan'], 'at' => $lastPay[$id]['current_period_start'] ?: $lastPay[$id]['created_at'], 'offline' => str_starts_with((string) $lastPay[$id]['razorpay_sub_id'], PlatformAdminService::MANUAL_PREFIX)] : null,
+                'messages' => ['sent' => (int) ($msgs[$id]['sent'] ?? 0), 'received' => (int) ($msgs[$id]['received'] ?? 0), 'failed' => (int) ($msgs[$id]['failed'] ?? 0), 'days' => self::MESSAGE_DAYS],
                 'last_active' => $lastLogin, 'whatsapp' => $waba[$id] ?? 'none', 'tickets_open' => (int) ($tickets[$id] ?? 0),
                 'partner' => $t['referred_partner_id'] ? ($partners[(int) $t['referred_partner_id']] ?? 'Partner #' . $t['referred_partner_id']) : null,
                 'flags' => $flags, 'attention' => $attention,

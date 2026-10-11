@@ -27,7 +27,7 @@ final class CustomerDirectoryTest extends CIUnitTestCase
         parent::setUp();
         $this->now = strtotime('2026-10-11 12:00:00');
         $db = db_connect(); $db->query('SET FOREIGN_KEY_CHECKS=0');
-        foreach (['support_messages', 'support_tickets', 'subscriptions', 'contacts', 'waba_accounts', 'trips', 'bookings', 'users', 'partners', 'tenants'] as $t) { $db->table($t)->truncate(); }
+        foreach (['messages', 'support_messages', 'support_tickets', 'subscriptions', 'contacts', 'waba_accounts', 'trips', 'bookings', 'users', 'partners', 'tenants'] as $t) { $db->table($t)->truncate(); }
         $d = fn (int $days) => date('Y-m-d H:i:s', $this->now - $days * 86400);
         $f = fn (int $days) => date('Y-m-d H:i:s', $this->now + $days * 86400);
         $db->table('partners')->insert(['id' => 1, 'name' => 'Diksha Partner', 'email' => 'p@example.com', 'code' => 'DIKSHA1', 'status' => 'active', 'created_at' => $d(90)]);
@@ -120,6 +120,29 @@ final class CustomerDirectoryTest extends CIUnitTestCase
         $this->assertSame('Alpha Travels', $s->list(['sort' => 'name'])['rows'][0]['name']);
         $p = $s->list(['per_page' => 5, 'page' => 2]);
         $this->assertCount(4, $p['rows']); $this->assertSame(9, $p['total']);
+    }
+
+    public function testLastPaymentAndMessageCounts(): void
+    {
+        $alpha = $this->row('Alpha Travels');
+        $this->assertSame(49900, $alpha['last_payment']['amount_paise']);
+        $this->assertFalse($alpha['last_payment']['offline']);
+        $this->assertNull($this->row('Delta Holidays')['last_payment'], 'never paid');
+        $this->assertNull($this->row('Charlie Trips')['last_payment'], 'a complimentary period is not a payment');
+        $this->assertSame(['sent' => 0, 'received' => 0, 'failed' => 0, 'days' => 30], $this->row('Bravo Tours')['messages']);
+    }
+
+    public function testMessageCountsOnlyLookAtTheLastThirtyDays(): void
+    {
+        $db = db_connect(); $at = fn (int $d) => date('Y-m-d H:i:s', $this->now - $d * 86400);
+        $cols = $db->getFieldNames('messages');
+        $this->assertContains('direction', $cols);
+        $mk = fn (int $t, string $dir, string $status, int $days) => $db->query("INSERT INTO messages (tenant_id, conversation_id, contact_id, direction, status, created_at) VALUES (?, 1, 1, ?, ?, ?)", [$t, $dir, $status, $at($days)]);
+        $mk(1, 'out', 'delivered', 2); $mk(1, 'out', 'failed', 3); $mk(1, 'in', 'delivered', 1); $mk(1, 'out', 'read', 45);
+        $m = $this->row('Alpha Travels')['messages'];
+        $this->assertSame(2, $m['sent'], 'the 45-day-old message is outside the window');
+        $this->assertSame(1, $m['failed']); $this->assertSame(1, $m['received']);
+        $this->assertSame('Alpha Travels', $this->svc()->list(['sort' => 'messages'])['rows'][0]['name']);
     }
 
     public function testPickerFieldsStayAvailable(): void

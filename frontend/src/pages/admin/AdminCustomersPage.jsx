@@ -133,7 +133,7 @@ const SEGMENTS = [
   ['all', 'All'], ['attention', 'Needs attention'], ['paying', 'Paying'], ['complimentary', 'Complimentary'], ['free', 'Free'], ['lapsed', 'Lapsed'], ['halted', 'Payment failed'],
   ['expiring', 'Ending soon'], ['inactive', 'Gone quiet'], ['not_activated', 'Not set up'], ['tickets', 'Open requests'], ['suspended', 'Suspended'], ['referred', 'Via partner'], ['new', 'New (7 days)'],
 ]
-const SORTS = [['newest', 'Newest first'], ['active', 'Recently active'], ['renewal', 'Renewal date'], ['revenue', 'Most paid'], ['contacts', 'Most contacts'], ['name', 'Name A–Z']]
+const SORTS = [['newest', 'Newest first'], ['active', 'Recently active'], ['messages', 'Most WhatsApp messages'], ['renewal', 'Renewal date'], ['revenue', 'Most paid'], ['contacts', 'Most contacts'], ['name', 'Name A–Z']]
 const TONE = { danger: 'var(--danger)', warn: 'var(--warning)', info: 'var(--primary)', muted: 'var(--text-3)' }
 const BILL_COLOR = { paying: 'var(--success)', complimentary: '#0e8f8c', free: '#64748b', lapsed: 'var(--warning)', halted: 'var(--danger)' }
 const WA = { active: ['Connected', 'var(--success)'], pending: ['Pending', 'var(--warning)'], suspended: ['Suspended', 'var(--danger)'], none: ['Not connected', 'var(--text-3)'] }
@@ -142,9 +142,9 @@ const rs = (paise) => '₹' + Math.round(paise / 100).toLocaleString('en-IN')
 const csvCell = (v) => { const t = String(v ?? ''); return /^[=+\-@]/.test(t) ? `"'${t.replace(/"/g, '""')}"` : /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t }   // no spreadsheet formulas from customer-typed text
 
 function exportCsv(rows) {
-  const head = ['ID', 'Workspace', 'Plan', 'Status', 'Billing', 'Monthly paid (INR)', 'Renews / ends', 'Lifetime paid (INR)', 'Owner', 'Owner e-mail', 'Owner phone', 'Users', 'Contacts', 'Trips', 'Bookings', 'WhatsApp', 'Last active', 'Joined', 'Referred by', 'Needs attention']
+  const head = ['ID', 'Workspace', 'Plan', 'Status', 'Billing', 'Monthly paid (INR)', 'Renews / ends', 'Lifetime paid (INR)', 'Owner', 'Owner e-mail', 'Owner phone', 'Users', 'Contacts', 'Trips', 'Bookings', 'WhatsApp', 'WhatsApp sent (30d)', 'WhatsApp received (30d)', 'WhatsApp failed (30d)', 'Last payment (INR)', 'Last payment date', 'Last active', 'Joined', 'Referred by', 'Needs attention']
   const lines = rows.map(r => [r.id, r.name, r.plan, r.status, r.billing.label, r.billing.state === 'paying' ? Math.round(r.billing.amount_paise / 100) : 0, r.billing.renews_at ?? '', Math.round(r.billing.lifetime_paise / 100), r.owner.name, r.owner.email, r.owner.phone,
-    r.usage.users, r.usage.contacts, r.usage.trips, r.usage.bookings, WA[r.whatsapp]?.[0] ?? r.whatsapp, r.last_active ?? '', r.created_at, r.partner ?? '', r.attention ? 'yes' : ''])
+    r.usage.users, r.usage.contacts, r.usage.trips, r.usage.bookings, WA[r.whatsapp]?.[0] ?? r.whatsapp, r.messages.sent, r.messages.received, r.messages.failed, r.last_payment ? Math.round(r.last_payment.amount_paise / 100) : '', r.last_payment?.at ?? '', r.last_active ?? '', r.created_at, r.partner ?? '', r.attention ? 'yes' : ''])
   const csv = [head, ...lines].map(l => l.map(csvCell).join(',')).join('\n')
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })); a.download = `tripsarthi-customers-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href)
 }
@@ -206,10 +206,10 @@ export default function AdminCustomersPage() {
 
       <div className="card" style={{ overflowX: 'auto' }}>
         <table className="cu-table">
-          <thead><tr>{['Customer', 'Owner', 'Plan & billing', 'Usage', 'WhatsApp', 'Last active', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+          <thead><tr>{['Customer', 'Owner', 'Plan & billing', 'Last payment', 'Usage', 'WhatsApp (30 days)', 'Last active', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
-            {!d && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
-            {d && d.rows.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No customers match these filters.</td></tr>}
+            {!d && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
+            {d && d.rows.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No customers match these filters.</td></tr>}
             {d?.rows.map(r => (
               <tr key={r.id} onClick={() => setSp({ open: r.id })}>
                 <td style={td}>
@@ -228,10 +228,19 @@ export default function AdminCustomersPage() {
                   {r.billing.lifetime_paise > 0 && <div className="cu-sub">{rs(r.billing.lifetime_paise)} paid so far</div>}
                 </td>
                 <td style={td}>
+                  {r.last_payment
+                    ? <><div><b>{rs(r.last_payment.amount_paise)}</b> <span className="cu-sub">{r.last_payment.plan}</span></div><div className="cu-sub">{fmtDate(r.last_payment.at)}{r.last_payment.offline ? ' · recorded by hand' : ''}</div></>
+                    : <span className="cu-sub">No payment yet</span>}
+                </td>
+                <td style={td}>
                   <div className="cu-use"><span><b>{r.usage.contacts.toLocaleString('en-IN')}</b> contacts <UsageBar n={r.usage.contacts} limit={r.usage.contacts_limit} /></span></div>
                   <div className="cu-sub"><b>{r.usage.users}</b> {r.usage.users === 1 ? 'user' : 'users'} · <b>{r.usage.trips}</b> trips · <b>{r.usage.bookings}</b> bookings</div>
                 </td>
-                <td style={td}><Pill color={WA[r.whatsapp]?.[1]}>{WA[r.whatsapp]?.[0] ?? r.whatsapp}</Pill></td>
+                <td style={td}>
+                  <Pill color={WA[r.whatsapp]?.[1]}>{WA[r.whatsapp]?.[0] ?? r.whatsapp}</Pill>
+                  <div className="cu-sub"><b>{r.messages.sent.toLocaleString('en-IN')}</b> sent · <b>{r.messages.received.toLocaleString('en-IN')}</b> received</div>
+                  {r.messages.failed > 0 && <div className="cu-sub" style={{ color: 'var(--danger)' }}>{r.messages.failed} failed</div>}
+                </td>
                 <td style={td}>{ago(r.last_active)}</td>
                 <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
                   <button className="btn btn-ghost btn-sm" onClick={() => setSp({ open: r.id })}>Open</button>{' '}
