@@ -43,7 +43,7 @@ const STATUS = {
   lost:      { label: 'Lost',      bg: '#fee2e2', color: '#b91c1c' },
 }
 const AVATAR_TINTS = [
-  ['#ede9fe', '#6d28d9'], ['#dbeafe', '#1d4ed8'], ['#dcfce7', '#15803d'],
+  ['#d7f3f0', '#0b7a73'], ['#dbeafe', '#1d4ed8'], ['#dcfce7', '#15803d'],
   ['#fee2e2', '#b91c1c'], ['#fef3c7', '#b45309'], ['#cffafe', '#0e7490'],
 ]
 const initials = (name) => (name || '#').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()

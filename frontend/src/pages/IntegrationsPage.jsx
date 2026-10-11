@@ -180,7 +180,7 @@ function IntegrationRow({ integration, metaWebhookUrl, onSubscribe, onDisconnect
             </button>
           )}
           {isSubscribed && (
-            <button onClick={handleTestLead} disabled={testing} className="btn btn-sm" style={{ fontSize: '.78rem', background: '#f5f3ff', border: '1px solid #c4b5fd', color: '#0e8f8c', fontWeight: 600 }}>
+            <button onClick={handleTestLead} disabled={testing} className="btn btn-sm" style={{ fontSize: '.78rem', background: '#e8f3fc', border: '1px solid #bcdcf5', color: '#0e8f8c', fontWeight: 600 }}>
               {testing ? 'Sending…' : <><FlaskConical size={14} strokeWidth={2} /> Send Test Lead</>}
             </button>
           )}

@@ -369,7 +369,7 @@ function SegmentCard({ segment, tags, onEdit, confirmId, setConfirmId }) {
                 transition: 'all .14s',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5,
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#e0e7ff'; e.currentTarget.style.borderColor = '#8ec5f0' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#e8f3fc'; e.currentTarget.style.borderColor = '#8ec5f0' }}
               onMouseLeave={e => { e.currentTarget.style.background = '#e8f3fc'; e.currentTarget.style.borderColor = '#bcdcf6' }}
             >
               <Megaphone size={13} strokeWidth={2} /> Use in Campaign

@@ -146,9 +146,9 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-flows-css'))
     .lp-fl-toggle.on .lp-fl-toggle-track { background:#0a6cc4; }
     .lp-fl-toggle.on .lp-fl-toggle-track::after { transform:translateX(17px); }
     .lp-fl-empty-bg {
-      background: linear-gradient(135deg, #f5f3ff 0%, #eff6ff 100%);
+      background: linear-gradient(135deg, #eef6fd 0%, #eff6ff 100%);
       border-radius:16px;
-      border:2px dashed #c4b5fd;
+      border:2px dashed #bcdcf5;
     }
     .lp-fl-modal {
       background:#fff;
@@ -206,7 +206,7 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-flows-css'))
     }
     .lp-fl-reentry-card.selected {
       border-color:#0a6cc4;
-      background:#f5f3ff;
+      background:#e8f3fc;
     }
     .lp-fl-reentry-radio {
       width:16px; height:16px;
@@ -236,7 +236,7 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-flows-css'))
 // ── Config ────────────────────────────────────────────────────────────────
 const TRIGGER_CFG = {
   ...Object.fromEntries(TRAVEL_TRIGGERS.map(t => [t.key, { icon: t.icon, label: t.label, color: t.color, bg: t.bg }])),
-  lead_created:       { icon: UserPlus, label: 'Lead Created',    color: '#0a6cc4', bg: '#ede9fe' },
+  lead_created:       { icon: UserPlus, label: 'Lead Created',    color: '#0a6cc4', bg: '#e8f3fc' },
   tag_added:          { icon: Tag, label: 'Tag Added',       color: '#0891b2', bg: '#e0f2fe' },
   form_submitted:     { icon: ClipboardList, label: 'Form Submitted',  color: '#d97706', bg: '#fef3c7' },
   meta_lead_received: { icon: Megaphone, label: 'Meta Lead',       color: '#1d4ed8', bg: '#dbeafe' },
@@ -247,7 +247,7 @@ const TRIGGER_CFG = {
   deal_lost:          { icon: HeartCrack, label: 'Deal Lost',       color: '#b91c1c', bg: '#fee2e2' },
   ticket_created:     { icon: Ticket, label: 'Ticket Created',  color: '#0891b2', bg: '#cffafe' },
   ticket_resolved:    { icon: CheckCircle2, label: 'Ticket Resolved', color: '#15803d', bg: '#dcfce7' },
-  keyword_reply:      { icon: MessageCircle, label: 'Keyword Reply',   color: '#0e8f8c', bg: '#ede9fe' },
+  keyword_reply:      { icon: MessageCircle, label: 'Keyword Reply',   color: '#0e8f8c', bg: '#e8f3fc' },
   inbound_message:    { icon: Inbox, label: 'Any Inbound',     color: '#059669', bg: '#d1fae5' },
   order_placed:       { icon: ShoppingCart, label: 'Order Placed',    color: '#c2410c', bg: '#ffedd5' },
   order_fulfilled:    { icon: Package, label: 'Order Fulfilled', color: '#15803d', bg: '#dcfce7' },
@@ -734,7 +734,7 @@ export default function FlowsPage() {
                 style={{
                   padding: '.3rem .8rem', borderRadius: 999,
                   border: filter === f.key ? '2px solid #0a6cc4' : '1.5px solid #e5e7eb',
-                  background: filter === f.key ? '#f5f3ff' : '#fff',
+                  background: filter === f.key ? '#e8f3fc' : '#fff',
                   color: filter === f.key ? '#0a6cc4' : '#374151',
                   fontWeight: filter === f.key ? 700 : 500,
                   fontSize: 13, cursor: 'pointer',

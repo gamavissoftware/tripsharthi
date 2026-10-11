@@ -9,7 +9,7 @@ const ACTION = {
   updated:  { label: 'Updated',  bg: '#dbeafe', color: '#1d4ed8' },
   deleted:  { label: 'Deleted',  bg: '#fee2e2', color: '#b91c1c' },
   status:   { label: 'Status',   bg: '#fef9c3', color: '#a16207' },
-  merged:   { label: 'Merged',   bg: '#ede9fe', color: '#6d28d9' },
+  merged:   { label: 'Merged',   bg: '#e8f3fc', color: '#074a8c' },
   restored: { label: 'Restored', bg: '#dcfce7', color: '#15803d' },
   purged:   { label: 'Purged',   bg: '#fee2e2', color: '#b91c1c' },
   exported: { label: 'Exported', bg: '#e0f2fe', color: '#0369a1' },

@@ -188,7 +188,7 @@ export default function TicketsPage() {
                   <div style={{ fontSize: '.72rem', color: '#94a3b8', textTransform: 'capitalize' }}>{t.source}{t.category ? ` · ${t.category}` : ''}</div>
                 </div>
                 {isBreach && <span title="SLA breached" style={{ fontSize: '.7rem', fontWeight: 700, color: '#dc2626', background: '#fef2f2', borderRadius: 999, padding: '.12rem .5rem' }}>⚠ SLA</span>}
-                {t.escalated_at && <span title={`Escalated ${t.escalated_at}`} style={{ fontSize: '.7rem', fontWeight: 700, color: '#9333ea', background: '#faf5ff', borderRadius: 999, padding: '.12rem .5rem' }}>⬆ Escalated</span>}
+                {t.escalated_at && <span title={`Escalated ${t.escalated_at}`} style={{ fontSize: '.7rem', fontWeight: 700, color: '#074a8c', background: '#e8f3fc', borderRadius: 999, padding: '.12rem .5rem' }}>⬆ Escalated</span>}
                 <span style={{ background: pr.bg, color: pr.color, borderRadius: 999, padding: '.12rem .55rem', fontSize: '.7rem', fontWeight: 700 }}>{pr.label}</span>
                 <span style={{ background: st.bg, color: st.color, borderRadius: 999, padding: '.12rem .6rem', fontSize: '.72rem', fontWeight: 700 }}>{st.label}</span>
               </div>

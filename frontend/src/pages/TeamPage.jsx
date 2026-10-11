@@ -29,12 +29,12 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-team-css')) 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const ROLE_PILL = {
-  owner: { label: 'Owner', icon: <Crown size={12} strokeWidth={2} />, bg: 'linear-gradient(135deg,#ede9fe,#ddd6fe)', color: '#6d28d9' },
+  owner: { label: 'Owner', icon: <Crown size={12} strokeWidth={2} />, bg: 'linear-gradient(135deg,#e8f3fc,#bcdcf5)', color: '#074a8c' },
   admin: { label: 'Admin', icon: <Shield size={12} strokeWidth={2} />, bg: 'linear-gradient(135deg,#dbeafe,#bfdbfe)', color: '#1d4ed8' },
   agent: { label: 'Agent', icon: <Headphones size={12} strokeWidth={2} />, bg: '#f3f4f6', color: '#4b5563' },
 }
 const AVATAR_TINTS = [
-  ['#ede9fe', '#6d28d9'], ['#dbeafe', '#1d4ed8'], ['#dcfce7', '#15803d'],
+  ['#d7f3f0', '#0b7a73'], ['#dbeafe', '#1d4ed8'], ['#dcfce7', '#15803d'],
   ['#fee2e2', '#b91c1c'], ['#fef3c7', '#b45309'], ['#cffafe', '#0e7490'],
 ]
 
@@ -228,7 +228,7 @@ export default function TeamPage() {
       {/* Stat chips */}
       {!loading && members.length > 0 && (
         <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          {[['Total', members.length, '#0a6cc4'], ['Owner', ownerCount, '#6d28d9'], ['Admins', adminCount, '#1d4ed8'], ['Agents', agentCount, '#4b5563']].map(([label, n, c]) => (
+          {[['Total', members.length, '#0a6cc4'], ['Owner', ownerCount, '#0b7a73'], ['Admins', adminCount, '#1d4ed8'], ['Agents', agentCount, '#4b5563']].map(([label, n, c]) => (
             <div key={label} style={{ padding: '.45rem .9rem', borderRadius: 12, background: '#fff', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '.5rem' }}>
               <span style={{ fontSize: 18, fontWeight: 800, color: c }}>{n}</span>
               <span style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 600 }}>{label}</span>

@@ -37,7 +37,7 @@ const STATUSES = ['new', 'contacted', 'qualified', 'won', 'lost']
 
 const STATUS_CFG = {
   draft:      { bg: '#f3f4f6', color: '#374151', label: 'Draft' },
-  scheduled:  { bg: '#f5f3ff', color: '#6d28d9', label: 'Scheduled' },
+  scheduled:  { bg: '#e8f3fc', color: '#074a8c', label: 'Scheduled' },
   processing: { bg: '#eff6ff', color: '#1d4ed8', label: 'Sending…', pulse: true },
   done:       { bg: '#f0fdf4', color: '#15803d', label: 'Completed ✓' },
   failed:     { bg: '#fff1f2', color: '#be123c', label: 'Failed' },
@@ -317,8 +317,8 @@ function CampaignCard({ campaign, templates, onSend, onDelete, onSchedule, onUns
       {isScheduled && c.scheduled_at && (
         <div style={{
           display: 'flex', alignItems: 'center', gap: 8,
-          background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10,
-          padding: '10px 12px', marginBottom: 14, fontSize: 13, color: '#5b21b6',
+          background: '#e8f3fc', border: '1px solid #bcdcf5', borderRadius: 10,
+          padding: '10px 12px', marginBottom: 14, fontSize: 13, color: '#074a8c',
         }}>
           <Clock size={16} strokeWidth={2} style={{ flexShrink: 0 }} />
           <span>
@@ -678,7 +678,7 @@ function CampaignWizard({ onDone, onCancel }) {
                           border: sel ? '2px solid #08569f' : '1.5px solid #e5e7eb',
                           borderRadius: 10, padding: '0.85rem',
                           cursor: 'pointer',
-                          background: sel ? '#f5f3ff' : '#fff',
+                          background: sel ? '#e8f3fc' : '#fff',
                           position: 'relative',
                           transition: 'border-color .15s, background .15s',
                         }}
@@ -708,8 +708,8 @@ function CampaignWizard({ onDone, onCancel }) {
 
             {/* A/B test */}
             {selectedTpl && templates.length > 1 && (
-              <div style={{ marginTop: 18, padding: '1rem', background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: '#6d28d9', cursor: 'pointer' }}>
+              <div style={{ marginTop: 18, padding: '1rem', background: '#e8f3fc', border: '1px solid #bcdcf5', borderRadius: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 600, color: '#074a8c', cursor: 'pointer' }}>
                   <input type="checkbox" checked={abEnabled} onChange={e => setAbEnabled(e.target.checked)} />
                   <FlaskConical size={15} strokeWidth={2} /> Run an A/B test
                 </label>
@@ -765,7 +765,7 @@ function CampaignWizard({ onDone, onCancel }) {
                       display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
                       padding: '10px 14px', borderRadius: 10,
                       border: active ? '2px solid #08569f' : '1.5px solid #e5e7eb',
-                      background: active ? '#f5f3ff' : '#fff',
+                      background: active ? '#e8f3fc' : '#fff',
                       transition: 'border-color .15s, background .15s',
                     }}
                   >
@@ -1094,7 +1094,7 @@ function ScheduleModal({ campaign, onSave, onCancel }) {
 
         <div style={{ display: 'flex', gap: 10, marginTop: '1.5rem', justifyContent: 'flex-end' }}>
           <button style={btnGhost} disabled={saving} onClick={onCancel}>Cancel</button>
-          <button style={{ ...btnPrimary, background: saving ? '#6b7280' : '#6d28d9', minWidth: 130 }} disabled={saving} onClick={handleSave}>
+          <button style={{ ...btnPrimary, background: saving ? '#6b7280' : '#074a8c', minWidth: 130 }} disabled={saving} onClick={handleSave}>
             {saving ? 'Scheduling…' : 'Schedule'}
           </button>
         </div>
@@ -1164,7 +1164,7 @@ function RetargetModal({ campaign, onDone, onCancel }) {
                 display: 'flex', alignItems: 'center', gap: 12, cursor: unavailable ? 'not-allowed' : 'pointer',
                 padding: '10px 14px', borderRadius: 10,
                 border: active ? '2px solid #08569f' : '1.5px solid #e5e7eb',
-                background: active ? '#f5f3ff' : '#fff', opacity: unavailable ? 0.5 : 1,
+                background: active ? '#e8f3fc' : '#fff', opacity: unavailable ? 0.5 : 1,
               }}>
                 <input type="radio" name="retargetOutcome" value={opt.key} checked={active}
                   disabled={unavailable}

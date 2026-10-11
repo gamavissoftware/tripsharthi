@@ -4,7 +4,7 @@ import { toast } from '../components/Toast'
 import ContactPicker from '../components/crm/ContactPicker'
 
 const STATUS = {
-  scheduled: { label: 'Scheduled', bg: '#e0e7ff', color: '#074a8c' },
+  scheduled: { label: 'Scheduled', bg: '#e8f3fc', color: '#074a8c' },
   completed: { label: 'Completed', bg: '#dcfce7', color: '#15803d' },
   canceled:  { label: 'Canceled',  bg: '#fee2e2', color: '#b91c1c' },
 }

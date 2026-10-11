@@ -35,7 +35,7 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-prof-css')) 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 const ROLE_STYLE = {
-  owner: { label: 'Owner', bg: 'linear-gradient(135deg,#ede9fe,#ddd6fe)', color: '#6d28d9', icon: <Crown size={13} strokeWidth={2} /> },
+  owner: { label: 'Owner', bg: 'linear-gradient(135deg,#e8f3fc,#bcdcf5)', color: '#074a8c', icon: <Crown size={13} strokeWidth={2} /> },
   admin: { label: 'Admin', bg: 'linear-gradient(135deg,#dbeafe,#bfdbfe)', color: '#1d4ed8', icon: <Shield size={13} strokeWidth={2} /> },
   agent: { label: 'Agent', bg: '#f3f4f6', color: '#4b5563', icon: <Headphones size={13} strokeWidth={2} /> },
 }

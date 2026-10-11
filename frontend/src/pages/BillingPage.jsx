@@ -3,7 +3,7 @@ import { billing as billingApi } from '../api/billing'
 import { analytics as analyticsApi } from '../api/analytics'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
-import { Rocket, Zap, Crown, Check, AlertTriangle, Info, Users, User, Smartphone, CheckCircle2, XCircle, Clock, KeyRound, Sparkles, Briefcase } from 'lucide-react'
+import { Rocket, Zap, Crown, Check, AlertTriangle, Info, Users, User, Smartphone, CheckCircle2, XCircle, Clock, KeyRound, Sparkles, Briefcase, BarChart3, Boxes, Route } from 'lucide-react'
 
 // CRM plan-usage bars (Phase K2) — fetches its own data; renders nothing if empty.
 function CrmUsageBars() {
@@ -11,10 +11,10 @@ function CrmUsageBars() {
   useEffect(() => { crm.planUsage().then(r => setU(r.data)).catch(() => {}) }, [])
   if (!u) return null
   const rows = [
-    ['💼', 'Deals', 'deals', '#0a6cc4'],
-    ['📊', 'Dashboards', 'dashboards', '#0891b2'],
-    ['📦', 'Custom Objects', 'custom_objects', '#a16207'],
-    ['🛤', 'Pipelines', 'pipelines', '#059669'],
+    [<Briefcase size={15} strokeWidth={2} />, 'Deals', 'deals', '#0a6cc4'],
+    [<BarChart3 size={15} strokeWidth={2} />, 'Dashboards', 'dashboards', '#0891b2'],
+    [<Boxes size={15} strokeWidth={2} />, 'Custom Objects', 'custom_objects', '#a16207'],
+    [<Route size={15} strokeWidth={2} />, 'Pipelines', 'pipelines', '#059669'],
   ]
   return (
     <>
@@ -146,7 +146,7 @@ const PLANS = [
     monthly: 3999,
     annual: 3199,
     color: '#0a6cc4',
-    colorBg: '#ede9fe',
+    colorBg: '#e8f3fc',
     popular: true,
     features: [
       '3 WhatsApp Numbers',
@@ -165,7 +165,7 @@ const PLANS = [
     monthly: 6999,
     annual: 5599,
     color: '#0e8f8c',
-    colorBg: '#ede9fe',
+    colorBg: '#e8f3fc',
     features: [
       'Unlimited WhatsApp Numbers',
       'Unlimited agents',
@@ -418,8 +418,8 @@ function CurrentPlanHero({ plan, status, renewsOn, onCancel }) {
   const cfg = {
     free:    { label:'Free Plan',    color:'#6b7280', bg:'linear-gradient(135deg,#f9fafb,#f3f4f6)', icon:<Sparkles size={26} strokeWidth={1.8} color="#9ca3af" />, accent:'#9ca3af' },
     starter: { label:'Starter Plan', color:'#0891b2', bg:'linear-gradient(135deg,#e0f2fe,#bae6fd)', icon:<Rocket size={26} strokeWidth={1.8} color="#0891b2" />, accent:'#0891b2' },
-    growth:  { label:'Growth Plan',  color:'#0a6cc4', bg:'linear-gradient(135deg,#ede9fe,#ddd6fe)', icon:<Zap size={26} strokeWidth={1.8} color="#0a6cc4" />, accent:'#0a6cc4' },
-    pro:     { label:'Pro Plan',     color:'#0e8f8c', bg:'linear-gradient(135deg,#faf5ff,#ede9fe)', icon:<Crown size={26} strokeWidth={1.8} color="#0e8f8c" />, accent:'#0e8f8c' },
+    growth:  { label:'Growth Plan',  color:'#0a6cc4', bg:'linear-gradient(135deg,#e8f3fc,#bcdcf5)', icon:<Zap size={26} strokeWidth={1.8} color="#0a6cc4" />, accent:'#0a6cc4' },
+    pro:     { label:'Pro Plan',     color:'#0e8f8c', bg:'linear-gradient(135deg,#f3f9fe,#e8f3fc)', icon:<Crown size={26} strokeWidth={1.8} color="#0e8f8c" />, accent:'#0e8f8c' },
   }[plan] ?? { label: plan, color:'#6b7280', bg:'#f3f4f6', icon:<Briefcase size={26} strokeWidth={1.8} color="#6b7280" />, accent:'#6b7280' }
 
   return (

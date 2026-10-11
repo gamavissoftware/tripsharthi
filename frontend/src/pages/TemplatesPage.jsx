@@ -31,7 +31,7 @@ const META_STATUS = {
   rejected: { label: 'Rejected', bg: '#fee2e2', color: '#b91c1c' },
 }
 const CATEGORY = {
-  marketing:      { label: 'Marketing', bg: '#ede9fe', color: '#6d28d9' },
+  marketing:      { label: 'Marketing', bg: '#e8f3fc', color: '#074a8c' },
   utility:        { label: 'Utility',   bg: '#dbeafe', color: '#1d4ed8' },
   authentication: { label: 'Auth',      bg: '#ffedd5', color: '#9a3412' },
 }

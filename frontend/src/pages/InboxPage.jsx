@@ -752,7 +752,7 @@ export default function InboxPage() {
                         </span>
                       )}
                       {conv.handoff_at && conv.status !== 'resolved' && (
-                        <span title="Handed off to a human by a flow" style={{ fontSize: '.7rem', fontWeight: 600, color: '#5b21b6', background: '#ede9fe', borderRadius: '999px', padding: '.1rem .45rem' }}>
+                        <span title="Handed off to a human by a flow" style={{ fontSize: '.7rem', fontWeight: 600, color: '#074a8c', background: '#e8f3fc', borderRadius: '999px', padding: '.1rem .45rem' }}>
                           Handoff{conv.assigned_agent_name ? ` · ${conv.assigned_agent_name}` : ''}
                         </span>
                       )}

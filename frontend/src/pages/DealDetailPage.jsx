@@ -275,7 +275,7 @@ export default function DealDetailPage() {
               <div style={{ fontSize: 19, fontWeight: 800, color: '#111827' }}>{deal.title}</div>
               <div style={{ fontSize: 22, fontWeight: 800, color: '#15803d', marginTop: 4 }}>
                 {money(deal.value_amount, deal.currency)}
-                {Number(deal.is_recurring) === 1 && <span style={{ fontSize: 12, fontWeight: 700, color: '#074a8c', background: '#e0e7ff', borderRadius: 999, padding: '.15rem .55rem', marginLeft: 8, verticalAlign: 'middle' }}>🔁 {deal.recurring_interval || 'recurring'}{deal.next_renewal_at ? ` · renews ${deal.next_renewal_at}` : ''}</span>}
+                {Number(deal.is_recurring) === 1 && <span style={{ fontSize: 12, fontWeight: 700, color: '#074a8c', background: '#e8f3fc', borderRadius: 999, padding: '.15rem .55rem', marginLeft: 8, verticalAlign: 'middle' }}>🔁 {deal.recurring_interval || 'recurring'}{deal.next_renewal_at ? ` · renews ${deal.next_renewal_at}` : ''}</span>}
               </div>
               <div style={{ fontSize: 12.5, color: '#6b7280', marginTop: 4 }}>
                 {deal.account?.name && <>🏢 <Link to="/accounts" style={{ color: '#0a6cc4', textDecoration: 'none' }}>{deal.account.name}</Link> · </>}

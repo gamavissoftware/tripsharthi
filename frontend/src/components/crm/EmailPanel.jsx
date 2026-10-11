@@ -5,7 +5,7 @@ import { toast } from '../Toast'
 const STATUS = {
   sent:   { label: 'Sent',   bg: '#dcfce7', color: '#15803d' },
   failed: { label: 'Failed', bg: '#fee2e2', color: '#b91c1c' },
-  queued: { label: 'Queued', bg: '#e0e7ff', color: '#074a8c' },
+  queued: { label: 'Queued', bg: '#e8f3fc', color: '#074a8c' },
 }
 
 function when(dt) {

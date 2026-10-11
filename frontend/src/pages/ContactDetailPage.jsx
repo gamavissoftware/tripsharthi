@@ -73,7 +73,7 @@ const STATUS = {
 const STATUSES = ['new', 'contacted', 'qualified', 'won', 'lost']
 const LIFECYCLE = ['subscriber', 'lead', 'mql', 'sql', 'opportunity', 'customer', 'evangelist', 'other']
 const LIFECYCLE_LABEL = { subscriber: 'Subscriber', lead: 'Lead', mql: 'MQL', sql: 'SQL', opportunity: 'Opportunity', customer: 'Customer', evangelist: 'Evangelist', other: 'Other' }
-const RUN_STATUS = { running: { bg: '#e0e7ff', color: '#3730a3' }, completed: { bg: '#d1fae5', color: '#065f46' }, stopped: { bg: '#fee2e2', color: '#991b1b' } }
+const RUN_STATUS = { running: { bg: '#e8f3fc', color: '#074a8c' }, completed: { bg: '#d1fae5', color: '#065f46' }, stopped: { bg: '#fee2e2', color: '#991b1b' } }
 
 const fmtDate = (dt) => { if (!dt) return '—'; try { return new Date(dt).toLocaleString() } catch { return dt } }
 const initials = (name, num) => (name || num || '#').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -300,7 +300,7 @@ export default function ContactDetailPage() {
             <div style={{ fontSize: 13, color: '#6b7280', fontFamily: 'monospace', marginTop: 2 }}>{contact.wa_number}</div>
             {(contact.business_type || contact.company_industry) && (
               <div style={{ marginTop: 6 }}>
-                <span style={{ display: 'inline-block', padding: '.15rem .55rem', borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: '#e0e7ff', color: '#074a8c' }}>
+                <span style={{ display: 'inline-block', padding: '.15rem .55rem', borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: '#e8f3fc', color: '#074a8c' }}>
                   {contact.business_type || contact.company_industry}
                 </span>
               </div>
