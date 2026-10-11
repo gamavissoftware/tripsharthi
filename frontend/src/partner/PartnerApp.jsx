@@ -5,6 +5,7 @@ import { isLoggedIn } from '../api/client'
 import { partnerApi } from '../api/partner'
 import { PartnerLoginPage, PartnerSetPasswordPage } from './PartnerAuthPages'
 import PartnerDashboard from './PartnerDashboard'
+import './partner.css'
 
 /** #/set-password?token=<48 hex> from the invite link */
 function inviteToken() {
@@ -17,23 +18,20 @@ function Portal({ onLogout }) {
   const [err, setErr] = useState('')
   const load = useCallback(() => partnerApi.dashboard().then(r => { setD(r); setErr('') }).catch(e => { if (e.status !== 401) setErr(e.message || 'Could not load your dashboard.') }), [])
   useEffect(() => { load() }, [load])
+  const name = d?.partner?.name || ''
+  const initials = name.split(' ').filter(Boolean).map(w => w[0]).join('').substring(0, 2).toUpperCase() || 'P'
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <header style={{ background: '#0a1f44', color: '#fff', padding: '12px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ background: '#fff', borderRadius: 8, padding: 3, display: 'grid', placeItems: 'center' }}><img src="/brand/tripsarthi-mark.png" alt="" width="26" height="26" /></span>
-          <b style={{ fontSize: '1.1rem' }}>Trip<span style={{ color: '#2fd0c2' }}>Sarthi</span></b>
-          <span style={{ fontSize: '.65rem', fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase', background: '#12a89e', padding: '2px 7px', borderRadius: 6 }}>Partners</span>
+    <div className="pt-shell">
+      <header className="pt-nav"><div className="pt-nav-in">
+        <div className="pt-brand"><span className="mark"><img src="/brand/tripsarthi-mark.png" alt="" width="26" height="26" /></span><span>Trip<span className="s">Sarthi</span></span><span className="pt-badge">Partners</span></div>
+        <div className="pt-user">
+          {name && <><span className="pt-avatar">{initials}</span><span className="nm">{name}</span></>}
+          <button onClick={onLogout} className="pt-out"><LogOut size={14} /> Sign out</button>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 13 }}>
-          <span style={{ opacity: .85 }}>{d?.partner?.name}</span>
-          <button onClick={onLogout} className="btn btn-sm" style={{ background: 'rgba(255,255,255,.12)', color: '#fff', border: 0, display: 'flex', gap: 6, alignItems: 'center' }}><LogOut size={14} /> Sign out</button>
-        </div>
-      </header>
-      <main style={{ maxWidth: 1040, margin: '0 auto', padding: '20px 16px' }}>
-        <h1 style={{ fontSize: '1.4rem', margin: '0 0 16px' }}>{d ? `Welcome, ${d.partner.name.split(' ')[0]}` : 'Partner dashboard'}</h1>
-        {err && <div className="form-error" style={{ marginBottom: 12 }}>{err}</div>}
-        {!d && !err && <p style={{ color: 'var(--text-3)' }}>Loading…</p>}
+      </div></header>
+      <main className="pt-main">
+        {err && <div className="pt-warn">{err}</div>}
+        {!d && !err && <><div className="pt-skel" style={{ height: 300 }} /><div className="pt-stats">{[1, 2, 3, 4].map(i => <div key={i} className="pt-skel" style={{ height: 130 }} />)}</div></>}
         {d && <PartnerDashboard d={d} reload={load} />}
       </main>
     </div>

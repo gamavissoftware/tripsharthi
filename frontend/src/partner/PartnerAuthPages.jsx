@@ -1,27 +1,33 @@
 import { useEffect, useState } from 'react'
 import { partnerApi } from '../api/partner'
 
-const S = {
-  page: { minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '1.5rem', background: 'linear-gradient(150deg, #06214f 0%, #0a3b7d 55%, #0b7f8f 100%)' },
-  card: { width: '100%', maxWidth: 420, background: '#fff', borderRadius: 16, padding: '2rem 1.75rem', boxShadow: '0 20px 50px rgba(0,0,0,.3)' },
-  logoRow: { display: 'flex', alignItems: 'center', gap: '.75rem', marginBottom: '1.5rem' },
-  tile: { width: 48, height: 48, borderRadius: 12, background: '#f3f6fb', display: 'grid', placeItems: 'center' },
-  name: { fontSize: '1.3rem', fontWeight: 800, color: '#0a1f44', letterSpacing: '-.3px' },
-  badge: { fontSize: '.65rem', fontWeight: 800, letterSpacing: '.6px', textTransform: 'uppercase', background: '#12a89e', color: '#fff', padding: '2px 7px', borderRadius: 6, verticalAlign: '3px' },
-  sub: { fontSize: '.82rem', color: '#6b7280' },
-  note: { marginTop: '1.25rem', fontSize: '.78rem', color: '#6b7280', lineHeight: 1.5 },
-}
+import { TrendingUp, Wallet, ShieldCheck } from 'lucide-react'
+import './partner.css'
+
+const PERKS = [
+  [TrendingUp, 'Recurring commission', 'Earn a share of every subscription payment from the travel businesses you bring.'],
+  [Wallet, 'Clear, simple payouts', 'Watch earnings build up in real time and get paid by UPI or bank transfer.'],
+  [ShieldCheck, 'Your link, your credit', 'The first partner a customer signs up through keeps that customer. No disputes.'],
+]
 
 function Shell({ title, sub, children }) {
   return (
-    <div style={S.page}><div style={S.card}>
-      <div style={S.logoRow}>
-        <span style={S.tile}><img src="/brand/tripsarthi-mark.png" alt="" width="34" height="34" style={{ display: 'block' }} /></span>
-        <div><div style={S.name}>Trip<span style={{ color: '#12a89e' }}>Sarthi</span> <span style={S.badge}>Partners</span></div><div style={S.sub}>{sub}</div></div>
-      </div>
-      <h2 style={{ margin: '0 0 1rem', fontSize: '1.15rem', color: '#0a1f44' }}>{title}</h2>
-      {children}
-    </div></div>
+    <div className="pt-auth">
+      <aside className="pt-auth-side">
+        <div className="pt-brand"><span className="mark"><img src="/brand/tripsarthi-mark.png" alt="" width="30" height="30" /></span><span>Trip<span className="s">Sarthi</span></span><span className="pt-badge">Partners</span></div>
+        <h1>Grow with the travel industry's smartest CRM.</h1>
+        <p className="lead">Introduce travel agencies and tour operators to TripSarthi and earn recurring commission, with a dashboard that shows every rupee.</p>
+        {PERKS.map(([Icon, t, d]) => <div key={t} className="pt-perk"><i><Icon size={18} /></i><div><b>{t}</b><span>{d}</span></div></div>)}
+      </aside>
+      <main className="pt-auth-main">
+        <div className="pt-auth-card">
+          <div className="pt-auth-mobile-brand"><img src="/brand/tripsarthi-mark.png" alt="" width="30" height="30" /><span>Trip<span style={{ color: '#12a89e' }}>Sarthi</span></span><span className="pt-badge">Partners</span></div>
+          <h2>{title}</h2>
+          <p className="sub">{sub}</p>
+          {children}
+        </div>
+      </main>
+    </div>
   )
 }
 
@@ -37,14 +43,14 @@ export function PartnerLoginPage({ onLogin }) {
     finally { setLoading(false) }
   }
   return (
-    <Shell title="Sign in to your partner account" sub="Referral partner program">
+    <Shell title="Welcome back" sub="Sign in to your partner account">
       <form onSubmit={submit}>
         <div className="form-group"><label className="form-label" htmlFor="pe">Email address</label><input id="pe" type="email" className="form-input" value={email} onChange={e => setEmail(e.target.value)} required autoComplete="username" autoFocus /></div>
         <div className="form-group"><label className="form-label" htmlFor="pp">Password</label><input id="pp" type="password" className="form-input" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" /></div>
         {error && <div className="form-error">{error}</div>}
         <button type="submit" disabled={loading} className="btn btn-primary w-full" style={{ padding: '.7rem', justifyContent: 'center', marginTop: '.25rem' }}>{loading ? 'Signing in…' : 'Sign in'}</button>
       </form>
-      <p style={S.note}>Forgot your password, or not a partner yet? Write to your TripSarthi contact and we will send you a new link.</p>
+      <p style={{ marginTop: '1.25rem', fontSize: '.8rem', color: '#6b7a93', lineHeight: 1.5 }}>Forgot your password, or not a partner yet? Write to your TripSarthi contact and we will send you a new link.</p>
     </Shell>
   )
 }
@@ -67,9 +73,9 @@ export function PartnerSetPasswordPage({ token, onDone }) {
     catch (err) { setError(err.message || 'Could not set the password.') } finally { setLoading(false) }
   }
   return (
-    <Shell title="Set your password" sub="Referral partner program">
+    <Shell title="Set your password" sub="One last step to open your partner dashboard">
       {problem && <div className="form-error">{problem}</div>}
-      {!problem && !info && <p style={{ color: '#6b7280' }}>Checking your link…</p>}
+      {!problem && !info && <div className="pt-skel" style={{ height: 120 }} />}
       {info && (
         <form onSubmit={submit}>
           <p style={{ marginTop: 0, color: '#374151', fontSize: '.9rem' }}>Welcome, <b>{info.name}</b>. Choose a password for <b>{info.email}</b>.</p>

@@ -1,31 +1,13 @@
 import { useState } from 'react'
 import { partnerApi } from '../api/partner'
 import { toast } from '../components/Toast'
-import { inr, fmtDate, th, td } from './format'
+import { Users, IndianRupee, Hourglass, BadgeCheck, Copy, MessageCircle, Mail, Link2, Sparkles, Landmark, BellRing, KeyRound, Receipt, Wallet } from 'lucide-react'
+import { inr, fmtDate } from './format'
+import './partner.css'
 
 const STATE = { paying: ['Paying', '#16a34a'], lapsed: ['Lapsed', '#d97706'], free: ['Free plan', '#6b7280'] }
 const CSTATUS = { available: ['Ready to pay', '#d97706'], pending: ['On hold', '#6b7280'], paid: ['Paid', '#16a34a'], void: ['Cancelled', '#9ca3af'] }
-const chip = (label, color) => <span style={{ display: 'inline-block', padding: '2px 9px', borderRadius: 999, fontSize: 12, fontWeight: 600, color, background: color + '1f' }}>{label}</span>
-
-function Stat({ label, value, sub, color }) {
-  return (
-    <div className="card card-body" style={{ flex: '1 1 190px', minWidth: 170 }}>
-      <div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '.04em' }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: color || 'var(--text)', marginTop: 4, letterSpacing: '-.02em' }}>{value}</div>
-      {sub && <div style={{ color: 'var(--text-3)', fontSize: 12.5, marginTop: 2 }}>{sub}</div>}
-    </div>
-  )
-}
-
-function CopyRow({ label, value }) {
-  async function copy() { try { await navigator.clipboard.writeText(value); toast.success(`${label} copied`) } catch { toast.error('Could not copy', 'Select it and copy by hand.') } }
-  return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 12, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 3 }}>{label}</div>
-      <div style={{ display: 'flex', gap: 8 }}><input className="form-input" readOnly value={value} onFocus={e => e.target.select()} style={{ fontFamily: 'ui-monospace,monospace', fontSize: 13 }} /><button className="btn btn-primary" onClick={copy}>Copy</button></div>
-    </div>
-  )
-}
+const chip = (label, color) => <span className="pt-pill" style={{ color, background: color + '1f' }}>{label}</span>
 
 function PayoutForm({ current, onSaved }) {
   const [f, setF] = useState({ method: current?.method === 'bank' ? 'bank' : 'upi', upi: '', account_name: '', account_no: '', ifsc: '', pan: '', current_password: '' })
@@ -97,78 +79,125 @@ function PasswordForm() {
   )
 }
 
+async function copyText(text, what) {
+  try { await navigator.clipboard.writeText(text); toast.success(`${what} copied`) } catch { toast.error('Could not copy', 'Select it and copy by hand.') }
+}
+
+function Empty({ title, text }) {
+  return (
+    <div className="pt-empty">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" aria-hidden="true"><circle cx="32" cy="32" r="30" fill="#eef4fc" /><path d="M20 38l8-8 6 6 10-12" stroke="#0a6cc4" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /><circle cx="44" cy="24" r="3" fill="#12a89e" /></svg>
+      <b>{title}</b><span>{text}</span>
+    </div>
+  )
+}
+
+function Panel({ icon: Icon, title, count, children, flush }) {
+  return (
+    <section className="pt-panel">
+      <div className="pt-panel-h"><h3>{Icon && <Icon size={18} color="#0a6cc4" />}{title}</h3>{count != null && <span className="count">{count}</span>}</div>
+      {flush ? children : <div className="pt-panel-b">{children}</div>}
+    </section>
+  )
+}
+
 export default function PartnerDashboard({ d, reload }) {
   const b = d.balances, p = d.partner
+  const first = p.name.split(' ')[0]
   const paying = d.referred.filter(r => r.state === 'paying').length
-  const terms = `${p.commission_pct}% of everything your referred customers pay${p.commission_months === 0 ? ', for as long as they stay' : `, for ${p.commission_months} months after their first payment`}. ${p.hold_days === 0 ? 'Commissions are payable as soon as they are earned.' : `Each commission becomes payable ${p.hold_days} days after the payment.`}`
+  const min = d.min_payout_paise || 100000
+  const pct = Math.max(0, Math.min(100, Math.round((b.available_paise / min) * 100)))
+  const link = d.links.app_link
+  const shareText = `I run my travel business on TripSarthi - quotes, bookings, payments and WhatsApp in one place. Try it here: ${link}`
+  const terms = `${p.commission_pct}% of everything your referred customers pay${p.commission_months === 0 ? ', for as long as they stay' : `, for ${p.commission_months} months after their first payment`}.`
   return (
-    <div style={{ display: 'grid', gap: 16 }}>
-      <div className="card card-body">
-        <h2 style={{ margin: '0 0 4px', fontSize: '1.05rem' }}>Your referral link</h2>
-        <p style={{ margin: '0 0 12px', color: 'var(--text-3)', fontSize: 13 }}>Share it anywhere. When someone signs up through it and subscribes, you earn. {terms}</p>
-        <CopyRow label="Sign-up link (goes straight to the app)" value={d.links.app_link} />
-        <CopyRow label="Website link (shows our site, then sign-up)" value={d.links.site_link} />
-        <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Your code: <b style={{ fontFamily: 'ui-monospace,monospace', color: 'var(--text)' }}>{d.links.code}</b> — the link already contains it.</div>
+    <>
+      <section className="pt-hero">
+        <h1 className="pt-hello"><small>Partner dashboard</small>Welcome back, {first}</h1>
+        <p className="pt-sub">Share your link with travel agencies and tour operators. When they subscribe, you earn {terms}</p>
+        <div className="pt-chips">
+          <span className="pt-chip"><Sparkles size={14} /> {p.commission_pct}% commission</span>
+          <span className="pt-chip">{p.commission_months === 0 ? 'Lifetime' : `${p.commission_months} months`} per customer</span>
+          <span className="pt-chip">{p.hold_days === 0 ? 'No hold period' : `Payable ${p.hold_days} days after payment`}</span>
+          <span className="pt-chip">Minimum payout {inr(min)}</span>
+        </div>
+
+        <div className="pt-share">
+          <h3>Your personal referral link</h3>
+          <p>Anyone who signs up through it is credited to you automatically.</p>
+          <div className="pt-linkrow">
+            <div className="pt-link"><Link2 size={16} color="#0a6cc4" style={{ flex: 'none' }} /><span>{link}</span></div>
+            <button className="pt-btn primary" onClick={() => copyText(link, 'Link')}><Copy size={16} /> Copy link</button>
+          </div>
+          <div className="pt-sharebtns">
+            <a className="pt-btn wa small" href={`https://wa.me/?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noreferrer"><MessageCircle size={15} /> Share on WhatsApp</a>
+            <a className="pt-btn soft small" href={`mailto:?subject=${encodeURIComponent('A tool I recommend for your travel business')}&body=${encodeURIComponent(shareText)}`}><Mail size={15} /> Send by e-mail</a>
+            <div className="pt-code">Your code <b>{d.links.code}</b></div>
+          </div>
+          <div className="pt-alt">Prefer to show our website first? <button onClick={() => copyText(d.links.site_link, 'Website link')}>Copy the website link</button></div>
+        </div>
+      </section>
+
+      <div className="pt-stats">
+        <div className="pt-stat"><div className="pt-ico blue"><Users size={20} /></div><div className="l">Customers referred</div><div className="v">{d.referred.length}</div><div className="n">{paying} paying now</div></div>
+        <div className="pt-stat"><div className="pt-ico teal"><IndianRupee size={20} /></div><div className="l">Total earned</div><div className="v">{inr(b.earned_paise)}</div><div className="n">excluding cancelled</div></div>
+        <div className="pt-stat"><div className="pt-ico orange"><Hourglass size={20} /></div><div className="l">Ready to be paid</div><div className="v" style={b.available_paise > 0 ? { color: '#c46a00' } : undefined}>{inr(b.available_paise)}</div>
+          <div className="pt-bar" aria-hidden="true"><i style={{ width: pct + '%' }} /></div>
+          <div className="n">{b.available_paise >= min ? 'Eligible - included in the next payout' : `${inr(min - b.available_paise)} more to reach the ${inr(min)} minimum`}</div></div>
+        <div className="pt-stat"><div className="pt-ico green"><BadgeCheck size={20} /></div><div className="l">Paid to you</div><div className="v" style={b.paid_paise > 0 ? { color: '#14804a' } : undefined}>{inr(b.paid_paise)}</div><div className="n">{b.pending_paise > 0 ? `${inr(b.pending_paise)} still on hold` : 'all time'}</div></div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <Stat label="Customers referred" value={d.referred.length} sub={`${paying} paying now`} />
-        <Stat label="Total earned" value={inr(b.earned_paise)} sub="excluding cancelled" />
-        <Stat label="Ready to be paid" value={inr(b.available_paise)} color={b.available_paise > 0 ? '#d97706' : undefined} sub={`paid once it reaches ${inr(d.min_payout_paise)}`} />
-        <Stat label="Paid to you" value={inr(b.paid_paise)} color="#16a34a" sub={b.pending_paise > 0 ? `${inr(b.pending_paise)} still on hold` : 'all time'} />
+      {d.referred.length === 0 && (
+        <section className="pt-how">
+          <h3>How it works</h3>
+          <div className="pt-steps">
+            <div className="pt-step"><span className="n">1</span><div><b>Share your link</b><span>Send it to travel agents on WhatsApp, e-mail or social media.</span></div></div>
+            <div className="pt-step"><span className="n">2</span><div><b>They sign up and subscribe</b><span>You are credited automatically, with no codes to remember.</span></div></div>
+            <div className="pt-step"><span className="n">3</span><div><b>You earn every month</b><span>{p.commission_pct}% of each payment lands in your earnings, paid out once it passes {inr(min)}.</span></div></div>
+          </div>
+        </section>)}
+
+      <Panel icon={Users} title="Customers you referred" count={d.referred.length} flush>
+        {d.referred.length === 0
+          ? <Empty title="No referrals yet" text="Share your link above. Your first sign-up will show up here." />
+          : <div className="pt-scroll"><table className="pt-table">
+            <thead><tr>{['Workspace', 'Joined', 'Status', 'Plan', 'Payments', 'You earned'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody>{d.referred.map((r, i) => <tr key={i}><td><b>{r.workspace}</b></td><td>{fmtDate(r.since)}</td><td>{chip(...STATE[r.state])}</td><td style={{ textTransform: 'capitalize' }}>{r.plan || '—'}</td><td>{r.payments}</td><td><b>{inr(r.earned_paise)}</b></td></tr>)}</tbody>
+          </table></div>}
+      </Panel>
+
+      <Panel icon={Receipt} title="Your commissions" count={d.commissions.length} flush>
+        {d.commissions.length === 0
+          ? <Empty title="Nothing earned yet" text="A commission appears here the moment a customer you referred pays." />
+          : <div className="pt-scroll"><table className="pt-table">
+            <thead><tr>{['Earned', 'Customer', 'Plan', 'They paid', 'Rate', 'You earn', 'Payable from', 'Status'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody>{d.commissions.map(c => <tr key={c.id}><td>{fmtDate(c.earned_at)}</td><td>{c.workspace}</td><td style={{ textTransform: 'capitalize' }}>{c.plan} · {c.cycle}</td><td>{inr(c.base_paise)}</td><td>{c.rate_pct}%</td><td><b>{inr(c.amount_paise)}</b></td><td>{c.status === 'paid' ? '—' : fmtDate(c.payable_after)}</td><td>{chip(...CSTATUS[c.status])}</td></tr>)}</tbody>
+          </table></div>}
+      </Panel>
+
+      <Panel icon={Wallet} title="Payouts" count={d.payouts.length} flush>
+        {d.payouts.length === 0
+          ? <Empty title="No payouts yet" text={`Once your available balance reaches ${inr(min)}, the TripSarthi team pays you and the transfer is listed here.`} />
+          : <div className="pt-scroll"><table className="pt-table">
+            <thead><tr>{['Paid on', 'Amount', 'Method', 'Reference', 'Commissions'].map(h => <th key={h}>{h}</th>)}</tr></thead>
+            <tbody>{d.payouts.map(o => <tr key={o.id}><td>{fmtDate(o.paid_at)}</td><td><b>{inr(o.amount_paise)}</b></td><td style={{ textTransform: 'uppercase' }}>{o.method}</td><td>{o.reference}</td><td>{o.commissions}</td></tr>)}</tbody>
+          </table></div>}
+      </Panel>
+
+      <div className="pt-grid2">
+        <Panel icon={Landmark} title="Where should we send your money?">
+          {d.payout_details
+            ? <div className="pt-ok">Saved: <b>{d.payout_details.method === 'upi' ? `UPI ${d.payout_details.upi}` : `${d.payout_details.account_name} · A/c ${d.payout_details.account_no} · ${d.payout_details.ifsc}`}</b>{d.payout_details.pan ? ` · PAN ${d.payout_details.pan}` : ''}. Saving new details replaces these.</div>
+            : <div className="pt-warn">Add your payout details so we can pay you. They are stored encrypted and only the TripSarthi finance team can read them.</div>}
+          <PayoutForm current={d.payout_details} onSaved={reload} />
+        </Panel>
+        <div style={{ display: 'grid', gap: 16 }}>
+          <Panel icon={BellRing} title="Contact preferences"><PreferencesForm prefs={d.preferences} onSaved={reload} /></Panel>
+          <Panel icon={KeyRound} title="Change password"><PasswordForm /></Panel>
+        </div>
       </div>
 
-      <div className="card">
-        <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Customers you referred</div>
-        <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>{['Workspace', 'Joined', 'Status', 'Plan', 'Payments', 'You earned'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>
-            {d.referred.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No one yet — share your link to get started.</td></tr>}
-            {d.referred.map((r, i) => <tr key={i}><td style={td}><b>{r.workspace}</b></td><td style={td}>{fmtDate(r.since)}</td><td style={td}>{chip(...STATE[r.state])}</td><td style={{ ...td, textTransform: 'capitalize' }}>{r.plan || '—'}</td><td style={td}>{r.payments}</td><td style={td}><b>{inr(r.earned_paise)}</b></td></tr>)}
-          </tbody>
-        </table></div>
-      </div>
-
-      <div className="card">
-        <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Your commissions</div>
-        <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>{['Earned', 'Customer', 'Plan', 'They paid', 'Rate', 'You earn', 'Payable from', 'Status'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>
-            {d.commissions.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Commissions appear here when a customer you referred pays.</td></tr>}
-            {d.commissions.map(c => <tr key={c.id}><td style={td}>{fmtDate(c.earned_at)}</td><td style={td}>{c.workspace}</td><td style={{ ...td, textTransform: 'capitalize' }}>{c.plan} · {c.cycle}</td><td style={td}>{inr(c.base_paise)}</td><td style={td}>{c.rate_pct}%</td><td style={td}><b>{inr(c.amount_paise)}</b></td><td style={td}>{fmtDate(c.payable_after)}</td><td style={td}>{chip(...CSTATUS[c.status])}</td></tr>)}
-          </tbody>
-        </table></div>
-      </div>
-
-      <div className="card">
-        <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Payouts</div>
-        <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>{['Paid on', 'Amount', 'Method', 'Reference', 'Commissions'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>
-            {d.payouts.length === 0 && <tr><td colSpan={5} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No payouts yet.</td></tr>}
-            {d.payouts.map(o => <tr key={o.id}><td style={td}>{fmtDate(o.paid_at)}</td><td style={td}><b>{inr(o.amount_paise)}</b></td><td style={{ ...td, textTransform: 'uppercase' }}>{o.method}</td><td style={td}>{o.reference}</td><td style={td}>{o.commissions}</td></tr>)}
-          </tbody>
-        </table></div>
-      </div>
-
-      <div className="card card-body">
-        <h2 style={{ margin: '0 0 4px', fontSize: '1.05rem' }}>Where should we send your money?</h2>
-        {d.payout_details
-          ? <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-3)' }}>Saved: <b style={{ color: 'var(--text)' }}>{d.payout_details.method === 'upi' ? `UPI ${d.payout_details.upi}` : `${d.payout_details.account_name} · A/c ${d.payout_details.account_no} · ${d.payout_details.ifsc}`}</b>{d.payout_details.pan ? ` · PAN ${d.payout_details.pan}` : ''}. Saving again replaces it.</p>
-          : <p style={{ margin: '0 0 12px', fontSize: 13, color: '#d97706' }}>Add your payout details so we can pay you. They are stored encrypted and only the TripSarthi finance team can read them.</p>}
-        <PayoutForm current={d.payout_details} onSaved={reload} />
-      </div>
-
-      <div className="card card-body">
-        <h2 style={{ margin: '0 0 12px', fontSize: '1.05rem' }}>Contact preferences</h2>
-        <PreferencesForm prefs={d.preferences} onSaved={reload} />
-      </div>
-
-      <div className="card card-body">
-        <h2 style={{ margin: '0 0 12px', fontSize: '1.05rem' }}>Change password</h2>
-        <PasswordForm />
-      </div>
-      <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 24px' }}>Commissions are calculated on what customers actually pay (after any discount) and are before tax. If tax (TDS) applies to your payouts, it is deducted as the law requires.</p>
-    </div>
+      <p className="pt-note">Commissions are calculated on what customers actually pay (after any discount) and are before tax. If tax (TDS) applies to your payouts, it is deducted as the law requires. Questions? Reply to any e-mail from TripSarthi.</p>
+    </>
   )
 }
