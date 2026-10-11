@@ -26,6 +26,7 @@ final class AuditLogger
             (new AuditLogModel())->insert([
                 'tenant_id'     => $tenantId ?? CurrentUser::tenantId(),
                 'actor_user_id' => $actorId ?? (CurrentUser::id() ?: null),
+                'impersonated_by' => $actorId === null ? CurrentUser::impersonatorId() : null,   // set while a TripSarthi team member is in the workspace
                 'action'        => $action,
                 'entity_type'   => $entityType,
                 'entity_id'     => $entityId,

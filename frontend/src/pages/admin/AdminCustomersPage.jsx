@@ -6,11 +6,50 @@ import { toast } from '../../components/Toast'
 import { Pill } from './AdminUi'
 import { th, td, fmtDate, ago, STATUS_COLOR, PLAN_COLOR } from './adminUtil'
 import { confirmAsk } from '../../components/confirmAsk'
+import { LogIn } from 'lucide-react'
 
 const PLANS = ['free', 'starter', 'growth', 'pro']
 const lbl = { display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }
 
 /** Right-hand panel: one customer's plan, usage, people and subscription history, with the actions the owner can take. */
+/** "Log in as customer": a reason (shown to the customer in their audit log), full access or view only, then the customer app opens in a new tab. */
+function LoginAsCustomer({ tenant }) {
+  const [open, setOpen] = useState(false)
+  const [reason, setReason] = useState('')
+  const [viewOnly, setViewOnly] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [link, setLink] = useState('')
+  async function go() {
+    setBusy(true)
+    try {
+      const r = await admin.impersonate(tenant.id, { reason, view_only: viewOnly })
+      const url = `${r.app_url}/#/impersonate/${r.token}`
+      setLink(url); setOpen(false); setReason('')
+      if (!window.open(url, '_blank', 'noopener')) toast.info('Pop-up blocked', 'Use the "Open customer app" button below.')
+    } catch (e) { toast.error('Could not sign in', e.message) }
+    finally { setBusy(false) }
+  }
+  return (
+    <div className="ad-impersonate">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div><b>Log in as this customer</b><div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Opens their app as the workspace owner. The owner is not signed out or notified; the visit appears in their audit log.</div></div>
+        <button className="btn btn-primary btn-sm" onClick={() => setOpen(o => !o)}><LogIn size={14} /> Log in as customer</button>
+      </div>
+      {open && <div className="card card-body" style={{ marginTop: 10, padding: 12 }}>
+        <label style={{ fontSize: 12.5, fontWeight: 700 }}>Reason (the customer can see this in their audit log)</label>
+        <textarea className="form-input" rows={2} maxLength={300} value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Customer reported invoices will not generate (ticket TS-00012)" />
+        <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: 13.5 }}><input type="checkbox" checked={viewOnly} onChange={e => setViewOnly(e.target.checked)} /> View only (no changes can be made)</label>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>Lasts up to 2 hours. Changing the owner's password or e-mail and paying for plans are always blocked inside a session.</div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+          <button className="btn btn-primary btn-sm" disabled={busy || reason.trim().length < 10} onClick={go}>{busy ? 'Opening…' : 'Open customer app'}</button>
+          <button className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>Cancel</button>
+        </div>
+      </div>}
+      {link && <div style={{ marginTop: 8 }}><a className="btn btn-ghost btn-sm" href={link} target="_blank" rel="noreferrer noopener">Open customer app again</a> <span style={{ fontSize: 12, color: 'var(--text-3)' }}>(single-use link; end the session from the orange bar in the customer app)</span></div>}
+    </div>
+  )
+}
+
 function CustomerDrawer({ id, onClose, onChanged }) {
   const [d, setD] = useState(null)
   const [plan, setPlan] = useState({ plan: 'growth', days: 30, amount_rs: 0, note: '' })
@@ -43,6 +82,7 @@ function CustomerDrawer({ id, onClose, onChanged }) {
         </div>
         {d && <>
           <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}><Pill color={PLAN_COLOR[t.plan]}>{t.plan}</Pill><Pill color={STATUS_COLOR[t.status]}>{t.status}</Pill></div>
+          <LoginAsCustomer tenant={t} />
 
           <h4 style={{ margin: '16px 0 8px' }}>Usage vs plan limits</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>

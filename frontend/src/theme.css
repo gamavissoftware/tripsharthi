@@ -179,3 +179,12 @@
 .cx .soc-chip.publishing i { background: #f59e0b; } .cx .soc-chip.published i { background: #1a9d57; } .cx .soc-chip.failed i { background: #d93025; }
 .cx .soc-cal-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .cx .soc-cal-dayhead h4 { margin: 0; }
+
+/* TripSarthi support session (admin "log in as customer") */
+body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
+.imp-bar { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9999; display: flex; align-items: center; gap: 10px; background: #0a1f44; color: #fff; padding: 9px 12px 9px 16px; border-radius: 999px; box-shadow: 0 8px 28px rgba(10,31,68,.35); font-size: 13px; max-width: calc(100vw - 24px); border: 2px solid #f98f26; }
+.imp-bar svg { color: #f98f26; flex-shrink: 0; }
+.imp-bar button { background: #f98f26; color: #0a1f44; border: none; border-radius: 999px; padding: 6px 14px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.aud-support { margin-left: 8px; font-size: 11px; font-weight: 700; color: #b45309; background: #fff4e5; padding: 2px 8px; border-radius: 999px; }
+
+.ad-impersonate { border: 1.5px solid #f9c88a; background: #fff8ee; border-radius: 12px; padding: 12px 14px; margin: 4px 0 14px; }

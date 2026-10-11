@@ -18,6 +18,7 @@ class CurrentUser
     private static int $tenantId             = 0;
     private static string $tenantPlan        = 'free';
     private static ?string $recordVisibility = null;
+    private static ?array $impersonation     = null;   // the support session when a TripSarthi team member is acting as this workspace's owner
 
     public static function set(array|object $user): void
     {
@@ -25,7 +26,15 @@ class CurrentUser
         self::$tenantId = (int) (is_array($user) ? ($user['tenant_id'] ?? 0) : ($user->tenant_id ?? 0));
         self::$tenantPlan = is_array($user) ? ($user['tenant_plan'] ?? 'free') : ($user->tenant_plan ?? 'free');
         self::$recordVisibility = null; // reload lazily for the new user's tenant
+        self::$impersonation    = null;
     }
+
+    public static function setImpersonation(?array $session): void { self::$impersonation = $session; }
+
+    /** The platform admin behind this request when it is a "log in as customer" session, else null. */
+    public static function impersonatorId(): ?int { return self::$impersonation !== null ? (int) self::$impersonation['admin_user_id'] : null; }
+
+    public static function impersonation(): ?array { return self::$impersonation; }
 
     public static function get(): array|object|null
     {
@@ -91,5 +100,6 @@ class CurrentUser
         self::$tenantId         = 0;
         self::$tenantPlan       = 'free';
         self::$recordVisibility = null;
+        self::$impersonation    = null;
     }
 }

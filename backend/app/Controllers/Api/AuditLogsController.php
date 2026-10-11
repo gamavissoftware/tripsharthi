@@ -52,10 +52,12 @@ class AuditLogsController extends ResourceController
                 'action'      => $r['action'],
                 'entity_type' => $r['entity_type'],
                 'entity_id'   => $r['entity_id'] !== null ? (int) $r['entity_id'] : null,
-                'actor'       => $r['actor_user_id'] !== null ? ($names[(int) $r['actor_user_id']] ?? ('User #' . $r['actor_user_id'])) : 'System',
+                // A change made by a TripSarthi team member inside this workspace is shown as such (never as the owner, never with the person's name).
+                'actor'       => ($r['impersonated_by'] ?? null) !== null ? 'TripSarthi support' : ($r['actor_user_id'] !== null ? ($names[(int) $r['actor_user_id']] ?? ('User #' . $r['actor_user_id'])) : 'System'),
+                'support'     => ($r['impersonated_by'] ?? null) !== null,
                 'before'      => json_decode($r['before'] ?? 'null', true),
                 'after'       => json_decode($r['after'] ?? 'null', true),
-                'ip'          => $r['ip'],
+                'ip'          => ($r['impersonated_by'] ?? null) !== null ? null : $r['ip'],
                 'created_at'  => $r['created_at'],
             ];
         }, $rows);

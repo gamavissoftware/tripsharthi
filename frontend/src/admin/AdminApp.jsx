@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
 import AdminLoginPage from './AdminLoginPage'
 import AdminOverviewPage from '../pages/admin/AdminOverviewPage'
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage'
+import AdminAccessLogPage from '../pages/admin/AdminAccessLogPage'
 import AdminSubscriptionsPage from '../pages/admin/AdminSubscriptionsPage'
 import AdminInboxPage from '../pages/admin/AdminInboxPage'
 import AdminOffersPage from '../pages/admin/AdminOffersPage'
@@ -35,6 +36,7 @@ const NAV = [
     { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
     { to: '/admin/whatsapp',      label: 'WhatsApp',      icon: MessageCircle },
     { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
+    { to: '/admin/access-log',    label: 'Access log',    icon: ScrollText },
   ] },
 ]
 
@@ -97,6 +99,7 @@ function Shell({ user, onLogout }) {
           <Route path="/admin/whatsapp" element={<AdminWhatsappPage />} />
           <Route path="/admin/whatsapp/:id" element={<AdminWhatsappWorkspacePage />} />
           <Route path="/admin/inbox" element={<AdminInboxPage />} />
+          <Route path="/admin/access-log" element={<AdminAccessLogPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </main>

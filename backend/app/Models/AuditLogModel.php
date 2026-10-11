@@ -13,6 +13,6 @@ class AuditLogModel extends BaseModel
     protected $useTimestamps  = false; // we set created_at explicitly
 
     protected $allowedFields = [
-        'tenant_id', 'actor_user_id', 'action', 'entity_type', 'entity_id', 'before', 'after', 'ip', 'created_at',
+        'tenant_id', 'actor_user_id', 'impersonated_by', 'action', 'entity_type', 'entity_id', 'before', 'after', 'ip', 'created_at',
     ];
 }

@@ -167,6 +167,12 @@ class AuthController extends ResourceController
 
     public function logout(): ResponseInterface
     {
+        // A TripSarthi support session ends only ITSELF: the real owner's login must never be touched.
+        if (CurrentUser::impersonation() !== null) {
+            (new \App\Services\Admin\ImpersonationService())->end((int) CurrentUser::impersonation()['id'], 'logout');
+            CurrentUser::reset();
+            return $this->respond(['success' => true, 'message' => 'Support session ended.']);
+        }
         $userModel = new UserModel();
         $userModel->revokeToken(CurrentUser::id());
         CurrentUser::reset();
@@ -180,9 +186,11 @@ class AuthController extends ResourceController
 
     public function me(): ResponseInterface
     {
+        $imp = CurrentUser::impersonation();
         return $this->respond([
             'success' => true,
             'user'    => $this->safeUser(CurrentUser::get()),
+            'support_session' => $imp === null ? null : ['view_only' => (int) $imp['read_only'] === 1, 'expires_at' => $imp['expires_at'], 'reason' => $imp['reason']],
         ]);
     }
 

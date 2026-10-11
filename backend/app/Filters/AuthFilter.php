@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filters;
 
 use App\Models\UserModel;
+use App\Services\Admin\ImpersonationService;
 use App\Services\Auth\CurrentUser;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
@@ -37,8 +38,22 @@ class AuthFilter implements FilterInterface
         $userModel = new UserModel();
         $user      = $userModel->findByToken($rawToken);
 
+        // Not a customer token? It may be a "log in as customer" support session opened by a platform admin (separate token, acts as the workspace owner).
         if ($user === null) {
-            return $this->unauthorized('Invalid or expired token.');
+            $imp = (new ImpersonationService())->resolve($rawToken);
+            if ($imp === null) {
+                return $this->unauthorized('Invalid or expired token.');
+            }
+            $refusal = ImpersonationService::refusal($request->getMethod(), $request->getUri()->getPath(), (int) $imp['session']['read_only'] === 1);
+            if ($refusal !== null) {
+                return service('response')->setStatusCode(403)->setContentType('application/json')->setBody(json_encode(['success' => false, 'code' => 'support_session_limited', 'message' => $refusal]));
+            }
+            CurrentUser::set($imp['user']);
+            CurrentUser::setImpersonation($imp['session']);
+            if (! in_array(strtoupper($request->getMethod()), ['GET', 'HEAD', 'OPTIONS'], true) && ! str_ends_with(rtrim($request->getUri()->getPath(), '/'), 'auth/logout')) {
+                (new ImpersonationService())->countWrite((int) $imp['session']['id']);
+            }
+            return null;   // suspended workspaces are deliberately reachable: support often needs to look inside one
         }
 
         // A suspended or cancelled workspace cannot use the API (platform admins are never locked out). 403, not 401: the SPA logs out on 401.

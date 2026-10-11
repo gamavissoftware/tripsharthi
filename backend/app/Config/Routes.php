@@ -470,6 +470,9 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('tenants/(:num)',             'Api\PlatformAdminController::tenant/$1');
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
+        $routes->post('tenants/(:num)/impersonate', 'Api\AdminImpersonationController::start/$1');   // "log in as customer" (reason required, audited, visible to the customer)
+        $routes->get('impersonations',             'Api\AdminImpersonationController::list');
+        $routes->post('impersonations/(:num)/end', 'Api\AdminImpersonationController::end/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
         // WhatsApp: oversight of every workspace + TripSarthi's own marketing
         $routes->get('email',                                      'Api\AdminEmailController::index');

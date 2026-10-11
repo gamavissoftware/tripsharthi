@@ -165,7 +165,7 @@ trait CrmTestSchema
         )");
 
         $db->query("CREATE TABLE IF NOT EXISTS {$p}audit_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT, tenant_id INTEGER NOT NULL, actor_user_id INTEGER,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, tenant_id INTEGER NOT NULL, actor_user_id INTEGER, impersonated_by INTEGER,
             action TEXT, entity_type TEXT, entity_id INTEGER, before TEXT, after TEXT, ip TEXT, created_at TEXT
         )");
 

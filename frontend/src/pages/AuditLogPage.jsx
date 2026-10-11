@@ -79,7 +79,7 @@ export default function AuditLogPage() {
                       <Fragment key={r.id}>
                         <tr style={{ borderTop: '1px solid #f6f7f9', cursor: hasDiff ? 'pointer' : 'default' }} onClick={() => hasDiff && setOpenId(openId === r.id ? null : r.id)}>
                           <td style={{ ...td, color: '#6b7280', whiteSpace: 'nowrap' }}>{r.created_at?.slice(0, 16)}</td>
-                          <td style={{ ...td, fontWeight: 600 }}>{r.actor}</td>
+                          <td style={{ ...td, fontWeight: 600 }}>{r.actor}{r.support && <span className="aud-support">support</span>}</td>
                           <td style={td}><span style={{ background: a.bg, color: a.color, borderRadius: 999, padding: '.12rem .55rem', fontSize: 11.5, fontWeight: 700 }}>{a.label}</span></td>
                           <td style={{ ...td, textTransform: 'capitalize' }}>{r.entity_type?.replace(/_/g, ' ')}{r.entity_id ? ` #${r.entity_id}` : ''}</td>
                           <td style={{ ...td, textAlign: 'right', color: '#cbd5e1' }}>{hasDiff ? (openId === r.id ? '▲' : '▼') : ''}</td>
