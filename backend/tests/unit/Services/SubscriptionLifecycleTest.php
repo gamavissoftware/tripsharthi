@@ -177,4 +177,25 @@ final class SubscriptionLifecycleTest extends CIUnitTestCase
         $this->hook($this->orderPaid('order_W1', 'pay_W1', 149900));                // Razorpay retries: still exactly one active period
         $this->assertSame(1, db_connect()->table('subscriptions')->where('tenant_id', 1)->where('status', 'active')->countAllResults());
     }
+
+    public function testCheckoutWithoutRazorpayKeysSaysSoInsteadOfCrashing(): void
+    {
+        PlatformRazorpay::clear(1);
+        $keys = ['RAZORPAY_MOCK_MODE' => 'false', 'RAZORPAY_KEY_ID' => '', 'RAZORPAY_KEY_SECRET' => ''];
+        $old = [];
+        foreach ($keys as $k => $v) { $old[$k] = [$_ENV[$k] ?? null, $_SERVER[$k] ?? null, getenv($k)]; $_ENV[$k] = $_SERVER[$k] = $v; putenv("$k=$v"); }
+        try {
+            (new BillingService())->createOrder(1, 'starter', 'monthly');
+            $this->fail('expected a refusal');
+        } catch (\DomainException $e) {
+            $this->assertStringContainsString('not switched on', $e->getMessage());
+        } finally {
+            foreach ($old as $k => [$e, $sv, $g]) {
+                $e === null ? ($_ENV[$k] = null) : ($_ENV[$k] = $e); $sv === null ? ($_SERVER[$k] = null) : ($_SERVER[$k] = $sv);
+                if ($e === null) { unset($_ENV[$k]); } if ($sv === null) { unset($_SERVER[$k]); }
+                $g === false ? putenv($k) : putenv("$k=$g");
+            }
+        }
+        $this->assertSame(0, db_connect()->table('subscriptions')->where('tenant_id', 1)->where('status', 'created')->countAllResults(), 'no half-made order is left behind');
+    }
 }

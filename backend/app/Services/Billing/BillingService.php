@@ -82,6 +82,10 @@ class BillingService
         if ($this->isMockMode()) {
             $orderId = 'order_mock_' . bin2hex(random_bytes(8));
         } else {
+            if (PlatformRazorpay::keyId() === '' || PlatformRazorpay::keySecret() === '') {
+                log_message('critical', "BillingService: tenant#{$tenantId} tried to pay but no Razorpay keys are configured (admin app -> Payments).");
+                throw new \DomainException('Online payment is not switched on yet. Please contact TripSarthi support and we will help you upgrade.');
+            }
             $result  = $this->razorpayPost('/orders', [
                 'amount'          => $amountPaise,
                 'currency'        => 'INR',
