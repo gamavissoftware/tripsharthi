@@ -56,7 +56,7 @@ export default function AdminMailPage() {
         <div style={{ fontWeight: 700, marginBottom: 2 }}>SMTP settings</div>
         <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
           Support replies, plan reminders, password resets and marketing e-mails go out through this. Saving first sends a real test e-mail to <b>you</b>; if the mail server refuses, nothing is saved. The password is never shown again; leave it empty to keep the saved one.
-          <br />Using Gmail: server <code>smtp.gmail.com</code>, port <code>587</code>, TLS, username = the Gmail address, password = a Google <b>App Password</b> (Google Account → Security → 2-Step Verification → App passwords), and the same address as “from”.
+          <br />Using Gmail: server <code>smtp.gmail.com</code>, port <code>465</code> with SSL (this server blocks port 587; on other hosts 587 with TLS also works), username = the Gmail address, password = a Google <b>App Password</b> (Google Account → Security → 2-Step Verification → App passwords), and the same address as “from”.
         </div>
         <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', maxWidth: 760 }}>
           <label>Mail server<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp.gmail.com" spellCheck={false} required /></label>
