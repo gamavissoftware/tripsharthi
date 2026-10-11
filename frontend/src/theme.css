@@ -114,3 +114,8 @@
 .cx .ps-dot.google { background: #ea4335; }
 .cx .ps-dot.direct { background: #c3cde0; border-radius: 50%; }
 .cx .ps-inl { vertical-align: -2px; color: var(--primary); margin-right: 1px; }
+
+/* Booking detail */
+.cx .bk-h3 { font-size: 16px; font-weight: 800; color: var(--navy, #0a1f44); display: flex; align-items: center; gap: 8px; padding-bottom: 10px; border-bottom: 2px solid #eef3f9; margin-bottom: 10px !important; }
+.cx .bk-h3::before { content: ''; width: 4px; height: 16px; border-radius: 2px; background: linear-gradient(180deg, #0a6cc4, #12a89e); }
+.cx .btn-sm.btn-ghost svg { vertical-align: -2px; margin-right: 3px; }

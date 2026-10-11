@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { Boxes } from 'lucide-react'
 
 const FIELD_TYPES = ['text', 'textarea', 'number', 'date', 'select', 'boolean', 'email', 'phone']
 
@@ -19,7 +20,7 @@ function CreateObjectModal({ onClose, onCreated }) {
   return (
     <div onClick={onClose} style={modalBg}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={modalCard}>
-        <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>📦 New Custom Object</h3>
+        <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>New Custom Object</h3>
         <label style={lbl}>Singular name *</label>
         <input value={form.label_singular} onChange={e => setForm(f => ({ ...f, label_singular: e.target.value }))} placeholder="e.g. Property" autoFocus style={inp} />
         <label style={lbl}>Plural name</label>
@@ -100,7 +101,7 @@ export default function CustomObjectsPage() {
     <div className="page" style={{ maxWidth: 820 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>📦 Custom Objects</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Boxes size={18} /></span>Custom Objects</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Model anything your industry needs — Properties, Patients, Policies, and more.</p>
         </div>
         <button onClick={() => setShowCreate(true)} style={btnPrimary}>+ New Object</button>
@@ -108,7 +109,7 @@ export default function CustomObjectsPage() {
 
       {/* Industry template quick-start */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '.6rem' }}>⚡ Quick start — apply an industry template</div>
+        <div style={{ fontSize: '.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.08em', marginBottom: '.6rem' }}>Quick start — apply an industry template</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '.6rem' }}>
           {templates.map(t => (
             <div key={t.key} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.85rem' }}>
