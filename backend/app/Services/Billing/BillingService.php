@@ -172,29 +172,76 @@ class BillingService
             ->get()->getRowArray();
 
         if ($order === null) {
+            // The payment webhook may have activated this very order a moment before the browser's callback arrived:
+            // that is a success for the customer, not an error.
+            $done = $db->table('subscriptions')->where('tenant_id', $tenantId)->where('razorpay_sub_id', $paymentId)->where('status', 'active')->countAllResults();
+            if ($done > 0) { return; }
             throw new \RuntimeException('No matching pending order for this tenant — refusing to activate.');
         }
 
+        $this->activateOrder($order, $paymentId);
+    }
+
+    /**
+     * Razorpay's own "order paid" / "payment captured" notification (signature-checked by the webhook controller). This is the safety net
+     * for a customer who pays and closes the browser before the checkout callback reaches us: the money is taken, so the plan must open.
+     * Only an order WE created counts, and only when the amount paid covers the amount we asked for.
+     *
+     * @return string activated | already | unknown | amount_mismatch
+     */
+    public function confirmOrderPaid(string $orderId, string $paymentId, int $amountPaidPaise): string
+    {
+        $db = db_connect();
+        $order = $db->table('subscriptions')->where('razorpay_sub_id', $orderId)->where('status', 'created')->get()->getRowArray();
+        if ($order === null) {
+            $done = $db->table('subscriptions')->where('razorpay_sub_id', $paymentId)->where('status', 'active')->countAllResults();
+            if ($done > 0) { return 'already'; }
+            log_message('critical', "BillingService: Razorpay says order {$orderId} (payment {$paymentId}) is PAID but no pending order of ours matches - check by hand.");
+            return 'unknown';
+        }
+        if ($amountPaidPaise < (int) $order['amount_paise']) {
+            log_message('critical', "BillingService: order {$orderId} paid {$amountPaidPaise} paise but {$order['amount_paise']} was expected - NOT activated, check by hand.");
+            return 'amount_mismatch';
+        }
+        return $this->activateOrder($order, $paymentId) ? 'activated' : 'already';
+    }
+
+    /**
+     * Open the paid period for one pending order. Atomic: if the callback and the webhook arrive together only one of them
+     * flips the row, so a plan is never opened (or a commission earned) twice. A renewal made before the current period ends
+     * starts when that period ends, so no paid days are lost.
+     *
+     * @return bool true when THIS call activated it, false when it was already active
+     */
+    private function activateOrder(array $order, string $paymentId): bool
+    {
+        $db       = db_connect();
+        $tenantId = (int) $order['tenant_id'];
         $plan        = $order['plan'];
         $cycle       = ($order['billing_cycle'] === 'annual') ? 'annual' : 'monthly';
         $amountPaise = (int) ($order['amount_paise'] ?: ($this->resolveAmountInr($plan, $cycle) * 100));
         $periodDays  = ($cycle === 'annual') ? 365 : 30;
         $now         = new \DateTime();
-        $periodEnd   = (clone $now)->modify("+{$periodDays} days");
 
-        // Activate that exact order row.
+        $running = $db->table('subscriptions')->selectMax('current_period_end', 'e')->where('tenant_id', $tenantId)->where('status', 'active')->where('current_period_end >', $now->format('Y-m-d H:i:s'))->get()->getRowArray();
+        $start     = (! empty($running['e'])) ? new \DateTime((string) $running['e']) : clone $now;
+        $periodEnd = (clone $start)->modify("+{$periodDays} days");
+
+        // Activate that exact order row - only if nobody else already did.
         $db->table('subscriptions')
             ->where('id', $order['id'])
+            ->where('status', 'created')
             ->update([
                 'razorpay_sub_id'      => $paymentId,   // store payment_id as the subscription reference
                 'razorpay_customer_id' => $paymentId,
                 'amount_paise'         => $amountPaise,
                 'billing_cycle'        => $cycle,
                 'status'               => 'active',
-                'current_period_start' => $now->format('Y-m-d H:i:s'),
+                'current_period_start' => $start->format('Y-m-d H:i:s'),
                 'current_period_end'   => $periodEnd->format('Y-m-d H:i:s'),
                 'updated_at'           => $now->format('Y-m-d H:i:s'),
             ]);
+        if ($db->affectedRows() < 1) { return false; }
 
         // Update the tenant's plan to the verified, paid-for plan.
         $db->table('tenants')->where('id', $tenantId)->update([
@@ -212,6 +259,7 @@ class BillingService
         catch (\Throwable $e) { log_message('critical', "BillingService: could not record the partner commission for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
 
         log_message('info', "BillingService: tenant#{$tenantId} activated plan={$plan} via payment={$paymentId}");
+        return true;
     }
 
     /**

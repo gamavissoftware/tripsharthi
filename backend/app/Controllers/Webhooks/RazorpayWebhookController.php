@@ -43,6 +43,13 @@ class RazorpayWebhookController extends Controller
         $payload = json_decode($rawBody, true);
         $event   = $payload['event'] ?? '';
 
+        // Prepaid checkout: Razorpay tells us an ORDER was paid. Safety net for a customer who pays and closes the page before
+        // our own callback runs. Idempotent (the callback and this notice can arrive in either order).
+        if ($event === 'order.paid' || $event === 'payment.captured') {
+            $this->handleOrderPaid($event, $payload);
+            return $this->response->setStatusCode(200)->setBody('OK');
+        }
+
         $subEntity = $payload['payload']['subscription']['entity'] ?? null;
         if (! $subEntity) {
             return $this->response->setStatusCode(200)->setBody('OK');
@@ -74,6 +81,23 @@ class RazorpayWebhookController extends Controller
         }
 
         return $this->response->setStatusCode(200)->setBody('OK');
+    }
+
+    private function handleOrderPaid(string $event, array $payload): void
+    {
+        try {
+            $pay     = $payload['payload']['payment']['entity'] ?? [];
+            $ord     = $payload['payload']['order']['entity'] ?? [];
+            $orderId = (string) ($ord['id'] ?? $pay['order_id'] ?? '');
+            $payId   = (string) ($pay['id'] ?? '');
+            if ($orderId === '' || $payId === '') { return; }
+            if (isset($pay['status']) && $pay['status'] !== 'captured') { return; }   // authorised only: money not taken yet
+            $paid = (int) ($ord['amount_paid'] ?? $pay['amount'] ?? 0);
+            $r = (new BillingService())->confirmOrderPaid($orderId, $payId, $paid);
+            log_message('info', "RazorpayWebhook: {$event} order {$orderId} -> {$r}");
+        } catch (\Throwable $e) {
+            log_message('error', "RazorpayWebhook: error handling {$event}: " . $e->getMessage());
+        }
     }
 
     // ------------------------------------------------------------------

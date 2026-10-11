@@ -58,7 +58,7 @@ final class PlatformRazorpay
         $warnings = [];
         if ($mock) { $warnings[] = 'Mock mode is ON in the server settings (RAZORPAY_MOCK_MODE): payments are simulated and no real money moves. Switch it off before taking real payments.'; }
         if ($id !== '' && ! $secretSet) { $warnings[] = 'A Key ID is saved but the Key Secret is missing - checkout will fail.'; }
-        if (self::webhookSecret() === '') { $warnings[] = 'No webhook secret yet: Razorpay can\'t tell us about cancelled or halted subscriptions until you add one.'; }
+        if (self::webhookSecret() === '') { $warnings[] = 'No webhook secret yet: if a customer pays and closes the page before checkout finishes, the plan will not open automatically. Add the webhook below.'; }
         return [
             'configured'     => $id !== '' && $secretSet,
             'source'         => $id === '' ? 'none' : ($fromAdmin ? 'admin' : 'server'),

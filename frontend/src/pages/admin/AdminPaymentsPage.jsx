@@ -71,7 +71,7 @@ export default function AdminPaymentsPage() {
         <div style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
           <label>Key ID<input className="form-input" value={f.key_id} onChange={e => setF({ ...f, key_id: e.target.value })} placeholder="rzp_live_…" spellCheck={false} autoComplete="off" required /></label>
           <label>Key Secret<input className="form-input" type="password" value={f.key_secret} onChange={e => setF({ ...f, key_secret: e.target.value })} placeholder={st.secret_set ? '•••••••• saved — leave empty to keep' : 'Paste the Key Secret'} autoComplete="new-password" spellCheck={false} /></label>
-          <label>Webhook secret <span style={{ color: 'var(--text-3)' }}>(optional now, needed for cancelled / halted subscriptions)</span>
+          <label>Webhook secret <span style={{ color: 'var(--text-3)' }}>(recommended: lets Razorpay confirm a payment even if the customer closes the page)</span>
             <input className="form-input" type="password" value={f.webhook_secret} onChange={e => setF({ ...f, webhook_secret: e.target.value })} placeholder={st.webhook_set ? '•••••••• saved — leave empty to keep' : 'The secret you typed in Razorpay → Webhooks'} autoComplete="new-password" spellCheck={false} /></label>
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -83,12 +83,12 @@ export default function AdminPaymentsPage() {
 
       <div className="card card-body">
         <div style={{ fontWeight: 700, marginBottom: 4 }}>Webhook (in the Razorpay dashboard)</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>Settings → Webhooks → Add. Use this URL, choose your own secret (paste the same one above), and tick the subscription events (activated, charged, halted, cancelled, completed).</div>
+        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>Settings → Webhooks → Add. Use this URL, choose your own secret (paste the same one above), and tick Order → order.paid and Payment → payment.captured.</div>
         <div style={{ display: 'flex', gap: 8, maxWidth: 620 }}>
           <input className="form-input" readOnly value={st.webhook_url} onFocus={e => e.target.select()} style={{ fontFamily: 'ui-monospace,monospace', fontSize: 12 }} />
           <button type="button" className="btn btn-ghost" onClick={() => copy(st.webhook_url)}>Copy</button>
         </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Payments themselves don&apos;t need the webhook: they are confirmed by a signed callback straight after checkout.</div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Normally a payment is confirmed by a signed callback straight after checkout. The webhook is the safety net: if the customer pays and closes the page, Razorpay tells us and the plan still opens.</div>
       </div>
     </div>
   )
