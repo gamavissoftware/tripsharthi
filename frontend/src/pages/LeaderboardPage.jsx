@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { fmt } from '../components/Charts'
+import { Trophy } from 'lucide-react'
 
 // ── Sales leaderboard (Phase I4) ─────────────────────────────────────────────
 
@@ -26,7 +27,7 @@ export default function LeaderboardPage() {
     <div className="page" style={{ maxWidth: 900 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🏆 Leaderboard</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Trophy size={18} /></span>Leaderboard</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Composite of won revenue, conversions, pipeline, and follow-up.</p>
         </div>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12.5 }}>

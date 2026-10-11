@@ -3,6 +3,7 @@ import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import { fmt } from '../components/Charts'
+import { TrendingUp } from 'lucide-react'
 
 // ── Forecasting + targets (Phase I3) ─────────────────────────────────────────
 
@@ -76,7 +77,7 @@ export default function ForecastPage() {
     <div className="page" style={{ maxWidth: 960 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🔮 Forecast</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><TrendingUp size={18} /></span>Forecast</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Weighted pipeline and target attainment.</p>
         </div>
         <button onClick={() => setShowTarget(true)} style={btn(true)}>🎯 Set target</button>

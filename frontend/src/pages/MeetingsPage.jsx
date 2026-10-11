@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import ContactPicker from '../components/crm/ContactPicker'
+import { CalendarDays } from 'lucide-react'
 
 const STATUS = {
   scheduled: { label: 'Scheduled', bg: '#e8f3fc', color: '#074a8c' },
@@ -105,7 +106,7 @@ export default function MeetingsPage() {
   return (
     <div className="page" style={{ maxWidth: 820 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>📅 Meetings</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><CalendarDays size={18} /></span>Meetings</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your agenda for the next 30 days. Booking a meeting can fire a flow.</p>
       </div>
 

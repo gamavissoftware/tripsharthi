@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { Trash2 } from 'lucide-react'
 
 // ── Recycle bin (Phase G6) ───────────────────────────────────────────────────
 // Browse soft-deleted CRM records per entity, then restore or permanently purge.
@@ -65,7 +66,7 @@ export default function RecycleBinPage() {
   return (
     <div className="page" style={{ maxWidth: 980 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🗑 Recycle Bin</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><Trash2 size={18} /></span>Recycle Bin</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Restore deleted records, or remove them permanently.</p>
       </div>
 

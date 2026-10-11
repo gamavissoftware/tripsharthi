@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { crm, rupees } from '../api/crm'
 import { toast } from '../components/Toast'
 import CrmListView from '../components/CrmListView'
+import { Briefcase } from 'lucide-react'
 
 const initials = (n) => (n || '#').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -146,7 +147,7 @@ export default function DealsPage() {
     <div className="page" style={{ maxWidth: '100%' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>💼 Deals</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Briefcase size={18} /></span>Deals</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>
             {board ? `${board.pipeline.name} · open pipeline value ${rupees(grandTotal)}` : 'Your sales pipeline'}
           </p>

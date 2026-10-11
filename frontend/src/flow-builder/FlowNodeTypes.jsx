@@ -93,7 +93,7 @@ const COLORS = {
   trigger: { border:'#16a34a', bg:'#f0fdf4' },
   action:  { border:'#08569f', bg:'#e8f3fc' },
   control: { border:'#d97706', bg:'#fffbeb' },
-  window:  { border:'#0e8f8c', bg:'#f5f3ff' },
+  window:  { border:'#0e8f8c', bg:'#e8f6f5' },
 }
 
 function nodeColor(type) {
@@ -370,7 +370,7 @@ export const nodeTypes = {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
           {handles.slice(0, 3).map((h, i) => (
             <span key={h.id ?? i} style={{
-              fontSize: 10, background: '#e0e7ff', color: '#074a8c',
+              fontSize: 10, background: '#e8f3fc', color: '#074a8c',
               borderRadius: 4, padding: '1px 6px', border: '1px solid #bcdcf6',
             }}>
               {(h.title ?? h.id ?? '').slice(0, 18)}

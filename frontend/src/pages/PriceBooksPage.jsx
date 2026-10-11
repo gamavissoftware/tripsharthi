@@ -3,6 +3,7 @@ import { crm } from '../api/crm'
 import { products as productsApi } from '../api/products'
 import { toast } from '../components/Toast'
 import { fmt } from '../components/Charts'
+import { BadgeIndianRupee } from 'lucide-react'
 
 // ── Price books (Phase J3) ───────────────────────────────────────────────────
 // Per-tenant named price lists; each overrides product prices for deals that
@@ -63,7 +64,7 @@ export default function PriceBooksPage() {
     <div className="page" style={{ maxWidth: 760 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>💲 Price Books</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><BadgeIndianRupee size={18} /></span>Price Books</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Named price lists; a deal can pick one to override product prices.</p>
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>

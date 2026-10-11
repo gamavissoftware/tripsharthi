@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { CheckSquare } from 'lucide-react'
 
 const TYPE_ICON = { call: '📞', whatsapp: '💬', email: '✉️', meeting: '🗓️', todo: '✓' }
 const PRIORITY = {
@@ -67,7 +68,7 @@ export default function TasksPage() {
   return (
     <div className="page" style={{ maxWidth: 820 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>✓ My Tasks</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><CheckSquare size={18} /></span>My Tasks</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your open follow-ups across every contact and deal.</p>
       </div>
 

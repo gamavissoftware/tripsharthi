@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { GitMerge } from 'lucide-react'
 
 // ── Find duplicates + merge (Phase G5) ───────────────────────────────────────
 // Lists groups of likely-duplicate contacts/accounts. Within a group, pick the
@@ -56,7 +57,7 @@ export default function DuplicatesPage() {
   return (
     <div className="page" style={{ maxWidth: 880 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🔀 Find Duplicates</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><GitMerge size={18} /></span>Find Duplicates</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Spot records that share a phone, email, or domain, and merge them into one.</p>
       </div>
 

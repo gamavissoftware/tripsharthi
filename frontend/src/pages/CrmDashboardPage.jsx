@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { crm, rupees } from '../api/crm'
 import { toast } from '../components/Toast'
+import { BarChart3 } from 'lucide-react'
 
 const LIFECYCLE_LABEL = { subscriber: 'Subscriber', lead: 'Lead', mql: 'MQL', sql: 'SQL', opportunity: 'Opportunity', customer: 'Customer', evangelist: 'Evangelist', other: 'Other' }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -148,7 +149,7 @@ export default function CrmDashboardPage() {
   return (
     <div className="page" style={{ maxWidth: 1180 }}>
       <div style={{ marginBottom: '1.25rem' }}>
-        <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>📊 CRM Dashboard</h1>
+        <h1 className="ps-h1"><span className="ps-ico"><BarChart3 size={18} /></span>CRM Dashboard</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your whole business at a glance — WhatsApp, leads, pipeline, revenue, service and tasks.</p>
       </div>
 

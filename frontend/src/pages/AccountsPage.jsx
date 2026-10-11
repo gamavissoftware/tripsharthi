@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import CrmListView from '../components/CrmListView'
+import { Building2 } from 'lucide-react'
 
 const TYPE = {
   prospect: { label: 'Prospect', bg: '#e8f3fc', color: '#08569f' },
@@ -98,7 +99,7 @@ export default function AccountsPage() {
     <div className="page" style={{ maxWidth: 1000 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>🏢 Accounts</h1>
+          <h1 className="ps-h1"><span className="ps-ico"><Building2 size={18} /></span>Accounts</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Companies and organizations your contacts belong to.</p>
         </div>
         <button onClick={() => setShowCreate(true)} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer' }}>+ New Account</button>

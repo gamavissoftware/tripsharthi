@@ -666,7 +666,7 @@ export default function NodeConfigPanel({ node, onChange, readOnly, tags, users 
             ))}
             {!readOnly && buttons.length < 3 && (
               <button onClick={() => setButtons([...buttons,{id:`btn_${buttons.length+1}`,title:`Option ${buttons.length+1}`}])}
-                style={{ fontSize:11, background:'#e0e7ff', border:'1px solid #bcdcf6', borderRadius:4, padding:'2px 8px', cursor:'pointer', color:'#074a8c' }}>
+                style={{ fontSize:11, background:'#e8f3fc', border:'1px solid #bcdcf6', borderRadius:4, padding:'2px 8px', cursor:'pointer', color:'#074a8c' }}>
                 + Add button
               </button>
             )}
