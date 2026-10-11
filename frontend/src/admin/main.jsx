@@ -4,6 +4,9 @@ import '@fontsource-variable/inter'
 import '../index.css'
 import '../App.css'
 import AdminApp from './AdminApp.jsx'
+import { installClipboardFallback } from '../lib/clipboardFallback'
+
+installClipboardFallback()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

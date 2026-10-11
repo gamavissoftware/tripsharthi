@@ -100,9 +100,10 @@ export default function AdminPartnerDetailPage() {
     if (!(await confirmAsk(msg))) return
     try { await admin.partnerStatus(p.id, st); toast.success(st === 'suspended' ? 'Suspended' : 'Reactivated'); load() } catch (e) { toast.error('Not changed', e.message) }
   }
-  async function newInvite() {
-    if (!(await confirmAsk('Issue a new one-time set-password link? (Use this to reset a forgotten password.)'))) return
-    try { const r = await admin.partnerInvite(p.id); setInvite(r.invite_url); load() } catch (e) { toast.error('Not issued', e.message) }
+  async function newInvite(sendEmail) {
+    const msg = sendEmail ? `Issue a new one-time link and e-mail it to ${p.email}? The old link stops working.` : 'Issue a new one-time set-password link? The old link stops working. (Use this to reset a forgotten password.)'
+    if (!(await confirmAsk(msg))) return
+    try { const r = await admin.partnerInvite(p.id, sendEmail); setInvite({ url: r.invite_url, emailed: r.emailed, emailTo: r.email_to, emailError: r.email_error }); load() } catch (e) { toast.error('Not issued', e.message) }
   }
   async function voidIt(c) {
     const reason = window.prompt(`Void the ${inr(c.amount_paise)} commission for ${c.tenant_name || 'this customer'}? It cannot be undone.\n\nReason (kept in the log):`)
@@ -120,13 +121,14 @@ export default function AdminPartnerDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-ghost" onClick={() => setEdit(e => !e)}>Edit</button>
-          <button className="btn btn-ghost" onClick={newInvite}>{p.has_password ? 'Reset password link' : 'New invite link'}</button>
+          <button className="btn btn-ghost" onClick={() => newInvite(false)}>{p.has_password ? 'Reset password link' : 'New invite link'}</button>
+          <button className="btn btn-ghost" onClick={() => newInvite(true)}>{p.has_password ? 'E-mail a reset link' : 'E-mail a new invite'}</button>
           {p.status === 'active' && <button className="btn btn-ghost" style={{ color: 'var(--danger)' }} onClick={() => setStatus('suspended')}>Suspend</button>}
           {p.status === 'suspended' && <button className="btn btn-primary" onClick={() => setStatus('active')}>Reactivate</button>}
         </div>
       </div>
 
-      {invite && <InviteBox url={invite} onClose={() => setInvite(null)} />}
+      {invite && <InviteBox url={invite.url} emailed={invite.emailed} emailTo={invite.emailTo} emailError={invite.emailError} onClose={() => setInvite(null)} />}
       {edit && <EditTerms p={{ ...p, notes: d.partner.notes }} onCancel={() => setEdit(false)} onSaved={() => { setEdit(false); load() }} />}
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>

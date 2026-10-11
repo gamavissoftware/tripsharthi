@@ -62,7 +62,7 @@ export const admin = {
   createPartner:      (b)       => api.post('/admin/partners', b).then(unwrap),
   updatePartner:      (id, b)   => api.put(`/admin/partners/${id}`, b).then(unwrap),
   partnerStatus:      (id, st)  => api.post(`/admin/partners/${id}/status`, { status: st }).then(unwrap),
-  partnerInvite:      (id)      => api.post(`/admin/partners/${id}/invite`, {}).then(unwrap),
+  partnerInvite:      (id, sendEmail = false) => api.post(`/admin/partners/${id}/invite`, { send_email: sendEmail }).then(unwrap),
   partnerPayout:      (id, b)   => api.post(`/admin/partners/${id}/payout`, b).then(unwrap),
   voidCommission:     (id, reason) => api.post(`/admin/commissions/${id}/void`, { reason }).then(unwrap),
 

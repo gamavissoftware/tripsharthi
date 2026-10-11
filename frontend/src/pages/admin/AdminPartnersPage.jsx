@@ -8,7 +8,7 @@ import { th, td, PARTNER_STATUS_COLOR } from './adminUtil'
 
 const termsText = (p) => `${p.commission_pct}% · ${p.commission_months === 0 ? 'lifetime' : `${p.commission_months} mo`} · ${p.hold_days}d hold`
 
-const BLANK = { name: '', email: '', company: '', phone: '', code: '', commission_pct: 20, commission_months: 12, hold_days: 30, notes: '' }
+const BLANK = { name: '', email: '', company: '', phone: '', code: '', commission_pct: 20, commission_months: 12, hold_days: 30, notes: '', send_email: true }
 
 function NewPartnerForm({ onCreated, onCancel }) {
   const [f, setF] = useState(BLANK)
@@ -31,6 +31,7 @@ function NewPartnerForm({ onCreated, onCancel }) {
       {G({ label: 'Commission %', hint: 'Of what each referred customer actually pays.', children: <input className="form-input" type="number" min="1" max="60" step="0.5" value={f.commission_pct} onChange={e => set('commission_pct', e.target.value)} required /> })}
       {G({ label: 'For how many months', hint: '0 = lifetime. Counted from the first commission.', children: <input className="form-input" type="number" min="0" max="120" value={f.commission_months} onChange={e => set('commission_months', e.target.value)} required /> })}
       {G({ label: 'Hold (days)', hint: 'A commission becomes payable this many days after the payment (the refund window).', children: <input className="form-input" type="number" min="0" max="180" value={f.hold_days} onChange={e => set('hold_days', e.target.value)} required /> })}
+      <label style={{ gridColumn: '1/-1', display: 'flex', gap: 8, alignItems: 'center', fontSize: 14, cursor: 'pointer' }}><input type="checkbox" checked={f.send_email} onChange={e => set('send_email', e.target.checked)} /> E-mail the invite link to the partner now <span style={{ color: 'var(--text-3)', fontSize: 12.5 }}>(you still get the link to copy)</span></label>
       <div style={{ gridColumn: '1/-1' }}>{G({ label: 'Internal notes', children: <input className="form-input" value={f.notes} onChange={e => set('notes', e.target.value)} /> })}</div>
       <div style={{ gridColumn: '1/-1', display: 'flex', gap: 8 }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Creating…' : 'Create partner'}</button><button type="button" className="btn btn-ghost" onClick={onCancel}>Cancel</button></div>
     </form>
@@ -41,7 +42,7 @@ export default function AdminPartnersPage() {
   const nav = useNavigate()
   const [rows, setRows] = useState(null)
   const [form, setForm] = useState(false)
-  const [invite, setInvite] = useState(null)
+  const [invite, setInvite] = useState(null)   // { url, emailed, emailTo, emailError }
   const load = useCallback(() => admin.partners().then(setRows).catch(e => toast.error('Could not load', e.message)), [])
   useEffect(() => { load() }, [load])
   const tot = (rows || []).reduce((a, p) => ({ ref: a.ref + p.referrals, paying: a.paying + p.paying, avail: a.avail + p.balances.available_paise, paid: a.paid + p.balances.paid_paise }), { ref: 0, paying: 0, avail: 0, paid: 0 })
@@ -54,8 +55,8 @@ export default function AdminPartnersPage() {
         <Kpi label="Commission to pay" value={inr(tot.avail)} sub="available today" accent={tot.avail > 0 ? 'var(--warning)' : undefined} />
         <Kpi label="Paid out" value={inr(tot.paid)} sub="all time" />
       </div>
-      {invite && <InviteBox url={invite} onClose={() => setInvite(null)} />}
-      {form && <NewPartnerForm onCancel={() => setForm(false)} onCreated={r => { setForm(false); setInvite(r.invite_url); load() }} />}
+      {invite && <InviteBox url={invite.url} emailed={invite.emailed} emailTo={invite.emailTo} emailError={invite.emailError} onClose={() => setInvite(null)} />}
+      {form && <NewPartnerForm onCancel={() => setForm(false)} onCreated={r => { setForm(false); setInvite({ url: r.invite_url, emailed: r.emailed, emailTo: r.email_to, emailError: r.email_error }); load() }} />}
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>{['Partner', 'Code', 'Terms', 'Customers', 'Earned', 'To pay', 'Paid', 'Status'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>

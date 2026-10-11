@@ -16,11 +16,13 @@ export function Kpi({ label, value, sub, accent }) {
 }
 
 /** The one-time set-password link: shown once after creating a partner / issuing a new link. */
-export function InviteBox({ url, onClose }) {
+export function InviteBox({ url, onClose, emailed = false, emailTo = null, emailError = null }) {
   async function copy() { try { await navigator.clipboard.writeText(url); toast.success('Link copied') } catch { toast.error('Could not copy', 'Select the link and copy it by hand.') } }
   return (
     <div className="card card-body" style={{ marginBottom: 14, borderColor: 'var(--warning)' }}>
-      <div style={{ fontWeight: 700, marginBottom: 4 }}>Send this one-time link to the partner</div>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>{emailed ? 'Invite e-mailed — here is the link too' : 'Send this one-time link to the partner'}</div>
+      {emailed && <div style={{ fontSize: 13, color: 'var(--success)', marginBottom: 6 }}>✓ E-mailed to {emailTo}. If it lands in spam, you can still send this link yourself.</div>}
+      {!emailed && emailError && <div style={{ fontSize: 13, color: 'var(--danger)', marginBottom: 6 }}>✗ Could not e-mail it: {emailError} Copy the link below and send it yourself.</div>}
       <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>They use it to set their password (valid 7 days). It is shown only now — if it is lost, issue a new link.</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input className="form-input" readOnly value={url} onFocus={e => e.target.select()} style={{ fontFamily: 'ui-monospace,monospace', fontSize: 12 }} />

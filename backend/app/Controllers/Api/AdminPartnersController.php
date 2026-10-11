@@ -25,13 +25,23 @@ class AdminPartnersController extends TravelBaseController
     public function index()             { return $this->run(fn () => $this->svc()->partners()); }
     public function show($id = null)    { return $this->run(fn () => $this->svc()->detail((int) $id)); }
 
-    /** POST /admin/partners -> {partner, invite_url} (the link is shown once) */
+    /** POST /admin/partners { ..., send_email? } -> {partner, invite_url, emailed, email_error} (the link is shown once) */
     public function create()
     {
-        return $this->run(function () {
-            $r = $this->svc()->create($this->body(), CurrentUser::id());
-            return ['partner' => $r['partner'], 'invite_url' => PartnerService::inviteUrl($r['invite_token'])];
+        $b = $this->body();
+        return $this->run(function () use ($b) {
+            $r = $this->svc()->create($b, CurrentUser::id());
+            $url = PartnerService::inviteUrl($r['invite_token']);
+            return ['partner' => $r['partner'], 'invite_url' => $url] + $this->maybeEmail($r['partner'], $url, false, $b);
         }, 201);
+    }
+
+    /** E-mail the link when asked (send_email = true). Never fails the request: the admin can still copy the link. */
+    private function maybeEmail(array $partner, string $url, bool $reset, array $b): array
+    {
+        if (! filter_var($b['send_email'] ?? false, FILTER_VALIDATE_BOOLEAN)) { return ['emailed' => false, 'email_error' => null, 'email_to' => null]; }
+        $r = \App\Services\Partner\PartnerInviteMail::send($partner, $url, $reset);
+        return ['emailed' => $r['ok'], 'email_error' => $r['error'], 'email_to' => $partner['email'] ?? null];
     }
 
     public function update($id = null)  { return $this->run(fn () => $this->svc()->update((int) $id, $this->body(), CurrentUser::id())); }
@@ -40,7 +50,15 @@ class AdminPartnersController extends TravelBaseController
     public function status($id = null)  { return $this->run(fn () => $this->svc()->setStatus((int) $id, (string) ($this->body()['status'] ?? ''), CurrentUser::id())); }
 
     /** POST /admin/partners/:id/invite -> {invite_url}  (also how a forgotten password is reset) */
-    public function invite($id = null)  { return $this->run(fn () => ['invite_url' => PartnerService::inviteUrl($this->svc()->newInvite((int) $id, CurrentUser::id()))]); }
+    public function invite($id = null)
+    {
+        $b = $this->body();
+        return $this->run(function () use ($id, $b) {
+            $url = PartnerService::inviteUrl($this->svc()->newInvite((int) $id, CurrentUser::id()));
+            $p = db_connect()->table('partners')->select('name, email, code, password_hash')->where('id', (int) $id)->get()->getRowArray() ?: [];
+            return ['invite_url' => $url] + $this->maybeEmail($p, $url, ! empty($p['password_hash']), $b);
+        });
+    }
 
     /** POST /admin/partners/:id/payout { method, reference, note?, pay_anyway? } */
     public function payout($id = null)
