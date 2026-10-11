@@ -227,6 +227,20 @@ final class PlatformCreditNoteTest extends CIUnitTestCase
         $this->assertSame('paid', db_connect()->table('partner_commissions')->where('id', $cid)->get()->getRowArray()['status']);
     }
 
+    public function testEveryCreditNoteCarriesAReasonCategoryAndOnlyOtherNeedsAWrittenNote(): void
+    {
+        $i = $this->invoice(); $id = (int) $i['id'];
+        $a = $this->cn()->issue($id, 10_000, '', null, 1, 'duplicate_payment');
+        $this->assertSame(['duplicate_payment', 'Duplicate payment'], [$a['reason_code'], $a['reason']]);
+        $b = $this->cn()->issue($id, 10_000, 'paid twice by mistake on 11 Oct', 'rfnd_77', 1, 'duplicate_payment');
+        $this->assertSame('Duplicate payment: paid twice by mistake on 11 Oct', $b['reason']);
+        foreach (['wrong_details', 'payment_dispute', 'billing_error'] as $code) { $this->assertSame($code, $this->cn()->issue($id, 1_000, '', null, 1, $code)['reason_code']); }
+        try { $this->cn()->issue($id, 1_000, 'short', null, 1, 'other'); $this->fail('"other" needs a written reason'); } catch (\InvalidArgumentException) { $this->assertTrue(true); }
+        try { $this->cn()->issue($id, 1_000, 'a long enough note here', null, 1, 'customer_changed_mind'); $this->fail('an unknown category is refused'); } catch (\InvalidArgumentException $e) { $this->assertStringContainsString('why', $e->getMessage()); }
+        $this->assertSame(5, db_connect()->table('platform_credit_notes')->countAllResults(), 'refused attempts saved nothing');
+        $this->assertSame(['wrong_details', 'duplicate_payment', 'payment_dispute', 'billing_error', 'other'], array_keys(PlatformCreditNoteService::REASONS));
+    }
+
     public function testCreditPrefixMustDifferFromTheInvoicePrefix(): void
     {
         $this->expectException(\InvalidArgumentException::class);

@@ -13,10 +13,12 @@ use App\Services\Email\EmailLayout;
 use App\Services\Email\EmailService;
 
 /**
- * Credit notes against TripSarthi's own GST invoices: the GST document for a refund (full or partial).
+ * Credit notes against TripSarthi's own GST invoices: the GST document for a billing CORRECTION (full or partial). TripSarthi's policy is that
+ * fees are non-refundable, so this is an admin-only tool for the cases that still need one: wrong invoice details, a duplicate payment, a payment
+ * the bank reversed (dispute), or a mistake on our side. Every note carries a reason category.
  *
- * This records the refund; it does NOT move money. The team refunds the customer in Razorpay / the bank, then issues the credit note and types
- * the refund reference (the same "make the transfer first, then record it" rule as partner payouts).
+ * It records the correction; it does NOT move money. If money has to go back to the customer (a duplicate payment), the team returns it in
+ * Razorpay / the bank first and types the reference here (the same "make the transfer first, then record it" rule as partner payouts).
  *
  * Rules (all tested):
  *  - The admin enters the refund AMOUNT INCLUDING GST (what the customer gets back). The note splits it at the invoice's rate and supply type
@@ -33,6 +35,8 @@ use App\Services\Email\EmailService;
 final class PlatformCreditNoteService
 {
     public const MIN_REASON = 10;
+    /** Allowed reason categories => what is printed. A note is required only for 'other'. */
+    public const REASONS = ['wrong_details' => 'Wrong invoice details', 'duplicate_payment' => 'Duplicate payment', 'payment_dispute' => 'Payment reversed or disputed', 'billing_error' => 'Billing error', 'other' => 'Other'];
 
     public function __construct(private readonly ?int $now = null) {}
 
@@ -54,11 +58,13 @@ final class PlatformCreditNoteService
      * @param int|null $totalPaise refund amount INCLUDING GST; null = everything still creditable
      * @return array the credit note row
      */
-    public function issue(int $invoiceId, ?int $totalPaise, string $reason, ?string $refundRef, int $adminId): array
+    public function issue(int $invoiceId, ?int $totalPaise, string $reason, ?string $refundRef, int $adminId, string $reasonCode = 'other'): array
     {
-        $reason = trim(preg_replace('/\s+/u', ' ', strip_tags($reason)) ?? '');
-        if (mb_strlen($reason) < self::MIN_REASON) { throw new \InvalidArgumentException('Write the reason for the credit note (at least ' . self::MIN_REASON . ' characters). It is printed on the document.'); }
-        $reason = mb_substr($reason, 0, 300);
+        if (! isset(self::REASONS[$reasonCode])) { throw new \InvalidArgumentException('Choose why the credit note is needed.'); }
+        $note = trim(preg_replace('/\s+/u', ' ', strip_tags($reason)) ?? '');
+        if ($reasonCode === 'other' && mb_strlen($note) < self::MIN_REASON) { throw new \InvalidArgumentException('Write the reason for the credit note (at least ' . self::MIN_REASON . ' characters). It is printed on the document.'); }
+        $label = self::REASONS[$reasonCode];
+        $reason = mb_substr($reasonCode === 'other' ? $note : ($note !== '' ? $label . ': ' . $note : $label), 0, 300);   // what is printed
         $refundRef = $refundRef !== null ? mb_substr(trim(strip_tags($refundRef)), 0, 80) : null; $refundRef = $refundRef === '' ? null : $refundRef;
         $s = $this->inv()->settings();
         if ($errs = PlatformInvoiceService::validate($s)) { throw new \DomainException('Invoice settings are incomplete: ' . implode(' ', $errs)); }
@@ -92,7 +98,7 @@ final class PlatformCreditNoteService
             $row = ['number' => $number, 'series' => $series, 'fy' => $fy, 'seq' => $seq, 'issue_date' => $date, 'invoice_id' => $invoiceId, 'invoice_number' => $inv['number'], 'invoice_date' => $inv['issue_date'],
                 'tenant_id' => (int) $inv['tenant_id'], 'source' => $inv['source'], 'payment_ref' => $inv['payment_ref'], 'plan' => $inv['plan'], 'buyer_type' => $inv['buyer_type'], 'buyer_name' => $inv['buyer_name'], 'buyer_gstin' => $inv['buyer_gstin'],
                 'place_of_supply' => $inv['place_of_supply'], 'supply_type' => $inv['supply_type'], 'sac' => $inv['sac'], 'gst_rate' => $inv['gst_rate'], 'taxable_value' => $parts['taxable'], 'cgst' => $parts['cgst'], 'sgst' => $parts['sgst'], 'igst' => $parts['igst'],
-                'total' => $total, 'reason' => $reason, 'refund_ref' => $refundRef, 'seller' => $inv['seller'], 'buyer' => $inv['buyer'], 'email_to' => $inv['email_to'], 'created_by' => $adminId, 'created_at' => $this->stamp()];
+                'total' => $total, 'reason' => $reason, 'reason_code' => $reasonCode, 'refund_ref' => $refundRef, 'seller' => $inv['seller'], 'buyer' => $inv['buyer'], 'email_to' => $inv['email_to'], 'created_by' => $adminId, 'created_at' => $this->stamp()];
             $db->table('platform_credit_notes')->insert($row);
             $id = (int) $db->insertID();
             $bytes = $this->renderPdf($row + ['id' => $id], $inv);
@@ -121,7 +127,7 @@ final class PlatformCreditNoteService
         if (! $c) { return 'none'; }
         if ($c['status'] === 'paid') { return 'paid_out'; }
         if ($c['status'] === 'void') { return 'none'; }
-        try { (new \App\Services\Partner\PartnerService($this->now))->voidCommission((int) $c['id'], "Refunded: credit note {$number}", $adminId); return 'voided'; }
+        try { (new \App\Services\Partner\PartnerService($this->now))->voidCommission((int) $c['id'], "Invoice credited: credit note {$number}", $adminId); return 'voided'; }
         catch (\Throwable $e) { log_message('error', 'Could not void the partner commission after a refund: ' . $e->getMessage()); return 'failed'; }
     }
 
@@ -164,11 +170,11 @@ final class PlatformCreditNoteService
             return ['sent' => false, 'to' => null, 'error' => 'This customer has no valid e-mail address.'];
         }
         $rupees = DocFormat::inr((int) $n['total']);
-        $m = EmailLayout::build(['subject' => "TripSarthi credit note {$n['number']}", 'preheader' => "Credit note {$n['number']} for {$rupees} against invoice {$n['invoice_number']} is attached.", 'eyebrow' => 'Credit note', 'title' => 'Your credit note is ready',
+        $m = EmailLayout::build(['subject' => "TripSarthi credit note {$n['number']}", 'preheader' => "Credit note {$n['number']} for {$rupees} against invoice {$n['invoice_number']} is attached.", 'eyebrow' => 'Credit note', 'title' => 'Your invoice has been corrected',
             'blocks' => [
-                ['p', 'We have issued a credit note against your invoice. It is attached to this e-mail as a PDF.'],
+                ['p', 'We have issued a credit note against your invoice to correct it. It is attached to this e-mail as a PDF.'],
                 ['facts', array_values(array_filter([['Credit note no.', $n['number']], ['Date', DocFormat::date($n['issue_date'])], ['Against invoice', $n['invoice_number'] . ' (' . DocFormat::date($n['invoice_date']) . ')'],
-                    ['Amount credited', $rupees . ' (' . DocFormat::inr((int) $n['taxable_value']) . ' + GST ' . DocFormat::inr((int) $n['cgst'] + (int) $n['sgst'] + (int) $n['igst']) . ')'], ['Reason', $n['reason']], $n['refund_ref'] ? ['Refund reference', $n['refund_ref']] : null]))],
+                    ['Amount credited', $rupees . ' (' . DocFormat::inr((int) $n['taxable_value']) . ' + GST ' . DocFormat::inr((int) $n['cgst'] + (int) $n['sgst'] + (int) $n['igst']) . ')'], ['Reason', $n['reason']], $n['refund_ref'] ? ['Reference', $n['refund_ref']] : null]))],
                 ['p', 'Keep this document with the original invoice: it reduces the GST on that invoice, which matters if you claimed input tax credit on it. Questions? Reply to this e-mail or use Help & support inside TripSarthi.'],
             ], 'footer_note' => $seller['legal_name'] . ' · GSTIN ' . $seller['gstin']]);
         $bcc = trim((string) $this->inv()->settings()['copy_to']) ?: null;
@@ -212,7 +218,7 @@ final class PlatformCreditNoteService
         $order = match ($p['sort'] ?? 'newest') { 'oldest' => 'c.issue_date ASC, c.id ASC', 'amount' => 'c.total DESC, c.id DESC', 'customer' => 'c.buyer_name ASC, c.id DESC', default => 'c.issue_date DESC, c.id DESC' };
         $t = $db->query("SELECT COUNT(*) n, COALESCE(SUM(c.taxable_value),0) taxable, COALESCE(SUM(c.cgst),0) cgst, COALESCE(SUM(c.sgst),0) sgst, COALESCE(SUM(c.igst),0) igst, COALESCE(SUM(c.total),0) total FROM platform_credit_notes c WHERE {$where}", $b)->getRowArray();
         $rows = $db->query("SELECT c.id, c.number, c.issue_date, c.fy, c.invoice_id, c.invoice_number, c.invoice_date, c.tenant_id, c.source, c.payment_ref, c.plan, c.buyer_type, c.buyer_name, c.buyer_gstin, c.place_of_supply, c.supply_type, c.sac, c.gst_rate,
-                c.taxable_value, c.cgst, c.sgst, c.igst, c.total, c.reason, c.refund_ref, c.email_to, c.emailed_at, c.email_attempts, c.email_error FROM platform_credit_notes c WHERE {$where} ORDER BY {$order} LIMIT {$per} OFFSET " . (($page - 1) * $per), $b)->getResultArray();
+                c.taxable_value, c.cgst, c.sgst, c.igst, c.total, c.reason, c.reason_code, c.refund_ref, c.email_to, c.emailed_at, c.email_attempts, c.email_error FROM platform_credit_notes c WHERE {$where} ORDER BY {$order} LIMIT {$per} OFFSET " . (($page - 1) * $per), $b)->getResultArray();
         foreach ($rows as &$r) { foreach (['id', 'invoice_id', 'tenant_id', 'taxable_value', 'cgst', 'sgst', 'igst', 'total', 'email_attempts'] as $k) { $r[$k] = (int) $r[$k]; } $r['gst_rate'] = (float) $r['gst_rate']; $r['place_name'] = Gst::STATES[$r['place_of_supply']] ?? ''; $r['gst'] = $r['cgst'] + $r['sgst'] + $r['igst']; } unset($r);
         return ['rows' => $rows, 'total' => (int) $t['n'], 'page' => $page, 'per_page' => $per,
             'totals' => ['count' => (int) $t['n'], 'taxable' => (int) $t['taxable'], 'cgst' => (int) $t['cgst'], 'sgst' => (int) $t['sgst'], 'igst' => (int) $t['igst'], 'gst' => (int) $t['cgst'] + (int) $t['sgst'] + (int) $t['igst'], 'total' => (int) $t['total']]];

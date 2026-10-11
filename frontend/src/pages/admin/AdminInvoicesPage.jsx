@@ -142,7 +142,7 @@ function InvoicesTab({ f, setF, reloadKey, onChanged }) {
                 <td style={{ ...td, whiteSpace: 'nowrap' }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => openPdf(`/admin/invoices/${r.id}/pdf`).catch(e => toast.error('Could not open', e.message))}>PDF</button>{' '}
                   <button className="btn btn-ghost btn-sm" disabled={busy === 'r' + r.id} onClick={() => resend(r)} title="E-mail this invoice to the customer again"><Send size={13} /> {r.emailed_at ? 'Resend' : 'Send'}</button>{' '}
-                  <button className="btn btn-ghost btn-sm" disabled={r.credited >= r.total} onClick={() => setCnFor(r)} title="Issue a credit note (refund) against this invoice"><RotateCcw size={13} /> Credit note</button>
+                  <button className="btn btn-ghost btn-sm" disabled={r.credited >= r.total} onClick={() => setCnFor(r)} title="Correct this invoice with a credit note (wrong details, duplicate payment, dispute, billing error). Fees are non-refundable."><RotateCcw size={13} /> Correction</button>
                 </td>
               </tr>))}
           </tbody>
@@ -172,23 +172,23 @@ function CreditNotesTab({ f, setF, reloadKey, onChanged }) {
   return (
     <>
       <div className="iv-kpis">
-        <Kpi icon={RotateCcw} tone="#d93025" label="Credit notes" value={T?.count ?? '…'} sub="refund documents" />
+        <Kpi icon={RotateCcw} tone="#d93025" label="Credit notes" value={T?.count ?? '…'} sub="billing corrections" />
         <Kpi icon={Wallet} tone="#12a89e" label="Taxable value credited" value={T ? inr2(T.taxable) : '…'} />
         <Kpi icon={Landmark} tone="#f98f26" label="GST credited" value={T ? inr2(T.gst) : '…'} sub={T ? `CGST ${inr2(T.cgst)} · SGST ${inr2(T.sgst)} · IGST ${inr2(T.igst)}` : ''} />
-        <Kpi icon={FileText} tone="#1a9d57" label="Total refunded" value={T ? inr2(T.total) : '…'} sub="credited to customers" />
+        <Kpi icon={FileText} tone="#1a9d57" label="Total credited" value={T ? inr2(T.total) : '…'} sub="reduces invoiced revenue" />
       </div>
       <div className="card" style={{ overflowX: 'auto' }}>
         <table className="iv-table">
           <thead><tr>{['Credit note', 'Customer', 'Against invoice', 'Reason', 'Taxable', 'GST', 'Total credited', 'E-mail', ''].map(h => <th key={h} style={{ ...th, textAlign: ['Taxable', 'GST', 'Total credited'].includes(h) ? 'right' : 'left' }}>{h}</th>)}</tr></thead>
           <tbody>
             {!d && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
-            {d && d.rows.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No credit notes in this period. Issue one from the Invoices tab with the Credit note button.</td></tr>}
+            {d && d.rows.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No credit notes in this period. Fees are non-refundable; a credit note is only for correcting a mistake, from the Correction button on the Invoices tab.</td></tr>}
             {d?.rows.map(r => (
               <tr key={r.id}>
                 <td style={td}><button type="button" className="iv-link" onClick={() => openPdf(`/admin/credit-notes/${r.id}/pdf`).catch(e => toast.error('Could not open', e.message))}>{r.number}</button><div className="cu-sub">{fmtDate(r.issue_date)}</div></td>
                 <td style={td}><div style={{ fontWeight: 700 }}>{r.buyer_name} <Pill color={r.buyer_type === 'b2b' ? '#0a6cc4' : '#64748b'}>{r.buyer_type.toUpperCase()}</Pill></div><div className="cu-sub">{r.buyer_gstin ? `GSTIN ${r.buyer_gstin} · ` : ''}workspace #{r.tenant_id}</div></td>
                 <td style={td}>{r.invoice_number}<div className="cu-sub">{fmtDate(r.invoice_date)}</div></td>
-                <td style={{ ...td, maxWidth: 240 }}>{r.reason}{r.refund_ref && <div className="cu-sub">Refund ref: {r.refund_ref}</div>}</td>
+                <td style={{ ...td, maxWidth: 240 }}>{r.reason}{r.refund_ref && <div className="cu-sub">Ref: {r.refund_ref}</div>}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{inr2(r.taxable_value)}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{inr2(r.gst)}</td>
                 <td style={{ ...td, textAlign: 'right', fontWeight: 800 }}>{inr2(r.total)}</td>

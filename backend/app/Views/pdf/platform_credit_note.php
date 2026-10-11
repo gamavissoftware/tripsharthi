@@ -35,7 +35,7 @@ $tax = $doc['cgst'] + $doc['sgst'] + $doc['igst'];
       <tr><td class="small muted">Against invoice</td><td class="bold"><?= $e($doc['invoice_number']) ?> (<?= $e($doc['invoice_date']) ?>)</td></tr>
       <tr><td class="small muted">Place of supply</td><td class="bold"><?= $e($doc['place_name']) ?> (<?= $e($doc['place_of_supply']) ?>)</td></tr>
       <tr><td class="small muted">Reverse charge</td><td>No</td></tr>
-      <?php if (! empty($doc['refund_ref'])): ?><tr><td class="small muted">Refund reference</td><td><?= $e($doc['refund_ref']) ?></td></tr><?php endif; ?>
+      <?php if (! empty($doc['refund_ref'])): ?><tr><td class="small muted">Reference</td><td><?= $e($doc['refund_ref']) ?></td></tr><?php endif; ?>
     </table>
   </td>
 </tr></table>
@@ -60,7 +60,7 @@ $tax = $doc['cgst'] + $doc['sgst'] + $doc['igst'];
   <td style="width:55%; padding-right:14px">
     <div class="eyebrow">Amount in words</div>
     <div class="bold" style="margin:2px 0 8px"><?= $e($doc['words']) ?></div>
-    <div class="small"><b>Reason:</b> <?= $e($doc['reason']) ?></div><div class="tiny muted" style="margin-top:6px; border-left:2px solid #0a6cc4; padding-left:7px">This credit note reduces the taxable value and the GST of the invoice above (invoice total <?= $e($inr($doc['invoice_total'])) ?>). It records a refund; it is not a demand for payment.</div>
+    <div class="small"><b>Reason:</b> <?= $e($doc['reason']) ?></div><div class="tiny muted" style="margin-top:6px; border-left:2px solid #0a6cc4; padding-left:7px">This credit note reduces the taxable value and the GST of the invoice above (invoice total <?= $e($inr($doc['invoice_total'])) ?>). It corrects that invoice; it is not a demand for payment.</div>
   </td>
   <td>
     <table class="sum">

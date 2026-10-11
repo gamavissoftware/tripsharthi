@@ -81,7 +81,7 @@ final class PlatformInvoiceService
         return ['legal_name' => 'Gamavis Software Solutions', 'trade_name' => 'Gamavis Software Solutions', 'gstin' => '06ABCFG6551H1ZG', 'pan' => 'ABCFG6551H',
             'address_line1' => 'Cabin No. 1, Basement Floor, 2/14/3, Mathura Road', 'address_line2' => 'Near Idea Shacks Coworking, Sector 32', 'city' => 'Faridabad', 'state_code' => '06', 'pincode' => '121003',
             'phone' => '', 'email' => (string) (env('CONTACT_NOTIFY_EMAIL') ?: ''), 'website' => 'https://tripsarthi.com', 'sac_code' => '998314', 'gst_rate' => '18', 'prefix' => 'GS', 'credit_prefix' => 'CN',
-            'signatory' => 'Mangleesh Kumar Upadhyay', 'terms' => "Subscription fees are for the plan period stated and are non-refundable except as required by law.\nGST is charged extra on plan prices at the applicable rate.",
+            'signatory' => 'Mangleesh Kumar Upadhyay', 'terms' => "Subscription fees are non-refundable except as required by law. GST is charged extra on plan prices at the applicable rate.\nBilling errors are corrected by credit note.",
             'bank_name' => '', 'bank_account_name' => '', 'bank_account_no' => '', 'bank_ifsc' => '', 'upi_id' => '', 'copy_to' => '', 'auto_email' => '1'];
     }
 
@@ -403,7 +403,7 @@ final class PlatformInvoiceService
             $neg = static fn (int $paise): string => number_format(-$paise / 100, 2, '.', '');
             $out[] = implode(',', array_map($cell, ['Credit note', $c['number'], $c['issue_date'], $c['fy'], $c['buyer_name'], $c['buyer_gstin'] ?? '', strtoupper($c['buyer_type']), $c['place_name'] . ' (' . $c['place_of_supply'] . ')', $c['supply_type'] === 'intra' ? 'Intra-state' : 'Inter-state',
                 ucfirst((string) $c['plan']), '', '', '', $c['sac'], $c['gst_rate'], $neg($c['taxable_value']), $neg($c['cgst']), $neg($c['sgst']), $neg($c['igst']), $neg($c['gst']), $neg($c['total']),
-                'Refund', $c['refund_ref'] ?? '', $c['email_to'] ?? '', $c['emailed_at'] ? 'Yes ' . $c['emailed_at'] : ($c['email_error'] ? 'Failed' : 'No'), $c['tenant_id'], $c['invoice_number'], $c['reason']]));
+                'Credit note', $c['refund_ref'] ?? '', $c['email_to'] ?? '', $c['emailed_at'] ? 'Yes ' . $c['emailed_at'] : ($c['email_error'] ? 'Failed' : 'No'), $c['tenant_id'], $c['invoice_number'], $c['reason']]));
         }
         return "\xEF\xBB\xBF" . implode("\r\n", $out) . "\r\n";
     }

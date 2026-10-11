@@ -85,16 +85,16 @@ class AdminInvoicesController extends TravelBaseController
 
     // ---- credit notes (refunds) ------------------------------------------------------------------------------------------------------------------
 
-    /** POST invoices/:id/credit-note { amount_rs?, full?, reason, refund_ref? } - amount is the refund INCLUDING GST; omit it (or full) for everything still creditable. */
+    /** POST invoices/:id/credit-note { reason_code, reason?, amount_rs?, full?, refund_ref? } - a billing CORRECTION; amount is INCLUDING GST; omit it (or full) for everything still creditable. */
     public function creditNote($id = null)
     {
         $b = $this->body();
         return $this->run(function () use ($id, $b): array {
             $full = ! empty($b['full']) || ! isset($b['amount_rs']) || $b['amount_rs'] === '';
             $paise = $full ? null : (int) round((float) $b['amount_rs'] * 100);
-            $n = (new \App\Services\Billing\PlatformCreditNoteService())->issue((int) $id, $paise, (string) ($b['reason'] ?? ''), isset($b['refund_ref']) ? (string) $b['refund_ref'] : null, CurrentUser::id());
+            $n = (new \App\Services\Billing\PlatformCreditNoteService())->issue((int) $id, $paise, (string) ($b['reason'] ?? ''), isset($b['refund_ref']) ? (string) $b['refund_ref'] : null, CurrentUser::id(), (string) ($b['reason_code'] ?? 'other'));
             if (((new PlatformInvoiceService())->settings()['auto_email'] ?? '1') === '1') { try { (new \App\Services\Billing\PlatformCreditNoteService())->email((int) $n['id']); } catch (\Throwable $e) { log_message('error', 'Credit note e-mail failed: ' . $e->getMessage()); } }
-            return ['credit_note' => (new \App\Services\Billing\PlatformCreditNoteService())->list(['q' => $n['number']])['rows'][0] ?? null, 'commission' => $n['commission']];
+            return ['credit_note' => (new \App\Services\Billing\PlatformCreditNoteService())->list(['q' => $n['number']])['rows'][0] ?? null, 'commission' => $n['commission'], 'reasons' => \App\Services\Billing\PlatformCreditNoteService::REASONS];
         }, 201);
     }
 
@@ -103,7 +103,7 @@ class AdminInvoicesController extends TravelBaseController
     {
         return $this->run(function () use ($id): array {
             $svc = new \App\Services\Billing\PlatformCreditNoteService();
-            return ['remaining' => $svc->remaining((int) $id), 'notes' => $svc->list(['invoice_id' => (int) $id, 'per_page' => 100, 'sort' => 'oldest'])['rows']];
+            return ['remaining' => $svc->remaining((int) $id), 'reasons' => \App\Services\Billing\PlatformCreditNoteService::REASONS, 'notes' => $svc->list(['invoice_id' => (int) $id, 'per_page' => 100, 'sort' => 'oldest'])['rows']];
         });
     }
 
