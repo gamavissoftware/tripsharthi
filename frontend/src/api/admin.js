@@ -6,6 +6,7 @@ const qs = (o) => Object.entries(o).filter(([, v]) => v !== '' && v != null).map
 /** TripSarthi platform-admin API (owner of the product, not a customer workspace). */
 export const admin = {
   overview:      ()          => api.get('/admin/overview').then(unwrap),
+  dashboard:     ()          => api.get('/admin/dashboard').then(unwrap),
   tenants:       (p = {})    => api.get('/admin/tenants?' + qs(p)).then(unwrap),
   tenant:        (id)        => api.get(`/admin/tenants/${id}`).then(unwrap),
   setPlan:       (id, b)     => api.put(`/admin/tenants/${id}/plan`, b).then(unwrap),

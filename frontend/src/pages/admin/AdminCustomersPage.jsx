@@ -160,7 +160,7 @@ function UsageBar({ n, limit }) {
 
 export default function AdminCustomersPage() {
   const [sp, setSp] = useSearchParams()
-  const [f, setF] = useState({ q: '', plan: '', status: '', segment: 'all', sort: 'newest', page: 1 })
+  const [f, setF] = useState(() => { const seg = new URLSearchParams(window.location.hash.split('?')[1] || '').get('segment'); return { q: '', plan: '', status: '', segment: SEGMENTS.some(([k]) => k === seg) ? seg : 'all', sort: 'newest', page: 1 } })   // the dashboard links here with ?segment=
   const [d, setD] = useState(null)
   const [exporting, setExporting] = useState(false)
   const open = Number(sp.get('open')) || null

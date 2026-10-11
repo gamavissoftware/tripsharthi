@@ -29,6 +29,9 @@ class PlatformAdminController extends TravelBaseController
 
     public function overview() { return $this->run(fn () => $this->svc()->overview()); }
 
+    /** GET /admin/dashboard - the home page: business health, what needs the team, recent activity, platform status. */
+    public function dashboard() { return $this->run(fn () => (new \App\Services\Admin\AdminDashboardService())->build()); }
+
     public function tenants()
     {
         return $this->run(fn () => (new \App\Services\Admin\CustomerDirectoryService())->list(['q' => $this->g('q'), 'plan' => $this->g('plan'), 'status' => $this->g('status'), 'segment' => $this->g('segment'), 'sort' => $this->g('sort'), 'page' => (int) $this->g('page', '1'), 'per_page' => (int) $this->g('per_page', '25')]));

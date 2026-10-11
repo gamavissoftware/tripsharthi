@@ -466,6 +466,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     });
     $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollection $routes): void {
         $routes->get('overview',                   'Api\PlatformAdminController::overview');
+        $routes->get('dashboard',                  'Api\PlatformAdminController::dashboard');
         $routes->get('tenants',                    'Api\PlatformAdminController::tenants');
         $routes->get('tenants/(:num)',             'Api\PlatformAdminController::tenant/$1');
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
