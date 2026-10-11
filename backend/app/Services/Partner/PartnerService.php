@@ -148,13 +148,18 @@ final class PartnerService
     }
 
     /** The partner's own WhatsApp number + whether they agreed to hear from TripSarthi about the program on WhatsApp. */
-    public function savePreferences(int $partnerId, ?string $phone, ?bool $optIn, string $ip = ''): array
+    public function savePreferences(int $partnerId, ?string $phone, ?bool $optIn, string $ip = '', ?bool $emailOptIn = null): array
     {
         $p = $this->row($partnerId);
         $f = \App\Services\Marketing\PlatformConsent::fields($phone !== null ? $phone : (string) $p['phone'], $optIn ?? (bool) $p['wa_marketing_opt_in'], $this->ts());
         db_connect()->table('partners')->where('id', $partnerId)->update(['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'], 'updated_at' => $this->stamp()]);
         $this->log($partnerId, 'partner', $partnerId, $f['wa_marketing_opt_in'] === 1 ? 'whatsapp_consent.given' : 'whatsapp_consent.withdrawn', null, $ip);
-        return ['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'] === 1];
+        if ($emailOptIn !== null && (int) $emailOptIn !== (int) ($p['email_marketing_opt_in'] ?? 0)) {
+            db_connect()->table('partners')->where('id', $partnerId)->update(['email_marketing_opt_in' => $emailOptIn ? 1 : 0]);
+            $this->log($partnerId, 'partner', $partnerId, $emailOptIn ? 'email_consent.given' : 'email_consent.withdrawn', null, $ip);
+        }
+        $emailNow = $emailOptIn ?? (bool) ($p['email_marketing_opt_in'] ?? 0);
+        return ['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'] === 1, 'email_marketing_opt_in' => $emailNow];
     }
 
     // ================================================================================================================================
@@ -404,7 +409,7 @@ final class PartnerService
         return ['partner' => ['name' => $p['name'], 'company' => $p['company'], 'email' => $p['email'], 'commission_pct' => (float) $p['commission_pct'], 'commission_months' => (int) $p['commission_months'], 'hold_days' => (int) $p['hold_days']],
                 'links' => $this->referralLinks($p['code']), 'balances' => $this->balances($partnerId), 'referred' => $referred, 'commissions' => $commissions, 'payouts' => $payouts,
                 'payout_details' => $this->maskedPayout($this->payoutDetails($partnerId)), 'min_payout_paise' => self::MIN_PAYOUT_PAISE,
-                'preferences' => ['phone' => $p['phone'], 'wa_marketing_opt_in' => (bool) $p['wa_marketing_opt_in']]];
+                'preferences' => ['phone' => $p['phone'], 'wa_marketing_opt_in' => (bool) $p['wa_marketing_opt_in'], 'email_marketing_opt_in' => (bool) ($p['email_marketing_opt_in'] ?? 0)]];
     }
 
     // ================================================================================================================================

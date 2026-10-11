@@ -435,6 +435,10 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('(:num)/manifest.csv',       'Api\DeparturesController::manifestCsv/$1');
         $routes->delete('holds/(:num)',           'Api\DeparturesController::release/$1');
     });
+    // Unsubscribe link in TripSarthi marketing e-mails (public; the address + HMAC in the link are the credential)
+    $routes->get('public/email/unsubscribe',  'Public\EmailUnsubscribeController::show');
+    $routes->post('public/email/unsubscribe', 'Public\EmailUnsubscribeController::apply');
+
     // Website contact form (public, throttled; see Public\ContactController)
     $routes->post('public/contact', 'Public\ContactController::submit');
     $routes->options('public/contact', static function (): void {});   // CORS preflight from the marketing site (origins come from CORS_ORIGIN)
@@ -468,6 +472,15 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
         // WhatsApp: oversight of every workspace + TripSarthi's own marketing
+        $routes->get('email',                                      'Api\AdminEmailController::index');
+        $routes->post('email/campaigns',                           'Api\AdminEmailController::create');
+        $routes->get('email/campaigns/(:num)',                     'Api\AdminEmailController::show/$1');
+        $routes->put('email/campaigns/(:num)',                     'Api\AdminEmailController::update/$1');
+        $routes->delete('email/campaigns/(:num)',                  'Api\AdminEmailController::delete/$1');
+        $routes->get('email/campaigns/(:num)/preview',             'Api\AdminEmailController::preview/$1');
+        $routes->post('email/campaigns/(:num)/test',               'Api\AdminEmailController::test/$1');
+        $routes->post('email/campaigns/(:num)/send',               'Api\AdminEmailController::send/$1');
+        $routes->post('email/campaigns/(:num)/cancel',             'Api\AdminEmailController::cancel/$1');
         $routes->get('support',                                    'Api\AdminSupportController::index');
         $routes->get('support/(:num)',                             'Api\AdminSupportController::show/$1');
         $routes->post('support/(:num)/reply',                      'Api\AdminSupportController::reply/$1');

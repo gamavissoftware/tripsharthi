@@ -40,6 +40,16 @@ export const admin = {
   supportNote:        (id, message) => api.post(`/admin/support/${id}/note`, { message }).then(unwrap),
   supportUpdate:      (id, b)   => api.put(`/admin/support/${id}`, b).then(unwrap),
 
+  // E-mail marketing (TripSarthi's own, consent-based)
+  emailOverview:      ()        => api.get('/admin/email').then(unwrap),
+  emailCampaign:      (id)      => api.get(`/admin/email/campaigns/${id}`).then(unwrap),
+  emailSave:          (id, b)   => (id ? api.put(`/admin/email/campaigns/${id}`, b) : api.post('/admin/email/campaigns', b)).then(unwrap),
+  emailDelete:        (id)      => api.delete(`/admin/email/campaigns/${id}`).then(unwrap),
+  emailPreview:       (id)      => api.get(`/admin/email/campaigns/${id}/preview`).then(unwrap),
+  emailTest:          (id)      => api.post(`/admin/email/campaigns/${id}/test`, {}).then(unwrap),
+  emailSend:          (id, n)   => api.post(`/admin/email/campaigns/${id}/send`, { confirm_count: n }).then(unwrap),
+  emailCancel:        (id)      => api.post(`/admin/email/campaigns/${id}/cancel`, {}).then(unwrap),
+
   // Partner program
   partners:           ()        => api.get('/admin/partners').then(unwrap),
   partner:            (id)      => api.get(`/admin/partners/${id}`).then(unwrap),

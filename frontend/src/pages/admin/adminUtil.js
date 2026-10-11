@@ -22,3 +22,4 @@ export const ago = (s) => {
 
 export const TICKET_STATUS = { open: ['Open', 'var(--primary)'], pending: ['Waiting on customer', 'var(--warning)'], resolved: ['Resolved', 'var(--success)'], closed: ['Closed', 'var(--text-3)'] }
 export const PRIORITY_COLOR = { urgent: 'var(--danger)', high: 'var(--warning)', normal: 'var(--text-3)', low: 'var(--text-3)' }
+export const EMAIL_STATUS_COLOR = { draft: 'var(--text-3)', sending: 'var(--warning)', sent: 'var(--success)', cancelled: 'var(--danger)' }

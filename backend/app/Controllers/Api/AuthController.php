@@ -130,6 +130,9 @@ class AuthController extends ResourceController
             'phone'               => $consent['phone'],
             'wa_marketing_opt_in' => $consent['wa_marketing_opt_in'],
             'wa_opt_in_at'        => $consent['wa_opt_in_at'],
+            // Optional, UNTICKED by default: product news and offers by e-mail (no number needed).
+            'email_marketing_opt_in' => filter_var($this->request->getJsonVar('email_opt_in'), FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
+            'email_opt_in_at'        => filter_var($this->request->getJsonVar('email_opt_in'), FILTER_VALIDATE_BOOLEAN) ? date('Y-m-d H:i:s') : null,
         ], true);
 
         if (! $userId) {
@@ -210,6 +213,12 @@ class AuthController extends ResourceController
                 $f = \App\Services\Marketing\PlatformConsent::fields($phoneIn !== null ? (string) $phoneIn : (string) ($cur['phone'] ?? ''), $optIn !== null ? filter_var($optIn, FILTER_VALIDATE_BOOLEAN) : (bool) ($cur['wa_marketing_opt_in'] ?? 0));
             } catch (\InvalidArgumentException $e) { return $this->fail(['phone' => $e->getMessage()], 422); }
             $consentPayload = ['phone' => $f['phone'], 'wa_marketing_opt_in' => $f['wa_marketing_opt_in'], 'wa_opt_in_at' => ((int) ($cur['wa_marketing_opt_in'] ?? 0) === 1 && $f['wa_marketing_opt_in'] === 1) ? ($cur['wa_opt_in_at'] ?? $f['wa_opt_in_at']) : $f['wa_opt_in_at']];
+        }
+        $emailIn = $this->request->getJsonVar('email_marketing_opt_in');
+        if ($emailIn !== null) {
+            $curE = $userModel->withoutTenantScope()->find($userId); $curE = is_array($curE) ? $curE : (array) $curE;
+            $want = filter_var($emailIn, FILTER_VALIDATE_BOOLEAN) ? 1 : 0;
+            if ($want !== (int) ($curE['email_marketing_opt_in'] ?? 0)) { $consentPayload += ['email_marketing_opt_in' => $want, 'email_opt_in_at' => $want ? date('Y-m-d H:i:s') : null]; }
         }
         $payload   = array_filter([
             'name'  => $this->request->getJsonVar('name'),
@@ -355,6 +364,7 @@ class AuthController extends ResourceController
             'is_platform_admin' => (int) ($u['is_platform_admin'] ?? 0) === 1,
             'phone'               => $u['phone'] ?? null,
             'wa_marketing_opt_in' => (int) ($u['wa_marketing_opt_in'] ?? 0) === 1,
+            'email_marketing_opt_in' => (int) ($u['email_marketing_opt_in'] ?? 0) === 1,
         ];
     }
 

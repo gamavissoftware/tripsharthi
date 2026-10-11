@@ -70,7 +70,8 @@ class EmailService
         string $subject,
         string $htmlBody,
         string $textBody = '',
-        ?string $replyTo = null
+        ?string $replyTo = null,
+        array $headers = []
     ): bool {
         try {
             $email = self::makeEmailInstance();
@@ -88,6 +89,10 @@ class EmailService
 
             if ($textBody !== '') {
                 $email->setAltMessage($textBody);
+            }
+
+            foreach ($headers as $name => $value) {
+                $email->setHeader((string) $name, str_replace(["\r", "\n"], '', (string) $value));
             }
 
             $result = $email->send(false);

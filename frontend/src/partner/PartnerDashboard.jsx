@@ -57,10 +57,11 @@ function PayoutForm({ current, onSaved }) {
 function PreferencesForm({ prefs, onSaved }) {
   const [phone, setPhone] = useState(prefs?.phone || '')
   const [wa, setWa] = useState(Boolean(prefs?.wa_marketing_opt_in))
+  const [mail, setMail] = useState(Boolean(prefs?.email_marketing_opt_in))
   const [busy, setBusy] = useState(false)
   async function save(e) {
     e.preventDefault(); setBusy(true)
-    try { await partnerApi.savePreferences({ phone, wa_marketing_opt_in: wa }); toast.success('Saved'); onSaved() }
+    try { await partnerApi.savePreferences({ phone, wa_marketing_opt_in: wa, email_marketing_opt_in: mail }); toast.success('Saved'); onSaved() }
     catch (err) { toast.error('Not saved', err.message) } finally { setBusy(false) }
   }
   return (
@@ -69,6 +70,10 @@ function PreferencesForm({ prefs, onSaved }) {
       <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.4, cursor: 'pointer' }}>
         <input type="checkbox" checked={wa} onChange={e => setWa(e.target.checked)} style={{ marginTop: 3 }} />
         <span>Send me partner program updates on WhatsApp. Untick to stop — or reply STOP to any message.</span>
+      </label>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.4, cursor: 'pointer' }}>
+        <input type="checkbox" checked={mail} onChange={e => setMail(e.target.checked)} style={{ marginTop: 3 }} />
+        <span>E-mail me partner program news and offers. Untick to stop — every e-mail also has an unsubscribe link.</span>
       </label>
       <div style={{ gridColumn: '1/-1' }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
     </form>

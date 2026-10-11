@@ -8,6 +8,7 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
   const [company, setCompany]   = useState('')
   const [phone, setPhone]       = useState('')
   const [waOptIn, setWaOptIn]   = useState(false)   // never pre-ticked: consent has to be a choice
+  const [emailOptIn, setEmailOptIn] = useState(false)
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState(null)
@@ -23,7 +24,7 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
     setLoading(true)
     try {
       const ref = readReferral()
-      const data = await api.post('/auth/register', { name, company, email, password, ...(phone.trim() ? { phone: phone.trim() } : {}), wa_opt_in: waOptIn, ...(ref ? { ref } : {}) })
+      const data = await api.post('/auth/register', { name, company, email, password, ...(phone.trim() ? { phone: phone.trim() } : {}), wa_opt_in: waOptIn, email_opt_in: emailOptIn, ...(ref ? { ref } : {}) })
       clearReferral()
       saveToken(data.token)
       onLogin?.(data.user)
@@ -119,6 +120,10 @@ export default function RegisterPage({ onLogin, onShowLogin }) {
               <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 8, fontSize: 12.5, color: '#4b5563', lineHeight: 1.4, cursor: 'pointer' }}>
                 <input type="checkbox" checked={waOptIn} onChange={e => setWaOptIn(e.target.checked)} style={{ marginTop: 2 }} />
                 <span>Send me product updates and offers from TripSarthi on WhatsApp. You can turn this off any time in your profile, or reply STOP.</span>
+              </label>
+              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 8, fontSize: 12.5, color: '#4b5563', lineHeight: 1.4, cursor: 'pointer' }}>
+                <input type="checkbox" checked={emailOptIn} onChange={e => setEmailOptIn(e.target.checked)} style={{ marginTop: 2 }} />
+                <span>E-mail me product news and offers from TripSarthi. Every e-mail has a one-click unsubscribe; account and billing messages are separate.</span>
               </label>
             </div>
 

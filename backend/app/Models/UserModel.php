@@ -30,6 +30,8 @@ class UserModel extends BaseModel
         'phone',
         'wa_marketing_opt_in',
         'wa_opt_in_at',
+        'email_marketing_opt_in',
+        'email_opt_in_at',
     ];
 
     protected $hidden = ['password_hash', 'api_token'];
