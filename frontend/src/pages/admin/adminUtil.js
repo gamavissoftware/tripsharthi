@@ -1,6 +1,6 @@
 /** Shared styles and formatters for the platform-admin pages. */
-export const th = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase', whiteSpace: 'nowrap' }
-export const td = { padding: '10px 14px', borderTop: '1px solid var(--border)', verticalAlign: 'middle' }
+export const th = { padding: '12px 18px', textAlign: 'left', color: '#7a889f', fontSize: 11.5, letterSpacing: '.7px', fontWeight: 700, textTransform: 'uppercase', whiteSpace: 'nowrap', background: '#f8fafd' }
+export const td = { padding: '13px 18px', borderTop: '1px solid #edf1f7', verticalAlign: 'middle', fontSize: 14 }
 
 export const PARTNER_STATUS_COLOR = { active: 'var(--success)', invited: 'var(--warning)', suspended: 'var(--danger)' }
 export const QUALITY_COLOR = { green: 'var(--success)', yellow: 'var(--warning)', red: 'var(--danger)', unknown: 'var(--text-3)', none: 'var(--text-3)' }

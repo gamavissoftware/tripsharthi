@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import '@fontsource-variable/inter'
 import '../index.css'
 import '../App.css'
+import './admin.css'
 import AdminApp from './AdminApp.jsx'
 import { installClipboardFallback } from '../lib/clipboardFallback'
 

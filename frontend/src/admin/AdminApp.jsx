@@ -42,7 +42,7 @@ function Shell({ user, onLogout }) {
   const [navOpen, setNavOpen] = useState(false)
   const initials = (user?.name ?? 'A').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
   return (
-    <div className="app-shell">
+    <div className="app-shell ad">
       <aside className={'sidebar' + (navOpen ? ' open' : '')}>
         <div className="sidebar-logo">
           <span className="sidebar-logo-icon" style={{ background: '#fff', padding: 3 }}><img src="/brand/tripsarthi-mark.png" alt="" width="30" height="30" style={{ display: 'block' }} /></span>
