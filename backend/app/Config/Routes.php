@@ -481,6 +481,11 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('invoices/settings',          'Api\AdminInvoicesController::settings');
         $routes->put('invoices/settings',          'Api\AdminInvoicesController::saveSettings');
         $routes->get('invoices/(:num)/pdf',        'Api\AdminInvoicesController::pdf/$1');
+        $routes->post('invoices/(:num)/credit-note',   'Api\AdminInvoicesController::creditNote/$1');
+        $routes->get('invoices/(:num)/credit-notes',   'Api\AdminInvoicesController::creditNotesFor/$1');
+        $routes->get('credit-notes',                   'Api\AdminInvoicesController::creditNotes');
+        $routes->get('credit-notes/(:num)/pdf',        'Api\AdminInvoicesController::creditNotePdf/$1');
+        $routes->post('credit-notes/(:num)/resend',    'Api\AdminInvoicesController::creditNoteResend/$1');
         $routes->post('invoices/(:num)/resend',    'Api\AdminInvoicesController::resend/$1');
         $routes->get('impersonations',             'Api\AdminImpersonationController::list');
         $routes->post('impersonations/(:num)/end', 'Api\AdminImpersonationController::end/$1');
@@ -722,6 +727,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('verify-payment',  'Api\BillingController::verifyPayment');
         $routes->get('invoices',         'Api\BillingController::invoices');
         $routes->get('invoices/(:num)/pdf', 'Api\BillingController::invoicePdf/$1');
+        $routes->get('credit-notes',     'Api\BillingController::creditNotes');
+        $routes->get('credit-notes/(:num)/pdf', 'Api\BillingController::creditNotePdf/$1');
     });
 
     // --- License (owner only — self_hosted; controller gates via FeatureGate) ---

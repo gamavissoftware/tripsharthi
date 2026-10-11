@@ -11,6 +11,9 @@ export const billing = {
   invoices: () =>
     api.get('/billing/invoices'),
 
+  creditNotes: () =>
+    api.get('/billing/credit-notes'),
+
   subscribe: (plan) =>
     api.post('/billing/subscribe', { plan }),
 

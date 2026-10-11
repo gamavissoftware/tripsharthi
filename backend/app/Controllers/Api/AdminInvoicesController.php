@@ -82,4 +82,47 @@ class AdminInvoicesController extends TravelBaseController
         $name = 'tripsarthi-invoices-' . ($f['month'] ?? ($f['fy'] ?? 'all')) . '.zip';
         return $this->response->setHeader('Content-Type', 'application/zip')->setHeader('Content-Disposition', 'attachment; filename="' . $name . '"')->setHeader('X-Skipped', implode(',', $z['skipped']))->setHeader('X-Content-Type-Options', 'nosniff')->setBody($bytes);
     }
+
+    // ---- credit notes (refunds) ------------------------------------------------------------------------------------------------------------------
+
+    /** POST invoices/:id/credit-note { amount_rs?, full?, reason, refund_ref? } - amount is the refund INCLUDING GST; omit it (or full) for everything still creditable. */
+    public function creditNote($id = null)
+    {
+        $b = $this->body();
+        return $this->run(function () use ($id, $b): array {
+            $full = ! empty($b['full']) || ! isset($b['amount_rs']) || $b['amount_rs'] === '';
+            $paise = $full ? null : (int) round((float) $b['amount_rs'] * 100);
+            $n = (new \App\Services\Billing\PlatformCreditNoteService())->issue((int) $id, $paise, (string) ($b['reason'] ?? ''), isset($b['refund_ref']) ? (string) $b['refund_ref'] : null, CurrentUser::id());
+            if (((new PlatformInvoiceService())->settings()['auto_email'] ?? '1') === '1') { try { (new \App\Services\Billing\PlatformCreditNoteService())->email((int) $n['id']); } catch (\Throwable $e) { log_message('error', 'Credit note e-mail failed: ' . $e->getMessage()); } }
+            return ['credit_note' => (new \App\Services\Billing\PlatformCreditNoteService())->list(['q' => $n['number']])['rows'][0] ?? null, 'commission' => $n['commission']];
+        }, 201);
+    }
+
+    /** GET invoices/:id/credit-notes - what is still creditable and the notes already issued. */
+    public function creditNotesFor($id = null)
+    {
+        return $this->run(function () use ($id): array {
+            $svc = new \App\Services\Billing\PlatformCreditNoteService();
+            return ['remaining' => $svc->remaining((int) $id), 'notes' => $svc->list(['invoice_id' => (int) $id, 'per_page' => 100, 'sort' => 'oldest'])['rows']];
+        });
+    }
+
+    public function creditNotes() { $f = $this->filters(); return $this->run(fn () => (new \App\Services\Billing\PlatformCreditNoteService())->list($f)); }
+
+    public function creditNotePdf($id = null)
+    {
+        try { $f = (new \App\Services\Billing\PlatformCreditNoteService())->pdf((int) $id); }
+        catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 404); }
+        catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 409); }
+        return $this->response->setHeader('Content-Type', 'application/pdf')->setHeader('Content-Disposition', 'inline; filename="' . $f['filename'] . '"')->setHeader('X-Content-Type-Options', 'nosniff')->setBody($f['bytes']);
+    }
+
+    public function creditNoteResend($id = null)
+    {
+        return $this->run(function () use ($id): array {
+            $r = (new \App\Services\Billing\PlatformCreditNoteService())->email((int) $id);
+            if (! $r['sent']) { throw new \DomainException('Not sent: ' . ($r['error'] ?? 'unknown error')); }
+            return $r;
+        });
+    }
 }

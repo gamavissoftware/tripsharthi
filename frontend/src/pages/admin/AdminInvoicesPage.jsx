@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, FileArchive, Receipt, Wallet, Landmark, ChevronLeft, ChevronRight, AlertTriangle, FileText, Send } from 'lucide-react'
+import { Download, FileArchive, Receipt, Wallet, Landmark, ChevronLeft, ChevronRight, AlertTriangle, FileText, Send, RotateCcw } from 'lucide-react'
 import { admin } from '../../api/admin'
 import { downloadFile, openPdf } from '../../api/client'
 import { toast } from '../../components/Toast'
 import { Pill, Kpi } from './AdminUi'
 import { th, td, fmtDate, fmtDateTime } from './adminUtil'
 import AdminInvoiceSettings from './AdminInvoiceSettings'
+import AdminCreditNoteModal from './AdminCreditNoteModal'
 
 const inr2 = (p) => '₹' + (Number(p || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const thisMonth = () => new Date().toISOString().slice(0, 7)
@@ -78,6 +79,7 @@ function InvoicesTab({ f, setF, reloadKey, onChanged }) {
   const [d, setD] = useState(null)
   const [pending, setPending] = useState(0)
   const [busy, setBusy] = useState('')
+  const [cnFor, setCnFor] = useState(null)
   const navigate = useNavigate()
   const params = useMemo(() => toParams(f, { sort: f.sort, page: f.page, per_page: 25 }), [f])
   useEffect(() => {
@@ -134,12 +136,13 @@ function InvoicesTab({ f, setF, reloadKey, onChanged }) {
                 <td style={td}><div style={{ textTransform: 'capitalize' }}>{r.plan} · {r.billing_cycle}</div><div className="cu-sub">{r.source === 'offline' ? 'Offline, recorded by hand' : `Razorpay ${r.payment_ref ?? ''}`}</div></td>
                 <td style={{ ...td, textAlign: 'right' }}>{inr2(r.taxable_value)}</td>
                 <td style={{ ...td, textAlign: 'right' }}>{inr2(r.gst)}<div className="cu-sub">{r.supply_type === 'intra' ? `${inr2(r.cgst)} + ${inr2(r.sgst)}` : `IGST ${r.gst_rate}%`}</div></td>
-                <td style={{ ...td, textAlign: 'right', fontWeight: 800 }}>{inr2(r.total)}</td>
+                <td style={{ ...td, textAlign: 'right', fontWeight: 800 }}>{inr2(r.total)}{r.credited > 0 && <div className="cu-sub" style={{ color: 'var(--danger)', fontWeight: 600 }}>{r.credited >= r.total ? 'Fully credited' : `Credited ${inr2(r.credited)}`}</div>}</td>
                 <td style={td}>{r.emailed_at ? <><Pill color="var(--success)">E-mailed</Pill><div className="cu-sub">{fmtDateTime(r.emailed_at)}</div><div className="cu-sub">{r.email_to}</div></>
                   : r.email_error ? <span title={r.email_error}><Pill color="var(--danger)">Failed</Pill><div className="cu-sub" style={{ maxWidth: 170 }}>{r.email_error}</div></span> : <Pill color="var(--warning)">Not sent</Pill>}</td>
                 <td style={{ ...td, whiteSpace: 'nowrap' }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => openPdf(`/admin/invoices/${r.id}/pdf`).catch(e => toast.error('Could not open', e.message))}>PDF</button>{' '}
-                  <button className="btn btn-ghost btn-sm" disabled={busy === 'r' + r.id} onClick={() => resend(r)} title="E-mail this invoice to the customer again"><Send size={13} /> {r.emailed_at ? 'Resend' : 'Send'}</button>
+                  <button className="btn btn-ghost btn-sm" disabled={busy === 'r' + r.id} onClick={() => resend(r)} title="E-mail this invoice to the customer again"><Send size={13} /> {r.emailed_at ? 'Resend' : 'Send'}</button>{' '}
+                  <button className="btn btn-ghost btn-sm" disabled={r.credited >= r.total} onClick={() => setCnFor(r)} title="Issue a credit note (refund) against this invoice"><RotateCcw size={13} /> Credit note</button>
                 </td>
               </tr>))}
           </tbody>
@@ -147,6 +150,59 @@ function InvoicesTab({ f, setF, reloadKey, onChanged }) {
       </div>
       {d && d.total > d.per_page && <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 12, alignItems: 'center' }}>
         <button className="btn btn-ghost btn-sm" disabled={f.page <= 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Prev</button><span>Page {f.page} of {pages} · {d.total} invoices</span><button className="btn btn-ghost btn-sm" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button></div>}
+      {cnFor && <AdminCreditNoteModal invoice={cnFor} onClose={() => setCnFor(null)} onDone={() => { setCnFor(null); onChanged() }} />}
+    </>
+  )
+}
+
+function CreditNotesTab({ f, setF, reloadKey, onChanged }) {
+  const [d, setD] = useState(null)
+  const [busy, setBusy] = useState('')
+  const params = useMemo(() => toParams(f, { sort: f.sort, page: f.page, per_page: 25 }), [f])
+  useEffect(() => {
+    let alive = true
+    const t = setTimeout(() => { admin.creditNotes(params).then(r => { if (alive) setD(r) }).catch(e => toast.error('Could not load', e.message)) }, f.q ? 300 : 0)
+    return () => { alive = false; clearTimeout(t) }
+  }, [params, f.q, reloadKey])
+  const T = d?.totals; const pages = d ? Math.max(1, Math.ceil(d.total / d.per_page)) : 1
+  async function resend(r) {
+    setBusy('r' + r.id)
+    try { const x = await admin.resendCreditNote(r.id); toast.success('E-mailed', `Sent to ${x.to}`) } catch (e) { toast.error('Not sent', e.message) } finally { setBusy(''); onChanged() }
+  }
+  return (
+    <>
+      <div className="iv-kpis">
+        <Kpi icon={RotateCcw} tone="#d93025" label="Credit notes" value={T?.count ?? '…'} sub="refund documents" />
+        <Kpi icon={Wallet} tone="#12a89e" label="Taxable value credited" value={T ? inr2(T.taxable) : '…'} />
+        <Kpi icon={Landmark} tone="#f98f26" label="GST credited" value={T ? inr2(T.gst) : '…'} sub={T ? `CGST ${inr2(T.cgst)} · SGST ${inr2(T.sgst)} · IGST ${inr2(T.igst)}` : ''} />
+        <Kpi icon={FileText} tone="#1a9d57" label="Total refunded" value={T ? inr2(T.total) : '…'} sub="credited to customers" />
+      </div>
+      <div className="card" style={{ overflowX: 'auto' }}>
+        <table className="iv-table">
+          <thead><tr>{['Credit note', 'Customer', 'Against invoice', 'Reason', 'Taxable', 'GST', 'Total credited', 'E-mail', ''].map(h => <th key={h} style={{ ...th, textAlign: ['Taxable', 'GST', 'Total credited'].includes(h) ? 'right' : 'left' }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {!d && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
+            {d && d.rows.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No credit notes in this period. Issue one from the Invoices tab with the Credit note button.</td></tr>}
+            {d?.rows.map(r => (
+              <tr key={r.id}>
+                <td style={td}><button type="button" className="iv-link" onClick={() => openPdf(`/admin/credit-notes/${r.id}/pdf`).catch(e => toast.error('Could not open', e.message))}>{r.number}</button><div className="cu-sub">{fmtDate(r.issue_date)}</div></td>
+                <td style={td}><div style={{ fontWeight: 700 }}>{r.buyer_name} <Pill color={r.buyer_type === 'b2b' ? '#0a6cc4' : '#64748b'}>{r.buyer_type.toUpperCase()}</Pill></div><div className="cu-sub">{r.buyer_gstin ? `GSTIN ${r.buyer_gstin} · ` : ''}workspace #{r.tenant_id}</div></td>
+                <td style={td}>{r.invoice_number}<div className="cu-sub">{fmtDate(r.invoice_date)}</div></td>
+                <td style={{ ...td, maxWidth: 240 }}>{r.reason}{r.refund_ref && <div className="cu-sub">Refund ref: {r.refund_ref}</div>}</td>
+                <td style={{ ...td, textAlign: 'right' }}>{inr2(r.taxable_value)}</td>
+                <td style={{ ...td, textAlign: 'right' }}>{inr2(r.gst)}</td>
+                <td style={{ ...td, textAlign: 'right', fontWeight: 800 }}>{inr2(r.total)}</td>
+                <td style={td}>{r.emailed_at ? <><Pill color="var(--success)">E-mailed</Pill><div className="cu-sub">{fmtDateTime(r.emailed_at)}</div></> : r.email_error ? <span title={r.email_error}><Pill color="var(--danger)">Failed</Pill></span> : <Pill color="var(--warning)">Not sent</Pill>}</td>
+                <td style={{ ...td, whiteSpace: 'nowrap' }}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => openPdf(`/admin/credit-notes/${r.id}/pdf`).catch(e => toast.error('Could not open', e.message))}>PDF</button>{' '}
+                  <button className="btn btn-ghost btn-sm" disabled={busy === 'r' + r.id} onClick={() => resend(r)}><Send size={13} /> {r.emailed_at ? 'Resend' : 'Send'}</button>
+                </td>
+              </tr>))}
+          </tbody>
+        </table>
+      </div>
+      {d && d.total > d.per_page && <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 12, alignItems: 'center' }}>
+        <button className="btn btn-ghost btn-sm" disabled={f.page <= 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Prev</button><span>Page {f.page} of {pages} · {d.total} credit notes</span><button className="btn btn-ghost btn-sm" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button></div>}
     </>
   )
 }
@@ -178,11 +234,18 @@ function SummaryTab({ f }) {
         <Kpi icon={Receipt} label="Invoices" value={T.count} /><Kpi icon={Wallet} tone="#12a89e" label="Taxable value" value={inr2(T.taxable)} />
         <Kpi icon={Landmark} tone="#f98f26" label="Output GST" value={inr2(T.gst)} sub={`CGST ${inr2(T.cgst)} · SGST ${inr2(T.sgst)} · IGST ${inr2(T.igst)}`} /><Kpi icon={FileText} tone="#1a9d57" label="Total invoiced" value={inr2(T.total)} />
       </div>
+      {s.credit_notes.count > 0 && <div className="iv-kpis">
+        <Kpi icon={RotateCcw} tone="#d93025" label="Credit notes" value={s.credit_notes.count} sub={`−${inr2(s.credit_notes.total)} credited`} />
+        <Kpi icon={Landmark} tone="#f98f26" label="Net GST payable" value={inr2(s.net.gst)} sub={`invoices ${inr2(T.gst)} − credit notes ${inr2(s.credit_notes.gst)}`} />
+        <Kpi icon={Wallet} tone="#12a89e" label="Net taxable value" value={inr2(s.net.taxable)} /><Kpi icon={FileText} tone="#1a9d57" label="Net invoiced" value={inr2(s.net.total)} />
+      </div>}
       <SumTable title="B2B: registered customers (by GSTIN)" note="Goes in the B2B section of GSTR-1, one line per invoice (the invoice list / CSV has them)." heads={['GSTIN', 'Customer', ...H.slice(2)]} rows={s.b2b} render={r => <SumRow key={r.gstin} r={r} first={r.gstin} second={r.name} />} />
       <SumTable title="B2C: customers without a GSTIN (by place of supply)" note="Summarised state-wise and rate-wise in GSTR-1 (B2CS)." heads={['Place of supply', 'GST rate', ...H.slice(2)]} rows={s.b2c} render={r => <SumRow key={r.pos + r.rate} r={r} first={`${r.place_name} (${r.pos})`} second={`${r.rate}%`} />} />
+      {s.cn_b2b.length > 0 && <SumTable title="Credit notes: registered customers (CDNR in GSTR-1)" note="Reduce the output tax of the B2B invoices above." heads={['GSTIN', 'Customer', ...H.slice(2)]} rows={s.cn_b2b} render={r => <SumRow key={r.gstin} r={r} first={r.gstin} second={r.name} />} />}
+      {s.cn_b2c.length > 0 && <SumTable title="Credit notes: customers without a GSTIN (by place of supply)" note="Netted against the B2C summary above (CDNUR / B2CS adjustments)." heads={['Place of supply', 'GST rate', ...H.slice(2)]} rows={s.cn_b2c} render={r => <SumRow key={r.pos + r.rate} r={r} first={`${r.place_name} (${r.pos})`} second={`${r.rate}%`} />} />}
       <SumTable title="By plan" heads={['Plan', 'Cycle', ...H.slice(2)]} rows={s.by_plan} render={r => <SumRow key={r.plan + r.cycle} r={r} first={<span style={{ textTransform: 'capitalize' }}>{r.plan}</span>} second={r.cycle} />} />
       {s.by_month.length > 1 && <SumTable title="By month" heads={['Month', '', ...H.slice(2)]} rows={s.by_month} render={r => <SumRow key={r.month} r={r} first={monthLabel(r.month)} second="" />} />}
-      <div className="cu-sub" style={{ margin: '4px 2px 20px' }}>These figures come from the issued invoices only. Credit notes, e-invoicing and reverse charge are not handled here. Have your CA check the first return built from them.</div>
+      <div className="cu-sub" style={{ margin: '4px 2px 20px' }}>The invoice tables above are before credit notes; the net figures subtract them. E-invoicing and reverse charge are not handled here. Have your CA check the first return built from them.</div>
     </>
   )
 }
@@ -202,9 +265,10 @@ export default function AdminInvoicesPage() {
         <div><h1 className="page-title">GST invoices</h1><div style={{ color: 'var(--text-3)', fontSize: 13.5 }}>Tax invoices TripSarthi issues to its customers, e-mailed automatically when they pay. Showing <b>{label}</b>.</div></div>
       </div>
       <MissingBanner rows={missing} onDone={reload} />
-      <div className="iv-tabs">{[['invoices', 'Invoices'], ['summary', 'GST summary'], ['settings', 'Invoice settings']].map(([k, l]) => <button key={k} type="button" className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
+      <div className="iv-tabs">{[['invoices', 'Invoices'], ['credit', 'Credit notes'], ['summary', 'GST summary'], ['settings', 'Invoice settings']].map(([k, l]) => <button key={k} type="button" className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>{l}</button>)}</div>
       {tab !== 'settings' && <Filters f={f} setF={setF} />}
       {tab === 'invoices' && <InvoicesTab f={f} setF={setF} reloadKey={key} onChanged={reload} />}
+      {tab === 'credit' && <CreditNotesTab f={f} setF={setF} reloadKey={key} onChanged={reload} />}
       {tab === 'summary' && <SummaryTab f={f} />}
       {tab === 'settings' && <AdminInvoiceSettings />}
     </div>

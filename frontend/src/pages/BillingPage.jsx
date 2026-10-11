@@ -498,8 +498,8 @@ const HISTORY_STATUS = {
 }
 
 /** TripSarthi's GST tax invoices for this workspace (also e-mailed when each payment is made). */
-function BillingInvoices({ rows }) {
-  if (!rows || rows.length === 0) return null
+function BillingInvoices({ rows, credits = [] }) {
+  if ((!rows || rows.length === 0) && credits.length === 0) return null
   const open = (r) => openPdf(`/billing/invoices/${r.id}/pdf`).catch(e => toast.error('Could not open the invoice', e.message))
   return (
     <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:18, padding:'1.4rem 1.6rem', marginBottom:'1.5rem' }}>
@@ -508,6 +508,14 @@ function BillingInvoices({ rows }) {
       <div style={{ overflowX:'auto' }}>
         <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13.5 }}>
           <tbody>
+            {credits.map(c => (
+              <tr key={'cn' + c.id} style={{ borderTop:'1px solid #f0f2f5', background:'#fff8f7' }}>
+                <td style={{ padding:'.6rem' }}><b>{c.number}</b><div style={{ fontSize:12, color:'#6b7280' }}>{new Date(c.issue_date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</div></td>
+                <td style={{ padding:'.6rem', color:'#374151' }}>Credit note against {c.invoice_number}<div style={{ fontSize:12, color:'#6b7280' }}>{c.reason}</div></td>
+                <td style={{ padding:'.6rem', textAlign:'right', fontWeight:700, color:'#b3261e' }}>&minus;&#8377;{(c.total / 100).toLocaleString('en-IN', { minimumFractionDigits:2 })}</td>
+                <td style={{ padding:'.6rem', textAlign:'right' }}><button type="button" className="btn btn-ghost btn-sm" onClick={() => openPdf(`/billing/credit-notes/${c.id}/pdf`).catch(e => toast.error('Could not open the credit note', e.message))}>Download PDF</button></td>
+              </tr>
+            ))}
             {rows.map(r => (
               <tr key={r.id} style={{ borderTop:'1px solid #f0f2f5' }}>
                 <td style={{ padding:'.6rem' }}><b>{r.number}</b><div style={{ fontSize:12, color:'#6b7280' }}>{new Date(r.issue_date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</div></td>
@@ -602,6 +610,7 @@ function BillingPanel() {
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [history, setHistory]             = useState([])
   const [invoices, setInvoices]           = useState([])
+  const [creditNotes, setCreditNotes]     = useState([])
 
   const loadBilling = useCallback(async () => {
     setLoading(true); setError('')
@@ -613,6 +622,7 @@ function BillingPanel() {
       setBillingData(status)
       setHistory(hist?.data ?? [])
       billingApi.invoices().then(r => setInvoices(r?.data ?? [])).catch(() => {})
+      billingApi.creditNotes().then(r => setCreditNotes(r?.data ?? [])).catch(() => {})
     } catch (err) {
       setError(err.message ?? 'Failed to load billing.')
     } finally { setLoading(false) }
@@ -873,7 +883,7 @@ function BillingPanel() {
       </div>
 
       {/* Billing history */}
-      <BillingInvoices rows={invoices} />
+      <BillingInvoices rows={invoices} credits={creditNotes} />
       <BillingHistory rows={history} />
 
       {/* Cancel modal */}

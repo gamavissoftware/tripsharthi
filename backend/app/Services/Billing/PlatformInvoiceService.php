@@ -46,7 +46,7 @@ final class PlatformInvoiceService
 
     /** Settings keys in platform_settings (all prefixed inv_). */
     public const FIELDS = ['legal_name', 'trade_name', 'gstin', 'pan', 'address_line1', 'address_line2', 'city', 'state_code', 'pincode', 'phone', 'email', 'website',
-        'sac_code', 'gst_rate', 'prefix', 'signatory', 'terms', 'bank_name', 'bank_account_name', 'bank_account_no', 'bank_ifsc', 'upi_id', 'copy_to', 'auto_email'];
+        'sac_code', 'gst_rate', 'prefix', 'credit_prefix', 'signatory', 'terms', 'bank_name', 'bank_account_name', 'bank_account_no', 'bank_ifsc', 'upi_id', 'copy_to', 'auto_email'];
 
     public function __construct(private readonly ?int $now = null) {}
 
@@ -80,7 +80,7 @@ final class PlatformInvoiceService
     {
         return ['legal_name' => 'Gamavis Software Solutions', 'trade_name' => 'Gamavis Software Solutions', 'gstin' => '06ABCFG6551H1ZG', 'pan' => 'ABCFG6551H',
             'address_line1' => 'Cabin No. 1, Basement Floor, 2/14/3, Mathura Road', 'address_line2' => 'Near Idea Shacks Coworking, Sector 32', 'city' => 'Faridabad', 'state_code' => '06', 'pincode' => '121003',
-            'phone' => '', 'email' => (string) (env('CONTACT_NOTIFY_EMAIL') ?: ''), 'website' => 'https://tripsarthi.com', 'sac_code' => '998314', 'gst_rate' => '18', 'prefix' => 'GS',
+            'phone' => '', 'email' => (string) (env('CONTACT_NOTIFY_EMAIL') ?: ''), 'website' => 'https://tripsarthi.com', 'sac_code' => '998314', 'gst_rate' => '18', 'prefix' => 'GS', 'credit_prefix' => 'CN',
             'signatory' => 'Mangleesh Kumar Upadhyay', 'terms' => "Subscription fees are for the plan period stated and are non-refundable except as required by law.\nGST is charged extra on plan prices at the applicable rate.",
             'bank_name' => '', 'bank_account_name' => '', 'bank_account_no' => '', 'bank_ifsc' => '', 'upi_id' => '', 'copy_to' => '', 'auto_email' => '1'];
     }
@@ -108,6 +108,8 @@ final class PlatformInvoiceService
         if (trim((string) ($d['address_line1'] ?? '')) === '') { $e[] = 'Address is required on a tax invoice.'; }
         if (! empty($d['pincode']) && ! preg_match('/^\d{6}$/', (string) $d['pincode'])) { $e[] = 'PIN code must be 6 digits.'; }
         if (! preg_match('/^\d{4,8}$/', (string) ($d['sac_code'] ?? ''))) { $e[] = 'SAC code must be 4-8 digits.'; }
+        if (! preg_match('/^[A-Za-z0-9]{1,4}$/', (string) ($d['credit_prefix'] ?? ''))) { $e[] = 'Credit note number prefix is 1-4 letters/digits.'; }
+        elseif (strtoupper((string) ($d['credit_prefix'] ?? '')) === strtoupper((string) ($d['prefix'] ?? ''))) { $e[] = 'The credit note prefix must differ from the invoice prefix (each document type has its own series).'; }
         $rate = (float) ($d['gst_rate'] ?? 0);
         if ($rate < 0 || $rate > 40) { $e[] = 'GST rate must be between 0 and 40.'; }
         if (! preg_match('/^[A-Za-z0-9]{1,4}$/', (string) ($d['prefix'] ?? ''))) { $e[] = 'Invoice number prefix is 1-4 letters/digits (GST limits an invoice number to 16 characters).'; }
@@ -359,8 +361,9 @@ final class PlatformInvoiceService
         $order = match ($p['sort'] ?? 'newest') { 'oldest' => 'i.issue_date ASC, i.id ASC', 'amount' => 'i.total DESC, i.id DESC', 'customer' => 'i.buyer_name ASC, i.id DESC', default => 'i.issue_date DESC, i.id DESC' };
         $t = $db->query("SELECT COUNT(*) n, COALESCE(SUM(i.taxable_value),0) taxable, COALESCE(SUM(i.cgst),0) cgst, COALESCE(SUM(i.sgst),0) sgst, COALESCE(SUM(i.igst),0) igst, COALESCE(SUM(i.total),0) total FROM platform_invoices i WHERE {$where}", $b)->getRowArray();
         $rows = $db->query("SELECT i.id, i.number, i.issue_date, i.fy, i.tenant_id, i.source, i.payment_ref, i.plan, i.billing_cycle, i.period_start, i.period_end, i.description, i.buyer_type, i.buyer_name, i.buyer_gstin, i.place_of_supply, i.supply_type, i.sac, i.gst_rate,
-                i.taxable_value, i.cgst, i.sgst, i.igst, i.total, i.email_to, i.emailed_at, i.email_attempts, i.email_error FROM platform_invoices i WHERE {$where} ORDER BY {$order} LIMIT {$per} OFFSET " . (($page - 1) * $per), $b)->getResultArray();
-        foreach ($rows as &$r) { foreach (['id', 'tenant_id', 'taxable_value', 'cgst', 'sgst', 'igst', 'total', 'email_attempts'] as $k) { $r[$k] = (int) $r[$k]; } $r['gst_rate'] = (float) $r['gst_rate']; $r['place_name'] = Gst::STATES[$r['place_of_supply']] ?? ''; $r['gst'] = $r['cgst'] + $r['sgst'] + $r['igst']; } unset($r);
+                i.taxable_value, i.cgst, i.sgst, i.igst, i.total, i.email_to, i.emailed_at, i.email_attempts, i.email_error,
+                (SELECT COALESCE(SUM(c.total), 0) FROM platform_credit_notes c WHERE c.invoice_id = i.id) credited FROM platform_invoices i WHERE {$where} ORDER BY {$order} LIMIT {$per} OFFSET " . (($page - 1) * $per), $b)->getResultArray();
+        foreach ($rows as &$r) { foreach (['id', 'tenant_id', 'taxable_value', 'cgst', 'sgst', 'igst', 'total', 'email_attempts', 'credited'] as $k) { $r[$k] = (int) $r[$k]; } $r['gst_rate'] = (float) $r['gst_rate']; $r['place_name'] = Gst::STATES[$r['place_of_supply']] ?? ''; $r['gst'] = $r['cgst'] + $r['sgst'] + $r['igst']; } unset($r);
         return ['rows' => $rows, 'total' => (int) $t['n'], 'page' => $page, 'per_page' => $per,
             'totals' => ['count' => (int) $t['n'], 'taxable' => (int) $t['taxable'], 'cgst' => (int) $t['cgst'], 'sgst' => (int) $t['sgst'], 'igst' => (int) $t['igst'], 'gst' => (int) $t['cgst'] + (int) $t['sgst'] + (int) $t['igst'], 'total' => (int) $t['total']]];
     }
@@ -377,7 +380,9 @@ final class PlatformInvoiceService
         $plan = $fix($db->query("SELECT i.plan, i.billing_cycle cycle, {$agg} FROM platform_invoices i WHERE {$where} GROUP BY i.plan, i.billing_cycle ORDER BY total DESC", $b)->getResultArray());
         $supply = $fix($db->query("SELECT i.supply_type supply, {$agg} FROM platform_invoices i WHERE {$where} GROUP BY i.supply_type", $b)->getResultArray());
         $month = $fix($db->query("SELECT DATE_FORMAT(i.issue_date, '%Y-%m') month, {$agg} FROM platform_invoices i WHERE {$where} GROUP BY month ORDER BY month", $b)->getResultArray());
-        return ['totals' => $this->list($p + ['per_page' => 5])['totals'], 'b2b' => $b2b, 'b2c' => $b2c, 'by_plan' => $plan, 'by_supply' => $supply, 'by_month' => $month];
+        $tot = $this->list($p + ['per_page' => 5])['totals']; $cn = (new PlatformCreditNoteService($this->now))->summary($p); $ct = $cn['totals'];
+        $net = []; foreach (['count', 'taxable', 'cgst', 'sgst', 'igst', 'gst', 'total'] as $k) { $net[$k] = $k === 'count' ? $tot[$k] : $tot[$k] - $ct[$k]; }   // GST payable = invoices minus credit notes
+        return ['totals' => $tot, 'credit_notes' => $ct, 'net' => $net, 'cn_b2b' => $cn['b2b'], 'cn_b2c' => $cn['b2c'], 'b2b' => $b2b, 'b2c' => $b2c, 'by_plan' => $plan, 'by_supply' => $supply, 'by_month' => $month];
     }
 
     /** Sales register as CSV (UTF-8 with BOM for Excel). Text that could be read as a spreadsheet formula is neutralised. */
@@ -386,12 +391,19 @@ final class PlatformInvoiceService
         $rows = $this->list($p + ['per_page' => 1000, 'sort' => 'oldest'] )['rows'];
         $cell = static function ($v): string { $t = (string) $v; if ($t !== '' && in_array($t[0], ['=', '+', '-', '@', "\t", "\r"], true) && ! is_numeric($t)) { $t = "'" . $t; } return '"' . str_replace('"', '""', $t) . '"'; };
         $r2 = static fn (int $paise): string => number_format($paise / 100, 2, '.', '');
-        $out = [implode(',', array_map($cell, ['Invoice no', 'Date', 'FY', 'Customer', 'Customer GSTIN', 'Type', 'Place of supply', 'Supply', 'Plan', 'Cycle', 'Period from', 'Period to', 'SAC', 'GST rate %',
-            'Taxable value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice total', 'Payment', 'Payment reference', 'Customer e-mail', 'E-mailed', 'Workspace id']))];
+        $out = [implode(',', array_map($cell, ['Document', 'Invoice no', 'Date', 'FY', 'Customer', 'Customer GSTIN', 'Type', 'Place of supply', 'Supply', 'Plan', 'Cycle', 'Period from', 'Period to', 'SAC', 'GST rate %',
+            'Taxable value', 'CGST', 'SGST', 'IGST', 'Total GST', 'Invoice total', 'Payment', 'Payment reference', 'Customer e-mail', 'E-mailed', 'Workspace id', 'Against invoice', 'Reason']))];
         foreach ($rows as $r) {
-            $out[] = implode(',', array_map($cell, [$r['number'], $r['issue_date'], $r['fy'], $r['buyer_name'], $r['buyer_gstin'] ?? '', strtoupper($r['buyer_type']), $r['place_name'] . ' (' . $r['place_of_supply'] . ')', $r['supply_type'] === 'intra' ? 'Intra-state' : 'Inter-state',
+            $out[] = implode(',', array_map($cell, ['Tax invoice', $r['number'], $r['issue_date'], $r['fy'], $r['buyer_name'], $r['buyer_gstin'] ?? '', strtoupper($r['buyer_type']), $r['place_name'] . ' (' . $r['place_of_supply'] . ')', $r['supply_type'] === 'intra' ? 'Intra-state' : 'Inter-state',
                 ucfirst((string) $r['plan']), $r['billing_cycle'], substr((string) $r['period_start'], 0, 10), substr((string) $r['period_end'], 0, 10), $r['sac'], $r['gst_rate'], $r2($r['taxable_value']), $r2($r['cgst']), $r2($r['sgst']), $r2($r['igst']), $r2($r['gst']), $r2($r['total']),
-                $r['source'] === 'offline' ? 'Offline (recorded by hand)' : 'Online (Razorpay)', $r['payment_ref'] ?? '', $r['email_to'] ?? '', $r['emailed_at'] ? 'Yes ' . $r['emailed_at'] : ($r['email_error'] ? 'Failed' : 'No'), $r['tenant_id']]));
+                $r['source'] === 'offline' ? 'Offline (recorded by hand)' : 'Online (Razorpay)', $r['payment_ref'] ?? '', $r['email_to'] ?? '', $r['emailed_at'] ? 'Yes ' . $r['emailed_at'] : ($r['email_error'] ? 'Failed' : 'No'), $r['tenant_id'], '', '']));
+        }
+        // Credit notes follow the invoices with NEGATIVE amounts, so the columns still add up to the net.
+        foreach ((new PlatformCreditNoteService($this->now))->list($p + ['per_page' => 1000, 'sort' => 'oldest'])['rows'] as $c) {
+            $neg = static fn (int $paise): string => number_format(-$paise / 100, 2, '.', '');
+            $out[] = implode(',', array_map($cell, ['Credit note', $c['number'], $c['issue_date'], $c['fy'], $c['buyer_name'], $c['buyer_gstin'] ?? '', strtoupper($c['buyer_type']), $c['place_name'] . ' (' . $c['place_of_supply'] . ')', $c['supply_type'] === 'intra' ? 'Intra-state' : 'Inter-state',
+                ucfirst((string) $c['plan']), '', '', '', $c['sac'], $c['gst_rate'], $neg($c['taxable_value']), $neg($c['cgst']), $neg($c['sgst']), $neg($c['igst']), $neg($c['gst']), $neg($c['total']),
+                'Refund', $c['refund_ref'] ?? '', $c['email_to'] ?? '', $c['emailed_at'] ? 'Yes ' . $c['emailed_at'] : ($c['email_error'] ? 'Failed' : 'No'), $c['tenant_id'], $c['invoice_number'], $c['reason']]));
         }
         return "\xEF\xBB\xBF" . implode("\r\n", $out) . "\r\n";
     }
@@ -407,6 +419,10 @@ final class PlatformInvoiceService
         foreach ($rows as $r) {
             try { $f = $this->pdf((int) $r['id']); $z->addFromString($f['filename'], $f['bytes']); $n++; }
             catch (\Throwable) { $skipped[] = $r['number']; }
+        }
+        $cns = new PlatformCreditNoteService($this->now);
+        foreach ($cns->list($p + ['per_page' => 1000, 'sort' => 'oldest'])['rows'] as $c) {
+            try { $f = $cns->pdf((int) $c['id']); $z->addFromString($f['filename'], $f['bytes']); $n++; } catch (\Throwable) { $skipped[] = $c['number']; }
         }
         $z->close();
         return ['path' => $path, 'count' => $n, 'skipped' => $skipped];

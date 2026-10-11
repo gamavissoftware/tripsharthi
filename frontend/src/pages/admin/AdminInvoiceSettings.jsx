@@ -39,9 +39,9 @@ export default function AdminInvoiceSettings() {
 
       <h4 style={{ margin: '20px 0 8px' }}>Tax and numbering</h4>
       <div className="iv-grid">
-        {field('sac_code', 'SAC code', { maxLength: 8 })}{field('gst_rate', 'GST rate %', { type: 'number', min: 0, max: 40, step: '0.01' })}{field('prefix', 'Invoice number prefix (max 4)', { maxLength: 4 })}{field('signatory', 'Authorised signatory')}
+        {field('sac_code', 'SAC code', { maxLength: 8 })}{field('gst_rate', 'GST rate %', { type: 'number', min: 0, max: 40, step: '0.01' })}{field('prefix', 'Invoice number prefix (max 4)', { maxLength: 4 })}{field('credit_prefix', 'Credit note number prefix (max 4)', { maxLength: 4 })}{field('signatory', 'Authorised signatory')}
       </div>
-      <div className="cu-sub" style={{ marginTop: 6 }}>Numbers look like GS/26-27/00001 (restarting each financial year, no gaps). Plan prices <b>exclude GST</b>: checkout charges the price plus this GST rate, and the invoice shows the price as taxable value with the GST on top. A payment you record by hand is treated as the amount received including GST. The SAC code is a default; your CA should confirm the right one for subscription software.</div>
+      <div className="cu-sub" style={{ marginTop: 6 }}>Numbers look like GS/26-27/00001 for invoices and CN/26-27/00001 for credit notes (separate series, restarting each financial year, no gaps). Plan prices <b>exclude GST</b>: checkout charges the price plus this GST rate, and the invoice shows the price as taxable value with the GST on top. A payment you record by hand is treated as the amount received including GST. The SAC code is a default; your CA should confirm the right one for subscription software.</div>
 
       <h4 style={{ margin: '20px 0 8px' }}>Bank details (optional, printed on the invoice)</h4>
       <div className="iv-grid">{field('bank_account_name', 'Account name')}{field('bank_name', 'Bank')}{field('bank_account_no', 'Account number')}{field('bank_ifsc', 'IFSC')}{field('upi_id', 'UPI ID')}</div>

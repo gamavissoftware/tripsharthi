@@ -239,4 +239,18 @@ class BillingController extends ResourceController
         catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 409); }
         return $this->response->setHeader('Content-Type', 'application/pdf')->setHeader('Content-Disposition', 'inline; filename="' . $f['filename'] . '"')->setHeader('X-Content-Type-Options', 'nosniff')->setBody($f['bytes']);
     }
+
+    // GET /api/v1/billing/credit-notes  [owner]   |   GET /api/v1/billing/credit-notes/:id/pdf
+    public function creditNotes(): ResponseInterface
+    {
+        return $this->respond(['success' => true, 'data' => (new \App\Services\Billing\PlatformCreditNoteService())->forTenant(CurrentUser::tenantId())]);
+    }
+
+    public function creditNotePdf($id = null): ResponseInterface
+    {
+        try { $f = (new \App\Services\Billing\PlatformCreditNoteService())->pdf((int) $id, CurrentUser::tenantId()); }
+        catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => 'Credit note not found.'], 404); }
+        catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 409); }
+        return $this->response->setHeader('Content-Type', 'application/pdf')->setHeader('Content-Disposition', 'inline; filename="' . $f['filename'] . '"')->setHeader('X-Content-Type-Options', 'nosniff')->setBody($f['bytes']);
+    }
 }

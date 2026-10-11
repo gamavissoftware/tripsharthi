@@ -33,7 +33,7 @@ final class PlatformInvoiceTest extends CIUnitTestCase
         $this->dir = sys_get_temp_dir() . '/tsinv-' . bin2hex(random_bytes(4));
         putenv('PLATFORM_INVOICE_STORAGE_DIR=' . $this->dir); $_ENV['PLATFORM_INVOICE_STORAGE_DIR'] = $this->dir; $_SERVER['PLATFORM_INVOICE_STORAGE_DIR'] = $this->dir;
         $db = db_connect(); $db->query('SET FOREIGN_KEY_CHECKS=0');
-        foreach (['platform_invoices', 'platform_doc_sequences', 'subscriptions', 'business_profiles', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
+        foreach (['platform_credit_notes', 'platform_invoices', 'platform_doc_sequences', 'subscriptions', 'business_profiles', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
         $db->query("DELETE FROM platform_settings WHERE setting_key LIKE 'inv\\_%'");
         foreach ([1 => 'Alpha Travels', 2 => 'Bravo Tours', 3 => 'Charlie Trips'] as $id => $name) {
             $db->table('tenants')->insert(['id' => $id, 'name' => $name, 'slug' => "t$id", 'plan' => 'growth', 'status' => 'active', 'mode' => 'saas', 'created_at' => '2026-01-01 00:00:00']);
@@ -277,7 +277,7 @@ final class PlatformInvoiceTest extends CIUnitTestCase
         $this->seedBook();
         db_connect()->table('platform_invoices')->where('seq', 1)->update(['buyer_name' => '=HYPERLINK("http://evil","x")']);
         $csv = $this->svc()->csv(['fy' => '2026-27']);
-        $this->assertStringStartsWith("\xEF\xBB\xBF" . '"Invoice no","Date"', $csv);
+        $this->assertStringStartsWith("\xEF\xBB\xBF" . '"Document","Invoice no","Date"', $csv);
         $lines = array_values(array_filter(explode("\r\n", $csv)));
         $this->assertCount(5, $lines, 'header + 4 invoices');
         $this->assertStringContainsString('"\'=HYPERLINK', $csv, 'a formula typed by a customer is neutralised');

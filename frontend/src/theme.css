@@ -233,3 +233,11 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .iv-missing { display: flex; gap: 12px; align-items: center; background: #fff6e8; border: 1.5px solid #f9c88a; border-radius: 12px; padding: 12px 16px; margin: 6px 0 10px; color: #7a4a05; }
 .iv-ok { display: flex; gap: 8px; align-items: center; background: #eaf8f4; border: 1px solid #b6e5d8; border-radius: 10px; padding: 10px 14px; color: #0b6b58; font-size: 13.5px; }
 .iv-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+/* Admin: credit note dialog */
+.iv-backdrop { position: fixed; inset: 0; background: rgba(10,31,68,.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.iv-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 560px; max-height: calc(100vh - 32px); overflow: auto; box-shadow: 0 20px 60px rgba(10,31,68,.35); }
+.iv-modal-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; padding: 16px 18px; border-bottom: 1px solid #e6eef8; }
+.iv-modal-body { padding: 14px 18px; }
+.iv-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 12px 18px 16px; border-top: 1px solid #e6eef8; }
+.iv-lbl { display: block; font-size: 12.5px; font-weight: 700; margin: 12px 0 4px; }
