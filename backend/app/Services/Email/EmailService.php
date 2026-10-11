@@ -45,8 +45,9 @@ class EmailService
     {
         $t = trim(preg_replace('/\s+/', ' ', strip_tags($debug)) ?? '');
         if ($pass !== '') { $t = str_replace($pass, '********', $t); }
-        if (preg_match('/(5\d\d[ -][^<]{5,160})/', $t, $m)) { $t = $m[1]; }
-        elseif (stripos($t, 'unable to connect') !== false || stripos($t, 'connection') !== false) { $t = 'Could not connect to the mail server (check the address, port and TLS/SSL choice).'; }
+        if (preg_match('/\b(5\d\d[ -][^<]{5,160})/', $t, $m)) { $t = $m[1]; }
+        elseif (stripos($t, 'authenticat') !== false) { $t = 'The username or password was not accepted.'; }
+        else { $t = 'Could not reach the mail server (the connection timed out or was refused). Check the address and port. If it still fails, the hosting provider may block that port: try port 465 with SSL.'; }
         return mb_substr($t, 0, 220);
     }
 
