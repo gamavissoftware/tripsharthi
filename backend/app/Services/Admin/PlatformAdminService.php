@@ -94,8 +94,11 @@ final class PlatformAdminService
         $db->table('subscriptions')->where('tenant_id', $tenantId)->where('status', 'active')->update(['status' => 'cancelled', 'cancelled_at' => $now, 'updated_at' => $now]);
         if ($plan !== 'free') {
             $days = max(1, min(3650, $days));
+            $gstOn = \App\Services\Billing\PlatformInvoiceService::gstOn((int) round($amountRupees * 100));   // 0 stays 0: a complimentary period carries no GST
             $db->table('subscriptions')->insert(['tenant_id' => $tenantId, 'razorpay_sub_id' => self::MANUAL_PREFIX . date('YmdHis') . '-' . bin2hex(random_bytes(3)), 'razorpay_customer_id' => 'admin', 'plan' => $plan,
-                'amount_paise' => (int) round($amountRupees * 100), 'billing_cycle' => $days >= 360 ? 'annual' : 'monthly', 'status' => 'active', 'current_period_start' => $now, 'current_period_end' => date('Y-m-d H:i:s', time() + $days * 86400), 'created_at' => $now, 'updated_at' => $now]);
+                // The amount typed is the PRICE before GST; GST is added on top (same rule as online checkout), so what the customer owes / paid is price + GST.
+                'amount_paise' => $gstOn['total'], 'taxable_paise' => $gstOn['taxable'] > 0 ? $gstOn['taxable'] : null, 'gst_paise' => $gstOn['taxable'] > 0 ? $gstOn['gst'] : null, 'gst_rate' => $gstOn['taxable'] > 0 ? $gstOn['rate'] : null,
+                'billing_cycle' => $days >= 360 ? 'annual' : 'monthly', 'status' => 'active', 'current_period_start' => $now, 'current_period_end' => date('Y-m-d H:i:s', time() + $days * 86400), 'created_at' => $now, 'updated_at' => $now]);
         }
         $db->table('tenants')->where('id', $tenantId)->update(['plan' => $plan, 'updated_at' => $now]);
         $newSubId = $plan !== 'free' ? (int) $db->query('SELECT MAX(id) m FROM subscriptions WHERE tenant_id = ?', [$tenantId])->getRowArray()['m'] : 0;

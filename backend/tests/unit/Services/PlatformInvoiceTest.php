@@ -357,6 +357,26 @@ final class PlatformInvoiceTest extends CIUnitTestCase
         putenv('RAZORPAY_MOCK_MODE'); unset($_ENV['RAZORPAY_MOCK_MODE'], $_SERVER['RAZORPAY_MOCK_MODE']);
     }
 
+    public function testAnAmountTheTeamTypesByHandIsThePriceBeforeGstAndGstIsAddedOnTop(): void
+    {
+        PlatformInvoiceService::$enableInTests = true;
+        $this->svc()->saveSettings(['auto_email' => '0'], 1);
+        (new \App\Services\Admin\PlatformAdminService())->setPlan(1, 'growth', 30, 3999, 1, false, 'bank transfer');
+        $sub = db_connect()->table('subscriptions')->get()->getRowArray();
+        $this->assertSame([399_900, 71_982, 471_882], [(int) $sub['taxable_paise'], (int) $sub['gst_paise'], (int) $sub['amount_paise']], 'price + GST = what the customer owes');
+        $inv = db_connect()->table('platform_invoices')->get()->getRowArray();
+        $this->assertSame(['offline', 'exclusive', 471_882, 399_900], [$inv['source'], $inv['price_basis'], (int) $inv['total'], (int) $inv['taxable_value']]);
+    }
+
+    public function testAComplimentaryPeriodCarriesNoGstAndNoInvoice(): void
+    {
+        PlatformInvoiceService::$enableInTests = true;
+        (new \App\Services\Admin\PlatformAdminService())->setPlan(1, 'growth', 14, 0, 1);
+        $sub = db_connect()->table('subscriptions')->get()->getRowArray();
+        $this->assertSame([0, null, null], [(int) $sub['amount_paise'], $sub['taxable_paise'], $sub['gst_paise']]);
+        $this->assertSame(0, db_connect()->table('platform_invoices')->countAllResults());
+    }
+
     // ---- wiring into payments -----------------------------------------------------------------------------------------------------------------------
 
     public function testAPaymentIssuesTheInvoiceAutomatically(): void

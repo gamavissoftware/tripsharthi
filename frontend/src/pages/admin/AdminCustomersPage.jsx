@@ -105,10 +105,11 @@ function CustomerDrawer({ id, loginOpen = false, onClose, onChanged }) {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               <div><label style={lbl}>Plan</label><select className="form-select" value={plan.plan} onChange={e => setPlan({ ...plan, plan: e.target.value })}>{PLANS.map(p => <option key={p}>{p}</option>)}</select></div>
               <div><label style={lbl}>For (days)</label><input className="form-input" type="number" min="1" max="3650" value={plan.days} onChange={e => setPlan({ ...plan, days: e.target.value })} disabled={plan.plan === 'free'} /></div>
-              <div><label style={lbl}>Received ₹ (incl. GST)</label><input className="form-input" type="number" min="0" value={plan.amount_rs} onChange={e => setPlan({ ...plan, amount_rs: e.target.value })} disabled={plan.plan === 'free'} /></div>
+              <div><label style={lbl}>Price ₹ (before GST)</label><input className="form-input" type="number" min="0" value={plan.amount_rs} onChange={e => setPlan({ ...plan, amount_rs: e.target.value })} disabled={plan.plan === 'free'} /></div>
             </div>
+            {plan.plan !== 'free' && Number(plan.amount_rs) > 0 && <div className="cu-sub" style={{ marginTop: 8 }}>GST is added on top of this price, and a GST invoice for the total (price + GST) is e-mailed to the owner.</div>}
             <input className="form-input" style={{ marginTop: 8 }} placeholder="Note (e.g. paid by bank transfer, trial extension)" value={plan.note} onChange={e => setPlan({ ...plan, note: e.target.value })} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}><small style={{ color: 'var(--text-3)' }}>Ends on its own and drops to Free. ₹0 = complimentary. A paid amount gets a GST invoice (the amount is taken as received including GST).</small><button className="btn btn-primary btn-sm" disabled={busy} onClick={() => savePlan(false)}>Apply</button></div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}><small style={{ color: 'var(--text-3)' }}>Ends on its own and drops to Free. ₹0 = complimentary (no invoice).</small><button className="btn btn-primary btn-sm" disabled={busy} onClick={() => savePlan(false)}>Apply</button></div>
           </div>
 
           <h4 style={{ margin: '18px 0 8px' }}>Subscription history</h4>
