@@ -33,6 +33,12 @@ export const admin = {
   testRazorpay:       ()        => api.post('/admin/payments/razorpay/test', {}).then(unwrap),
   clearRazorpay:      ()        => api.delete('/admin/payments/razorpay').then(unwrap),
 
+  // Mail server for TripSarthi's own e-mails (password is write-only)
+  mail:               ()        => api.get('/admin/mail').then(unwrap),
+  saveMail:           (b)       => api.put('/admin/mail', b).then(unwrap),
+  testMail:           ()        => api.post('/admin/mail/test', {}).then(unwrap),
+  clearMail:          ()        => api.delete('/admin/mail').then(unwrap),
+
   // Support tickets (customers -> the team)
   supportList:        (p = {})  => api.get('/admin/support?' + qs(p)).then(unwrap),
   supportTicket:      (id)      => api.get(`/admin/support/${id}`).then(unwrap),

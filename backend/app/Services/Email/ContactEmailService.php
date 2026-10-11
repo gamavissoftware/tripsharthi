@@ -87,15 +87,15 @@ final class ContactEmailService
      */
     public function resolveSmtp(int $tenantId): array
     {
-        $envPort = (int) env('MAIL_PORT', 1025);
+        $p = PlatformMail::smtp();
         $defaults = [
-            'host'       => (string) env('MAIL_HOST', 'localhost'),
-            'port'       => $envPort,
-            'user'       => (string) env('MAIL_USERNAME', ''),
-            'pass'       => (string) env('MAIL_PASSWORD', ''),
-            'crypto'     => (string) env('MAIL_CRYPTO', $envPort === 465 ? 'ssl' : 'tls'),
-            'from_email' => (string) env('MAIL_FROM_ADDRESS', 'noreply@travelpilot.app'),
-            'from_name'  => (string) env('MAIL_FROM_NAME', 'TravelPilot'),
+            'host'       => $p['host'],
+            'port'       => $p['port'],
+            'user'       => $p['user'],
+            'pass'       => $p['pass'],
+            'crypto'     => $p['crypto'],
+            'from_email' => $p['from_email'],
+            'from_name'  => $p['from_name'],
             'tenant'     => false,
         ];
 

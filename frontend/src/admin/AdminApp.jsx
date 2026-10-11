@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -16,6 +16,7 @@ import AdminEmailPage from '../pages/admin/AdminEmailPage'
 import AdminEmailCampaignPage from '../pages/admin/AdminEmailCampaignPage'
 import AdminSupportPage from '../pages/admin/AdminSupportPage'
 import AdminSupportTicketPage from '../pages/admin/AdminSupportTicketPage'
+import AdminMailPage from '../pages/admin/AdminMailPage'
 import AdminPaymentsPage from '../pages/admin/AdminPaymentsPage'
 import AdminWhatsappPage from '../pages/admin/AdminWhatsappPage'
 import AdminWhatsappWorkspacePage from '../pages/admin/AdminWhatsappWorkspacePage'
@@ -28,6 +29,7 @@ const NAV = [
     { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
     { to: '/admin/email',          label: 'Email marketing', icon: Mail },
     { to: '/admin/support',        label: 'Support',       icon: LifeBuoy },
+    { to: '/admin/mail',           label: 'Mail server',   icon: Send },
     { to: '/admin/payments',       label: 'Payments',      icon: Wallet },
     { to: '/admin/offers',        label: 'Offers',        icon: Tag },
     { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
@@ -87,6 +89,7 @@ function Shell({ user, onLogout }) {
           <Route path="/admin/email/:id" element={<AdminEmailCampaignPage />} />
           <Route path="/admin/support" element={<AdminSupportPage />} />
           <Route path="/admin/support/:id" element={<AdminSupportTicketPage />} />
+          <Route path="/admin/mail" element={<AdminMailPage />} />
           <Route path="/admin/payments" element={<AdminPaymentsPage />} />
           <Route path="/admin/offers" element={<AdminOffersPage />} />
           <Route path="/admin/partners" element={<AdminPartnersPage />} />

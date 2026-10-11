@@ -11,18 +11,26 @@ class EmailService
     /**
      * Configure and return a fresh CI4 email instance from env vars.
      */
+    /** Test/verify seam: mail settings to use instead of the saved ones (see PlatformMail). */
+    public static ?array $override = null;
+    /** Short, secret-free reason of the last failed send (shown on the admin Mail server page). */
+    public static string $lastError = '';
+
+    private static function config(): array { return self::$override ?? PlatformMail::smtp(); }
+
     private static function makeEmailInstance(): \CodeIgniter\Email\Email
     {
         $email = Services::email();
+        $c = self::config();
 
         $email->initialize([
             'protocol'  => 'smtp',
-            'SMTPHost'  => (string) env('MAIL_HOST', 'localhost'),
-            'SMTPPort'  => (int) env('MAIL_PORT', 1025),
-            'SMTPUser'  => (string) env('MAIL_USERNAME', ''),
-            'SMTPPass'  => (string) env('MAIL_PASSWORD', ''),
+            'SMTPHost'  => $c['host'],
+            'SMTPPort'  => $c['port'],
+            'SMTPUser'  => $c['user'],
+            'SMTPPass'  => $c['pass'],
             // 'tls' for port 587, 'ssl' for 465, '' for none. Configurable.
-            'SMTPCrypto' => (string) env('MAIL_CRYPTO', ((int) env('MAIL_PORT', 1025) === 465 ? 'ssl' : 'tls')),
+            'SMTPCrypto' => $c['crypto'],
             'SMTPTimeout' => 15,
             'mailType'  => 'html',
             'charset'   => 'utf-8',
@@ -30,6 +38,16 @@ class EmailService
         ]);
 
         return $email;
+    }
+
+    /** One readable line from the SMTP conversation, with the password masked and tags removed. */
+    private static function explain(string $debug, string $pass): string
+    {
+        $t = trim(preg_replace('/\s+/', ' ', strip_tags($debug)) ?? '');
+        if ($pass !== '') { $t = str_replace($pass, '********', $t); }
+        if (preg_match('/(5\d\d[ -][^<]{5,160})/', $t, $m)) { $t = $m[1]; }
+        elseif (stripos($t, 'unable to connect') !== false || stripos($t, 'connection') !== false) { $t = 'Could not connect to the mail server (check the address, port and TLS/SSL choice).'; }
+        return mb_substr($t, 0, 220);
     }
 
     /**
@@ -76,8 +94,9 @@ class EmailService
         try {
             $email = self::makeEmailInstance();
 
-            $fromAddress = (string) env('MAIL_FROM_ADDRESS', 'noreply@travelpilot.app');
-            $fromName    = (string) env('MAIL_FROM_NAME', 'TravelPilot');
+            $cfg         = self::config();
+            $fromAddress = $cfg['from_email'];
+            $fromName    = $cfg['from_name'];
 
             $email->setFrom($fromAddress, $fromName);
             $email->setTo($to);
@@ -98,6 +117,7 @@ class EmailService
             $result = $email->send(false);
 
             if (! $result) {
+                self::$lastError = self::explain($email->printDebugger(['headers']), $cfg['pass']);
                 log_message('error', '[EmailService] Send failed to {to}: {debug}', [
                     'to'    => $to,
                     'debug' => $email->printDebugger(['headers', 'subject', 'body']),
@@ -108,6 +128,7 @@ class EmailService
 
             return true;
         } catch (\Throwable $e) {
+            self::$lastError = self::explain($e->getMessage(), '');
             log_message('error', '[EmailService] Exception sending to {to}: {msg}', [
                 'to'  => $to,
                 'msg' => $e->getMessage(),
