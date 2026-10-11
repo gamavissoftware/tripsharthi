@@ -73,3 +73,16 @@
 .cx .app-topbar .topbar-search input { border-radius: 11px; background: #f3f7fc; border: 1px solid transparent; }
 .cx .app-topbar .topbar-search input:focus { background: #fff; border-color: var(--primary, #0a6cc4); box-shadow: 0 0 0 4px var(--primary-ring, rgba(10, 108, 196, .14)); }
 .cx .topbar-menu:hover, .cx .topbar-collapse:hover { background: #eaf1fb; color: var(--ad-navy); }
+
+/* settings and form pages (customer app) */
+.cx { accent-color: var(--primary, #0a6cc4); }
+.cx .form-label { display: block; font-size: 13px; font-weight: 600; color: #26395c; margin-bottom: 5px; }
+.cx .form-group { margin-bottom: 14px; }
+.cx .card-body > h3:first-child, .cx .card-body > h2:first-child { margin-top: 0; margin-bottom: 12px; color: var(--ad-navy); }
+.cx .card-body > h3:first-child + p, .cx .card-body > h2:first-child + p { margin-top: -6px; }
+.cx .form-hint, .cx .form-group small { color: #7a889f; font-size: 12.5px; line-height: 1.45; }
+.cx .form-error { border-radius: 10px; }
+.cx .btn-success { border-radius: 11px; box-shadow: 0 6px 16px rgba(26, 157, 87, .25); }
+.cx .btn-danger { border-radius: 11px; }
+.cx hr { border: 0; border-top: 1px solid #edf1f7; }
+.cx .toast, .cx [role='status'] { border-radius: 12px; }

@@ -4,6 +4,7 @@ import { travel, inr, toPaise } from '../api/travel'
 import { toast } from '../components/Toast'
 import { toMinor, toMajor, fmt, toInrPaise } from '../lib/currency'
 import LoadFailed from '../components/LoadFailed'
+import './ItineraryBuilderPage.css'
 
 const TYPE_ICON = { hotel: '🏨', flight: '✈️', train: '🚆', transfer: '🚗', sightseeing: '📸', activity: '🎯', meal: '🍽️', visa: '🛂', insurance: '🛡️', other: '•' }
 
@@ -74,11 +75,11 @@ export default function ItineraryBuilderPage() {
 
   const lock = !['draft', 'sent', 'viewed'].includes(it.status)
   return (
-    <div className="page">
+    <div className="page itin">
       <div className="page-header">
         <div>
-          {it.trip_id && <Link to={`/trips/${it.trip_id}`} style={{ fontSize: 13 }}>← Trip</Link>}
-          <h1 className="page-title" style={{ margin: '4px 0' }}>{it.title} <small style={{ color: 'var(--text-3)' }}>v{it.version} · {it.status}</small></h1>
+          {it.trip_id && <Link to={`/trips/${it.trip_id}`} className="itin-back">← Back to trip</Link>}
+          <h1 className="page-title" style={{ margin: '6px 0 0' }}>{it.title} <small className={'itin-status st-' + it.status}>v{it.version} · {it.status}</small></h1>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="btn btn-ghost" onClick={() => travel.openQuotePdf(it.id).catch(e => toast.error('Could not open PDF', e.message))}>⬇ PDF</button>
@@ -92,12 +93,12 @@ export default function ItineraryBuilderPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,2fr) minmax(280px,1fr)', gap: 16 }} className="itin-grid">
         <div>
           {it.days.map(d => (
-            <div key={d.id} className="card card-body" style={{ marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Day {d.day_no}: {d.title}</h3>
-              {d.city && <small style={{ color: 'var(--text-3)' }}>{d.city}</small>}
+            <div key={d.id} className="card card-body itin-day" style={{ marginBottom: 14 }}>
+              <h3 style={{ margin: 0 }}><span className="itin-daynum">{d.day_no}</span>{d.title}</h3>
+              {d.city && <small className="itin-city">📍 {d.city}</small>}
               {d.description && <p>{d.description}</p>}
               {d.items.map(i => (
-                <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
+                <div key={i.id} className="itin-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
                   <span>{TYPE_ICON[i.type] || '•'} {i.title}{Number(i.nights) > 1 && i.type === 'hotel' ? ` · ${i.nights}N` : ''}{sup[i.supplier_id] ? <small style={{ color: 'var(--text-3)' }}> — {sup[i.supplier_id]}</small> : null}{Number(i.cost_amount) === 0 && <small style={{ color: 'var(--warning)' }}> · needs price</small>}{i.cost_currency && i.cost_currency !== 'INR' && <small style={{ color: 'var(--text-3)' }}> · {fmt(i.unit_cost_fx, i.cost_currency)} @ ₹{Number(i.fx_rate).toFixed(2)}</small>}</span>
                   <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><b>{inr(i.cost_amount)}</b>
                     <button className="btn btn-sm btn-ghost" title="Remove" onClick={async () => { await travel.deleteItem(it.id, i.id); load() }}>✕</button></span>
@@ -107,10 +108,10 @@ export default function ItineraryBuilderPage() {
             </div>
           ))}
           {(it.extras?.length > 0 || it.days.length === 0) && (
-            <div className="card card-body" style={{ marginBottom: 12 }}>
-              <h3 style={{ margin: 0 }}>Other services <small style={{ color: 'var(--text-3)', fontWeight: 400 }}>(not tied to a day)</small></h3>
+            <div className="card card-body itin-day" style={{ marginBottom: 14 }}>
+              <h3 style={{ margin: 0 }}><span className="itin-daynum extra">+</span>Other services <small style={{ color: 'var(--text-3)', fontWeight: 400 }}>(not tied to a day)</small></h3>
               {it.extras?.map(i => (
-                <div key={i.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
+                <div key={i.id} className="itin-row" style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '8px 0', borderTop: '1px solid var(--border)', alignItems: 'center' }}>
                   <span>{TYPE_ICON[i.type] || '•'} {i.title}</span>
                   <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}><b>{inr(i.cost_amount)}</b>
                     <button className="btn btn-sm btn-ghost" title="Remove" onClick={async () => { await travel.deleteItem(it.id, i.id); load() }}>✕</button></span>
@@ -119,7 +120,7 @@ export default function ItineraryBuilderPage() {
               <AddItem itin={it} day={null} rates={rates} fx={fx} onAdded={load} />
             </div>
           )}
-          <button className="btn btn-ghost" onClick={async () => { await travel.addDay(it.id, { title: `Day ${it.days.length + 1}` }); load() }}>+ Add day</button>
+          <button className="itin-addday" onClick={async () => { await travel.addDay(it.id, { title: `Day ${it.days.length + 1}` }); load() }}>+ Add day</button>
           <div className="card card-body" style={{ marginTop: 12 }}>
             <label className="form-label">Inclusions</label>
             <textarea className="form-input" rows={4} defaultValue={it.inclusions || ''} onBlur={e => e.target.value !== (it.inclusions || '') && patch({ inclusions: e.target.value })} />
@@ -128,7 +129,7 @@ export default function ItineraryBuilderPage() {
           </div>
         </div>
 
-        <div className="card card-body" style={{ alignSelf: 'start', position: 'sticky', top: 12 }}>
+        <div className="card card-body itin-price" style={{ alignSelf: 'start', position: 'sticky', top: 70 }}>
           <h3 style={{ marginTop: 0 }}>Pricing</h3>
           <div className="form-group"><label className="form-label">Markup</label>
             <div style={{ display: 'flex', gap: 6 }}>
@@ -149,9 +150,9 @@ export default function ItineraryBuilderPage() {
           {[['Supplier cost', it.cost_total, true], ['Selling price', it.sell_subtotal], [`GST ${Number(it.gst_rate)}%`, it.gst_amount], Number(it.tcs_amount) > 0 && [`TCS ${Number(it.tcs_rate)}%`, it.tcs_amount]].filter(Boolean).map(([k, v, dim]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', color: dim ? 'var(--text-3)' : 'inherit' }}><span>{k}</span><span>{inr(v)}</span></div>
           ))}
-          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '2px solid var(--border-strong)', paddingTop: 8, fontSize: 18, fontWeight: 800 }}><span>Total</span><span>{inr(it.grand_total)}</span></div>
-          <div style={{ marginTop: 8, color: 'var(--success)', fontWeight: 600 }}>Your margin: {inr(it.margin_amount)}</div>
-          <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Customers never see cost or margin. Taxes follow current rules; have your CA confirm the TCS base.</p>
+          <div className="itin-total"><span>Total</span><span>{inr(it.grand_total)}</span></div>
+          <div className="itin-margin">Your margin <b>{inr(it.margin_amount)}</b></div>
+          <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 0 }}>Customers never see cost or margin. Taxes follow current rules; have your CA confirm the TCS base.</p>
         </div>
       </div>
       <style>{`@media (max-width: 900px){ .itin-grid{ grid-template-columns: 1fr !important; } }`}</style>

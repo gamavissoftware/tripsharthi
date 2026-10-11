@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { ChartByType } from '../components/Charts'
+import { BarChart3 } from 'lucide-react'
 
 // ── Configurable dashboards + report widgets (Phase I1/I2) ───────────────────
 
@@ -20,9 +21,9 @@ function Widget({ widget, globalPreset, refreshTick, onEdit, onDelete }) {
 
   const format = METRIC_FORMAT[widget.config?.metric] || 'num'
   return (
-    <div className="lp-rep-widget lp-span-all-mobile" style={{ gridColumn: `span ${widget.width || 6}`, background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '1rem 1.1rem', display: 'flex', flexDirection: 'column' }}>
+    <div className="lp-rep-widget lp-span-all-mobile" style={{ gridColumn: `span ${widget.width || 6}`, background: '#fff', border: '1px solid #e3eaf3', borderRadius: 16, padding: '1.1rem 1.25rem', display: 'flex', flexDirection: 'column', boxShadow: '0 2px 12px rgba(10,31,68,.05)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 800, color: '#111827' }}>{widget.title}</span>
+        <span style={{ fontSize: 13, fontWeight: 800, color: '#0a1f44', letterSpacing: '.2px' }}>{widget.title}</span>
         <span className="lp-rep-actions" style={{ display: 'flex', gap: 6 }}>
           <button onClick={() => exportWidgetCsv(widget, globalPreset)} title="Download CSV" style={iconBtn}>⤓</button>
           <button onClick={() => onEdit(widget)} title="Edit" style={iconBtn}>✎</button>
@@ -149,7 +150,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 1100 }}>
+    <div className="page" style={{ maxWidth: 1280 }}>
       <style>{`
         .lp-rep-actions{opacity:0;transition:opacity .15s} .lp-rep-widget:hover .lp-rep-actions{opacity:1}
         @media print {
@@ -160,7 +161,7 @@ export default function ReportsPage() {
       `}</style>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.1rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>📈 Reports</h1>
+          <h1 style={{ margin: 0, fontSize: '1.65rem', fontWeight: 800, color: '#0a1f44', letterSpacing: '-.5px', display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 38, height: 38, borderRadius: 11, background: 'linear-gradient(135deg,#0a6cc4,#12a89e)', color: '#fff', display: 'grid', placeItems: 'center' }}><BarChart3 size={20} /></span>Reports</h1>
           <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Build dashboards from your CRM data.</p>
         </div>
         <div className="lp-rep-noprint" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

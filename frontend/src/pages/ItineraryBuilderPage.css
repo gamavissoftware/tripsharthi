@@ -1,0 +1,24 @@
+/* Itinerary builder - same design language as the rest of the app */
+.itin .itin-back { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #0a5aa8; text-decoration: none; background: #e8f3fc; padding: 4px 11px; border-radius: 999px; }
+.itin .itin-back:hover { background: #d7ebfa; }
+.itin .itin-status { font-size: .72rem; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; margin-left: 8px; vertical-align: 4px; background: #eef2f7; color: #52627c; }
+.itin .itin-status.st-draft { background: #fff3dc; color: #a05a00; }
+.itin .itin-status.st-sent, .itin .itin-status.st-viewed { background: #e8f3fc; color: #074a8c; }
+.itin .itin-status.st-accepted { background: #e3f6ea; color: #14804a; }
+.itin .itin-day h3 { display: flex; align-items: center; gap: 12px; font-size: 1.08rem; color: #0a1f44; }
+.itin .itin-daynum { flex: none; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff; background: linear-gradient(135deg, #0a6cc4, #12a89e); }
+.itin .itin-daynum.extra { background: linear-gradient(135deg, #f98f26, #ffb95e); }
+.itin .itin-city { display: block; margin: 4px 0 6px 44px; color: #6b7a93; }
+.itin .itin-day > p { margin: 4px 0 8px 44px; color: #52627c; }
+.itin .itin-row { padding: 11px 6px !important; border-radius: 8px; transition: background .12s; }
+.itin .itin-row:hover { background: #f7fafd; }
+.itin .itin-row b { color: #0a1f44; }
+.itin .itin-addday { width: 100%; background: #fff; border: 2px dashed #bcd2ea; color: #0a5aa8; font-weight: 700; padding: 14px; border-radius: 14px; cursor: pointer; font-size: 14px; transition: background .15s, border-color .15s; }
+.itin .itin-addday:hover { background: #f1f7fd; border-color: #0a6cc4; }
+.itin .itin-price h3 { font-size: 1.05rem; color: #0a1f44; }
+.itin .itin-price .form-group { margin-bottom: 14px; }
+.itin .itin-price .form-label { font-size: 12px; text-transform: uppercase; letter-spacing: .6px; color: #6b7a93; font-weight: 700; margin-bottom: 5px; }
+.itin .itin-total { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 14px 16px; border-radius: 14px; font-size: 1.15rem; font-weight: 800; color: #fff; background: linear-gradient(125deg, #0a1f44, #0a4aa0 60%, #0b8f94); box-shadow: 0 10px 24px rgba(10, 31, 68, .2); }
+.itin .itin-margin { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding: 9px 14px; border-radius: 11px; background: #e8f7ef; color: #14804a; font-weight: 600; }
+.itin .itin-margin b { font-size: 1.02rem; }
+.itin textarea.form-input { min-height: 96px; }

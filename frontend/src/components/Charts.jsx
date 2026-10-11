@@ -2,7 +2,7 @@
 // No chart library — small, themeable SVG components matching the app style.
 // Each takes { series:[{label,value}], total, format }.
 
-const PALETTE = ['#0a6cc4', '#16a34a', '#f59e0b', '#0ea5e9', '#ef4444', '#12a89e', '#14b8a6', '#ec4899', '#64748b']
+const PALETTE = ['#0a6cc4', '#12a89e', '#f98f26', '#3b9bea', '#1a9d57', '#d93025', '#7a8aa6', '#c9578b', '#5b6b86']
 
 const CURRENCY_SYMBOL = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ', AUD: 'A$', SGD: 'S$', CAD: 'C$', JPY: '¥' }
 // Currencies shown without fraction digits (INR by app convention; JPY has no minor unit).
