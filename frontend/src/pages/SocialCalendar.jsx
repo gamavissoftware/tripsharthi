@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, Trash2, XCircle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Trash2, XCircle } from 'lucide-react'
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MAX_CHIPS = 3
@@ -7,10 +7,12 @@ const MAX_CHIPS = 3
 // The backend stores naive UTC strings; read them as UTC, show them in the viewer's time.
 function parse(s) { return s ? new Date(s.replace(' ', 'T') + 'Z') : null }
 const key = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+const startOfToday = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()) }
+const isPast = (d) => d < startOfToday()
 const timeOf = (d) => d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
 
 /** Month grid of scheduled / published posts. `posts` come from the API; `onRemove(post)` deletes one. */
-export default function SocialCalendar({ posts, onRemove, renderPlatform }) {
+export default function SocialCalendar({ posts, onRemove, onNewPost, renderPlatform }) {
   const today = new Date()
   const [cursor, setCursor] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
   const [picked, setPicked] = useState(key(today))
@@ -36,6 +38,7 @@ export default function SocialCalendar({ posts, onRemove, renderPlatform }) {
   const step = (n) => setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + n, 1))
   const monthPosts = cells.filter(d => d.getMonth() === cursor.getMonth()).reduce((n, d) => n + (byDay[key(d)]?.length ?? 0), 0)
   const dayPosts = byDay[picked] ?? []
+  const pickedDate = (() => { const [y, m, dd] = picked.split('-').map(Number); return new Date(y, m - 1, dd) })()
   const lastRowEmpty = cells.slice(35).every(d => d.getMonth() !== cursor.getMonth())
   const shown = lastRowEmpty ? cells.slice(0, 35) : cells
 
@@ -60,7 +63,7 @@ export default function SocialCalendar({ posts, onRemove, renderPlatform }) {
           const out = d.getMonth() !== cursor.getMonth()
           const cls = 'soc-cal-day' + (out ? ' out' : '') + (k === key(today) ? ' today' : '') + (k === picked ? ' picked' : '')
           return (
-            <button type="button" key={k + (out ? 'o' : '')} className={cls} onClick={() => setPicked(k)}>
+            <button type="button" key={k + (out ? 'o' : '')} className={cls} onClick={() => { setPicked(k); if (list.length === 0 && !isPast(d)) onNewPost?.(d) }}>
               <span className="soc-cal-num">{d.getDate()}</span>
               <span className="soc-cal-chips">
                 {list.slice(0, MAX_CHIPS).map(p => (
@@ -82,8 +85,11 @@ export default function SocialCalendar({ posts, onRemove, renderPlatform }) {
       </div>
 
       <div className="soc-cal-detail">
-        <h4>{(() => { const [y, m, dd] = picked.split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) })()}</h4>
-        {dayPosts.length === 0 && <p className="soc-cal-empty">No posts on this day.</p>}
+        <div className="soc-cal-dayhead">
+          <h4>{pickedDate.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })}</h4>
+          {!isPast(pickedDate) && onNewPost && <button type="button" className="btn btn-primary btn-sm" onClick={() => onNewPost(pickedDate)}><Plus size={14} /> New post on this day</button>}
+        </div>
+        {dayPosts.length === 0 && <p className="soc-cal-empty">{isPast(pickedDate) ? 'No posts on this day.' : 'No posts yet on this day.'}</p>}
         {dayPosts.map(p => (
           <div key={p.id} className="soc-cal-item">
             <span className="soc-cal-time">{timeOf(p._d)}</span>

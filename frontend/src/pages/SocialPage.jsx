@@ -278,6 +278,17 @@ export default function SocialPage() {
     setSaving(false)
   }
 
+  // A day picked on the calendar: pre-fill "Schedule for" (10:00 that day, or the next full hour today) and jump to the form.
+  function startPostOn(day) {
+    const now = new Date()
+    const d = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 10, 0)
+    if (d <= now) { d.setTime(now.getTime()); d.setHours(d.getHours() + 1, 0, 0, 0) }
+    const pad = (n) => String(n).padStart(2, '0')
+    setWhen(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`)
+    document.getElementById('social-composer')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setTimeout(() => document.getElementById('social-message')?.focus({ preventScroll: true }), 350)
+  }
+
   async function handleRemovePost(p) {
     if (p.status === 'scheduled' && !(await confirmAsk('Remove this scheduled post?', { okLabel: 'Remove', danger: true }))) return
     try {
@@ -389,7 +400,7 @@ export default function SocialPage() {
       </div>
 
       {/* ── Composer ── */}
-      <div className="card mb-4">
+      <div className="card mb-4" id="social-composer">
         <div className="card-body">
           <h3 style={{ fontSize: '.95rem', marginBottom: '.85rem' }}>New post</h3>
           <form onSubmit={e => handleSchedule(e, false)} className="flex flex-col gap-3">
@@ -560,7 +571,7 @@ export default function SocialPage() {
             <button type="button" className={view === 'list' ? 'on' : ''} onClick={() => pickView('list')}>List</button>
           </div>
         </div>
-        {view === 'calendar' && <SocialCalendar posts={posts} onRemove={handleRemovePost} renderPlatform={(pl) => <PlatformIcon platform={pl} size={16} />} />}
+        {view === 'calendar' && <SocialCalendar posts={posts} onRemove={handleRemovePost} onNewPost={startPostOn} renderPlatform={(pl) => <PlatformIcon platform={pl} size={16} />} />}
         <div style={{ overflowX: 'auto', display: view === 'list' ? 'block' : 'none' }}>
         <table className="data-table">
           <thead>

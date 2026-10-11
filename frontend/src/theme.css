@@ -177,3 +177,5 @@
   .cx .soc-dots { display: flex; }
 }
 .cx .soc-chip.publishing i { background: #f59e0b; } .cx .soc-chip.published i { background: #1a9d57; } .cx .soc-chip.failed i { background: #d93025; }
+.cx .soc-cal-dayhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.cx .soc-cal-dayhead h4 { margin: 0; }
