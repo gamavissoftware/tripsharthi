@@ -121,7 +121,7 @@ class BillingService
             'amount'       => $amountPaise,
             'amount_inr'   => $amountInr,
             'currency'     => 'INR',
-            'key_id'       => env('RAZORPAY_KEY_ID', ''),
+            'key_id'       => PlatformRazorpay::keyId(),
             'plan'         => $plan,
             'billing_type' => $billingType,
             'period_days'  => $periodDays,
@@ -150,7 +150,7 @@ class BillingService
         string $billingType = 'monthly'
     ): void {
         if (! $this->isMockMode()) {
-            $keySecret = env('RAZORPAY_KEY_SECRET', '');
+            $keySecret = PlatformRazorpay::keySecret();
             $expected  = hash_hmac('sha256', $orderId . '|' . $paymentId, $keySecret);
 
             if (! hash_equals($expected, $signature)) {
@@ -414,8 +414,8 @@ class BillingService
 
     private function razorpayPost(string $path, array $data): array
     {
-        $keyId     = env('RAZORPAY_KEY_ID', '');
-        $keySecret = env('RAZORPAY_KEY_SECRET', '');
+        $keyId     = PlatformRazorpay::keyId();
+        $keySecret = PlatformRazorpay::keySecret();
         $baseUrl   = 'https://api.razorpay.com/v1';
 
         $ch = curl_init($baseUrl . $path);

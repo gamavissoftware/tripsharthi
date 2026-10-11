@@ -458,6 +458,10 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
         // WhatsApp: oversight of every workspace + TripSarthi's own marketing
+        $routes->get('payments/razorpay',                          'Api\AdminPaymentsController::razorpay');
+        $routes->put('payments/razorpay',                          'Api\AdminPaymentsController::save');
+        $routes->post('payments/razorpay/test',                    'Api\AdminPaymentsController::test');
+        $routes->delete('payments/razorpay',                       'Api\AdminPaymentsController::clear');
         $routes->get('whatsapp/overview',                          'Api\AdminWhatsappController::overview');
         $routes->get('whatsapp/workspaces/(:num)',                 'Api\AdminWhatsappController::workspace/$1');
         $routes->post('whatsapp/workspaces/(:num)/marketing-pause', 'Api\AdminWhatsappController::pause/$1');

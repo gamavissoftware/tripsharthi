@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -12,6 +12,7 @@ import AdminInboxPage from '../pages/admin/AdminInboxPage'
 import AdminOffersPage from '../pages/admin/AdminOffersPage'
 import AdminPartnersPage from '../pages/admin/AdminPartnersPage'
 import AdminPartnerDetailPage from '../pages/admin/AdminPartnerDetailPage'
+import AdminPaymentsPage from '../pages/admin/AdminPaymentsPage'
 import AdminWhatsappPage from '../pages/admin/AdminWhatsappPage'
 import AdminWhatsappWorkspacePage from '../pages/admin/AdminWhatsappWorkspacePage'
 
@@ -21,6 +22,7 @@ const NAV = [
     { to: '/admin',               label: 'Overview',      icon: LayoutDashboard, end: true },
     { to: '/admin/customers',     label: 'Customers',     icon: Building2 },
     { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+    { to: '/admin/payments',       label: 'Payments',      icon: Wallet },
     { to: '/admin/offers',        label: 'Offers',        icon: Tag },
     { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
     { to: '/admin/whatsapp',      label: 'WhatsApp',      icon: MessageCircle },
@@ -74,6 +76,7 @@ function Shell({ user, onLogout }) {
           <Route path="/admin" element={<AdminOverviewPage />} />
           <Route path="/admin/customers" element={<AdminCustomersPage />} />
           <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+          <Route path="/admin/payments" element={<AdminPaymentsPage />} />
           <Route path="/admin/offers" element={<AdminOffersPage />} />
           <Route path="/admin/partners" element={<AdminPartnersPage />} />
           <Route path="/admin/partners/:id" element={<AdminPartnerDetailPage />} />

@@ -37,7 +37,7 @@ final class RazorpaySignatureVerifier
             return true;
         }
 
-        $secret = env('RAZORPAY_WEBHOOK_SECRET', '');
+        $secret = PlatformRazorpay::webhookSecret();
 
         if (empty($sigHeader) || empty($secret)) {
             log_message('error',

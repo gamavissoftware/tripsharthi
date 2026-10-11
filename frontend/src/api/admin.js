@@ -27,6 +27,12 @@ export const admin = {
   waSegment:          (key)     => api.get(`/admin/whatsapp/marketing/segments/${key}`).then(unwrap),
   waSync:             (key)     => api.post(`/admin/whatsapp/marketing/segments/${key}/sync`, {}).then(unwrap),
 
+  // Payments: TripSarthi's own Razorpay account (secrets are write-only)
+  razorpay:           ()        => api.get('/admin/payments/razorpay').then(unwrap),
+  saveRazorpay:       (b)       => api.put('/admin/payments/razorpay', b).then(unwrap),
+  testRazorpay:       ()        => api.post('/admin/payments/razorpay/test', {}).then(unwrap),
+  clearRazorpay:      ()        => api.delete('/admin/payments/razorpay').then(unwrap),
+
   // Partner program
   partners:           ()        => api.get('/admin/partners').then(unwrap),
   partner:            (id)      => api.get(`/admin/partners/${id}`).then(unwrap),
