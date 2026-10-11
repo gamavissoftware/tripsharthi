@@ -3,18 +3,18 @@ import { useSearchParams } from 'react-router-dom'
 import { admin } from '../../api/admin'
 import { inr } from '../../api/travel'
 import { toast } from '../../components/Toast'
-import { Pill } from './AdminUi'
+import { Pill, Kpi } from './AdminUi'
 import { th, td, fmtDate, ago, STATUS_COLOR, PLAN_COLOR } from './adminUtil'
 import { confirmAsk } from '../../components/confirmAsk'
-import { LogIn } from 'lucide-react'
+import { LogIn, Download, Search, Building2, Wallet, Users, CalendarClock, AlertTriangle, IndianRupee } from 'lucide-react'
 
 const PLANS = ['free', 'starter', 'growth', 'pro']
 const lbl = { display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }
 
 /** Right-hand panel: one customer's plan, usage, people and subscription history, with the actions the owner can take. */
 /** "Log in as customer": a reason (shown to the customer in their audit log), full access or view only, then the customer app opens in a new tab. */
-function LoginAsCustomer({ tenant }) {
-  const [open, setOpen] = useState(false)
+function LoginAsCustomer({ tenant, startOpen = false }) {
+  const [open, setOpen] = useState(startOpen)
   const [reason, setReason] = useState('')
   const [viewOnly, setViewOnly] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -50,7 +50,7 @@ function LoginAsCustomer({ tenant }) {
   )
 }
 
-function CustomerDrawer({ id, onClose, onChanged }) {
+function CustomerDrawer({ id, loginOpen = false, onClose, onChanged }) {
   const [d, setD] = useState(null)
   const [plan, setPlan] = useState({ plan: 'growth', days: 30, amount_rs: 0, note: '' })
   const [reason, setReason] = useState('')
@@ -82,7 +82,13 @@ function CustomerDrawer({ id, onClose, onChanged }) {
         </div>
         {d && <>
           <div style={{ display: 'flex', gap: 8, margin: '12px 0' }}><Pill color={PLAN_COLOR[t.plan]}>{t.plan}</Pill><Pill color={STATUS_COLOR[t.status]}>{t.status}</Pill></div>
-          <LoginAsCustomer tenant={t} />
+          {d.health && <div className="cu-health">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}><Pill color={BILL_COLOR[d.health.billing.state]}>{d.health.billing.label}</Pill>
+              <span style={{ fontSize: 13.5 }}>{d.health.billing.amount_paise > 0 ? `${rs(d.health.billing.amount_paise)}/${d.health.billing.cycle === 'annual' ? 'yr' : 'mo'} · ` : ''}{d.health.billing.renews_at ? `runs to ${fmtDate(d.health.billing.renews_at)}` : 'no running paid period'}{d.health.billing.lifetime_paise > 0 ? ` · ${rs(d.health.billing.lifetime_paise)} paid so far` : ''}</span></div>
+            <div className="cu-sub" style={{ marginTop: 6 }}>Last seen {ago(d.health.last_active)} · WhatsApp: {WA[d.health.whatsapp]?.[0]}{d.health.partner ? ` · referred by ${d.health.partner}` : ''}</div>
+            {d.health.flags.length > 0 ? <div className="cu-flags" style={{ marginTop: 8 }}>{d.health.flags.map(x => <Flag key={x.key} f={x} />)}</div> : <div className="cu-sub" style={{ marginTop: 6, color: 'var(--success)' }}>Nothing needs attention.</div>}
+          </div>}
+          <LoginAsCustomer tenant={t} startOpen={loginOpen} />
 
           <h4 style={{ margin: '16px 0 8px' }}>Usage vs plan limits</h4>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 8 }}>
@@ -123,44 +129,122 @@ function CustomerDrawer({ id, onClose, onChanged }) {
   )
 }
 
+const SEGMENTS = [
+  ['all', 'All'], ['attention', 'Needs attention'], ['paying', 'Paying'], ['complimentary', 'Complimentary'], ['free', 'Free'], ['lapsed', 'Lapsed'], ['halted', 'Payment failed'],
+  ['expiring', 'Ending soon'], ['inactive', 'Gone quiet'], ['not_activated', 'Not set up'], ['tickets', 'Open requests'], ['suspended', 'Suspended'], ['referred', 'Via partner'], ['new', 'New (7 days)'],
+]
+const SORTS = [['newest', 'Newest first'], ['active', 'Recently active'], ['renewal', 'Renewal date'], ['revenue', 'Most paid'], ['contacts', 'Most contacts'], ['name', 'Name A–Z']]
+const TONE = { danger: 'var(--danger)', warn: 'var(--warning)', info: 'var(--primary)', muted: 'var(--text-3)' }
+const BILL_COLOR = { paying: 'var(--success)', complimentary: '#0e8f8c', free: '#64748b', lapsed: 'var(--warning)', halted: 'var(--danger)' }
+const WA = { active: ['Connected', 'var(--success)'], pending: ['Pending', 'var(--warning)'], suspended: ['Suspended', 'var(--danger)'], none: ['Not connected', 'var(--text-3)'] }
+
+const rs = (paise) => '₹' + Math.round(paise / 100).toLocaleString('en-IN')
+const csvCell = (v) => { const t = String(v ?? ''); return /^[=+\-@]/.test(t) ? `"'${t.replace(/"/g, '""')}"` : /[",\n]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t }   // no spreadsheet formulas from customer-typed text
+
+function exportCsv(rows) {
+  const head = ['ID', 'Workspace', 'Plan', 'Status', 'Billing', 'Monthly paid (INR)', 'Renews / ends', 'Lifetime paid (INR)', 'Owner', 'Owner e-mail', 'Owner phone', 'Users', 'Contacts', 'Trips', 'Bookings', 'WhatsApp', 'Last active', 'Joined', 'Referred by', 'Needs attention']
+  const lines = rows.map(r => [r.id, r.name, r.plan, r.status, r.billing.label, r.billing.state === 'paying' ? Math.round(r.billing.amount_paise / 100) : 0, r.billing.renews_at ?? '', Math.round(r.billing.lifetime_paise / 100), r.owner.name, r.owner.email, r.owner.phone,
+    r.usage.users, r.usage.contacts, r.usage.trips, r.usage.bookings, WA[r.whatsapp]?.[0] ?? r.whatsapp, r.last_active ?? '', r.created_at, r.partner ?? '', r.attention ? 'yes' : ''])
+  const csv = [head, ...lines].map(l => l.map(csvCell).join(',')).join('\n')
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })); a.download = `tripsarthi-customers-${new Date().toISOString().slice(0, 10)}.csv`; a.click(); URL.revokeObjectURL(a.href)
+}
+
+function Flag({ f }) { return <span className="cu-flag" style={{ '--c': TONE[f.tone] ?? TONE.muted }}>{f.label}</span> }
+
+function UsageBar({ n, limit }) {
+  if (!limit || limit >= 999) return null
+  const pct = Math.min(100, Math.round((n / limit) * 100))
+  return <span className="cu-bar" title={`${n} of ${limit}`}><i style={{ width: pct + '%', background: pct >= 90 ? 'var(--danger)' : pct >= 70 ? 'var(--warning)' : 'var(--primary)' }} /></span>
+}
+
 export default function AdminCustomersPage() {
   const [sp, setSp] = useSearchParams()
-  const [f, setF] = useState({ q: '', plan: '', status: '', page: 1 })
+  const [f, setF] = useState({ q: '', plan: '', status: '', segment: 'all', sort: 'newest', page: 1 })
   const [d, setD] = useState(null)
+  const [exporting, setExporting] = useState(false)
   const open = Number(sp.get('open')) || null
   const load = useCallback(() => admin.tenants(f).then(setD).catch(e => toast.error('Could not load', e.message)), [f])
   useEffect(() => { const t = setTimeout(load, f.q ? 300 : 0); return () => clearTimeout(t) }, [load, f.q])
   const pages = d ? Math.max(1, Math.ceil(d.total / d.per_page)) : 1
+  const S = d?.summary
+  const seg = (k) => setF({ ...f, segment: k, page: 1 })
+
+  async function doExport() {
+    setExporting(true)
+    try { const all = await admin.tenants({ ...f, page: 1, per_page: 1000 }); exportCsv(all.rows); toast.success('Exported', `${all.rows.length} customers (current filters)`) }
+    catch (e) { toast.error('Export failed', e.message) } finally { setExporting(false) }
+  }
+
   return (
     <div className="page">
-      <div className="page-header"><h1 className="page-title">Customers</h1>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input className="form-input" style={{ width: 230 }} placeholder="Search name, email, workspace…" value={f.q} onChange={e => setF({ ...f, q: e.target.value, page: 1 })} />
-          <select className="form-select" value={f.plan} onChange={e => setF({ ...f, plan: e.target.value, page: 1 })}><option value="">All plans</option>{PLANS.map(p => <option key={p}>{p}</option>)}</select>
-          <select className="form-select" value={f.status} onChange={e => setF({ ...f, status: e.target.value, page: 1 })}><option value="">All statuses</option>{['active', 'suspended', 'cancelled'].map(p => <option key={p}>{p}</option>)}</select>
-        </div>
+      <div className="page-header">
+        <div><h1 className="page-title">Customers</h1><div style={{ color: 'var(--text-3)', fontSize: 13.5 }}>Every workspace on TripSarthi: who they are, what they pay, whether they use it, and what needs you.</div></div>
+        <button className="btn btn-ghost btn-sm" onClick={doExport} disabled={exporting || !d}><Download size={14} /> {exporting ? 'Preparing…' : 'Export CSV'}</button>
       </div>
+
+      {S && <div className="cu-kpis">
+        <Kpi icon={Building2} label="Customers" value={S.segments.all} sub={`${S.segments.new} new this week · ${S.new_30d} this month`} />
+        <Kpi icon={Wallet} tone="#1a9d57" label="Paying" value={S.segments.paying} sub={`${rs(S.mrr_paise)} per month`} />
+        <Kpi icon={Users} tone="#12a89e" label="Free & complimentary" value={S.segments.free + S.segments.complimentary} sub={`${S.segments.complimentary} complimentary · ${S.segments.lapsed} lapsed`} />
+        <Kpi icon={CalendarClock} tone="#f98f26" label="Ending in 7 days" value={S.segments.expiring} sub={S.segments.halted ? `${S.segments.halted} payment failed` : 'no failed payments'} />
+        <Kpi icon={AlertTriangle} tone="#d93025" label="Needs attention" value={S.segments.attention} sub={`${S.segments.tickets} with open requests`} />
+        <Kpi icon={IndianRupee} tone="#0a6cc4" label="Collected so far" value={rs(S.lifetime_paise)} sub="all paid periods" />
+      </div>}
+
+      <div className="cu-chips">
+        {SEGMENTS.map(([k, label]) => (k === 'all' || S?.segments[k] > 0 || f.segment === k) && (
+          <button key={k} type="button" className={'cu-chip' + (f.segment === k ? ' on' : '')} onClick={() => seg(k)}>{label}{S && <b>{S.segments[k]}</b>}</button>
+        ))}
+      </div>
+
+      <div className="cu-filters">
+        <div className="cu-search"><Search size={15} /><input value={f.q} placeholder="Search workspace, owner name, e-mail, phone, partner or #id" onChange={e => setF({ ...f, q: e.target.value, page: 1 })} /></div>
+        <select className="form-select" value={f.plan} onChange={e => setF({ ...f, plan: e.target.value, page: 1 })}><option value="">All plans</option>{PLANS.map(p => <option key={p}>{p}</option>)}</select>
+        <select className="form-select" value={f.status} onChange={e => setF({ ...f, status: e.target.value, page: 1 })}><option value="">All statuses</option>{['active', 'suspended', 'cancelled'].map(p => <option key={p}>{p}</option>)}</select>
+        <select className="form-select" value={f.sort} onChange={e => setF({ ...f, sort: e.target.value, page: 1 })}>{SORTS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+      </div>
+
       <div className="card" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>{['Customer', 'Owner', 'Plan', 'Status', 'Subscription', 'Team', 'Contacts', 'Last seen', 'Joined'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
+        <table className="cu-table">
+          <thead><tr>{['Customer', 'Owner', 'Plan & billing', 'Usage', 'WhatsApp', 'Last active', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
-            {!d && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
-            {d && d.rows.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No customers match.</td></tr>}
+            {!d && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>}
+            {d && d.rows.length === 0 && <tr><td colSpan={7} style={{ ...td, textAlign: 'center', color: 'var(--text-3)', padding: 36 }}>No customers match these filters.</td></tr>}
             {d?.rows.map(r => (
-              <tr key={r.id} onClick={() => setSp({ open: r.id })} style={{ cursor: 'pointer' }}>
-                <td style={td}><b>{r.name}</b><div style={{ color: 'var(--text-3)', fontSize: 12 }}>{r.slug}</div></td>
-                <td style={td}>{r.owner_name}<div style={{ color: 'var(--text-3)', fontSize: 12 }}>{r.owner_email}</div></td>
-                <td style={td}><Pill color={PLAN_COLOR[r.plan]}>{r.plan}</Pill></td>
-                <td style={td}><Pill color={STATUS_COLOR[r.status]}>{r.status}</Pill></td>
-                <td style={td}>{r.sub_status ? <><Pill color={STATUS_COLOR[r.sub_status]}>{r.sub_status}</Pill><div style={{ color: 'var(--text-3)', fontSize: 12 }}>to {fmtDate(r.sub_ends)}</div></> : '—'}</td>
-                <td style={td}>{r.users}</td><td style={td}>{r.contacts.toLocaleString('en-IN')}</td><td style={td}>{ago(r.last_login_at)}</td><td style={td}>{fmtDate(r.created_at)}</td>
+              <tr key={r.id} onClick={() => setSp({ open: r.id })}>
+                <td style={td}>
+                  <div className="cu-name">{r.name}{r.status !== 'active' && <Pill color={STATUS_COLOR[r.status]}>{r.status}</Pill>}</div>
+                  <div className="cu-sub">#{r.id} · {r.slug} · joined {fmtDate(r.created_at)}{r.partner ? ` · via ${r.partner}` : ''}</div>
+                  {r.flags.length > 0 && <div className="cu-flags">{r.flags.filter(x => x.key !== 'suspended').map(x => <Flag key={x.key} f={x} />)}</div>}
+                </td>
+                <td style={td} onClick={e => e.stopPropagation()}>
+                  <div>{r.owner.name || '—'}</div>
+                  <div className="cu-sub">{r.owner.email && <a href={`mailto:${r.owner.email}`}>{r.owner.email}</a>}</div>
+                  {r.owner.phone && <div className="cu-sub"><a href={`https://wa.me/${r.owner.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer noopener">{r.owner.phone}</a></div>}
+                </td>
+                <td style={td}>
+                  <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}><Pill color={PLAN_COLOR[r.plan]}>{r.plan}</Pill><Pill color={BILL_COLOR[r.billing.state]}>{r.billing.label}</Pill></div>
+                  <div className="cu-sub">{r.billing.amount_paise > 0 ? `${rs(r.billing.amount_paise)}/${r.billing.cycle === 'annual' ? 'yr' : 'mo'} · ` : ''}{r.billing.renews_at ? `to ${fmtDate(r.billing.renews_at)}` : r.billing.state === 'free' ? 'never paid' : ''}</div>
+                  {r.billing.lifetime_paise > 0 && <div className="cu-sub">{rs(r.billing.lifetime_paise)} paid so far</div>}
+                </td>
+                <td style={td}>
+                  <div className="cu-use"><span><b>{r.usage.contacts.toLocaleString('en-IN')}</b> contacts <UsageBar n={r.usage.contacts} limit={r.usage.contacts_limit} /></span></div>
+                  <div className="cu-sub"><b>{r.usage.users}</b> {r.usage.users === 1 ? 'user' : 'users'} · <b>{r.usage.trips}</b> trips · <b>{r.usage.bookings}</b> bookings</div>
+                </td>
+                <td style={td}><Pill color={WA[r.whatsapp]?.[1]}>{WA[r.whatsapp]?.[0] ?? r.whatsapp}</Pill></td>
+                <td style={td}>{ago(r.last_active)}</td>
+                <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
+                  <button className="btn btn-ghost btn-sm" onClick={() => setSp({ open: r.id })}>Open</button>{' '}
+                  <button className="btn btn-ghost btn-sm" title="Log in as this customer" onClick={() => setSp({ open: r.id, login: 1 })}><LogIn size={13} /></button>
+                </td>
               </tr>))}
           </tbody>
         </table>
       </div>
       {d && d.total > d.per_page && <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 12, alignItems: 'center' }}>
         <button className="btn btn-ghost btn-sm" disabled={f.page <= 1} onClick={() => setF({ ...f, page: f.page - 1 })}>← Prev</button><span>Page {f.page} of {pages} · {d.total} customers</span><button className="btn btn-ghost btn-sm" disabled={f.page >= pages} onClick={() => setF({ ...f, page: f.page + 1 })}>Next →</button></div>}
-      {open && <CustomerDrawer id={open} onClose={() => setSp({})} onChanged={load} />}
+      {d && d.total <= d.per_page && d.total > 0 && <div style={{ textAlign: 'center', color: 'var(--text-3)', fontSize: 13, marginTop: 10 }}>{d.total} {d.total === 1 ? 'customer' : 'customers'}</div>}
+      {open && <CustomerDrawer id={open} loginOpen={sp.get('login') === '1'} onClose={() => setSp({})} onChanged={load} />}
     </div>
   )
 }

@@ -29,9 +29,12 @@ class PlatformAdminController extends TravelBaseController
 
     public function overview() { return $this->run(fn () => $this->svc()->overview()); }
 
-    public function tenants() { return $this->run(fn () => $this->svc()->tenants($this->g('q'), $this->g('plan'), $this->g('status'), (int) $this->g('page', '1'), (int) $this->g('per_page', '25'))); }
+    public function tenants()
+    {
+        return $this->run(fn () => (new \App\Services\Admin\CustomerDirectoryService())->list(['q' => $this->g('q'), 'plan' => $this->g('plan'), 'status' => $this->g('status'), 'segment' => $this->g('segment'), 'sort' => $this->g('sort'), 'page' => (int) $this->g('page', '1'), 'per_page' => (int) $this->g('per_page', '25')]));
+    }
 
-    public function tenant($id = null) { return $this->run(fn () => $this->svc()->tenant((int) $id)); }
+    public function tenant($id = null) { return $this->run(fn () => $this->svc()->tenant((int) $id) + ['health' => (new \App\Services\Admin\CustomerDirectoryService())->one((int) $id)]); }
 
     /** PUT /admin/tenants/:id/plan { plan, days?, amount_rs?, note?, force? } */
     public function setPlan($id = null)
