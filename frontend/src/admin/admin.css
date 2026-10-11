@@ -1,53 +1,5 @@
-/* Platform admin app - same design language as the partner portal. Everything is scoped under .ad so the customer app is untouched. */
-.ad { --ad-navy: #0a1f44; --ad-border: #e3eaf3; --ad-muted: #6b7a93; font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+/* Platform admin app extras (stat cards, overview hero, sign-in). The shared look (sidebar, top bar, cards, buttons, tables) lives in ../theme.css. */
 .ad .app-main { background: linear-gradient(180deg, #eaf1fa 0, #f4f7fb 320px, #f4f7fb 100%); min-width: 0; }
-
-/* ---- sidebar ---- */
-.ad .sidebar { width: 252px; background: linear-gradient(180deg, #081a3b 0%, #0a2650 100%); border-right: 1px solid rgba(255, 255, 255, .06); }
-.ad .sidebar-logo { height: auto; padding: 22px 20px 14px; gap: .7rem; }
-.ad .sidebar-logo-icon { width: 38px; height: 38px; border-radius: 11px !important; }
-.ad .sidebar-logo-text { font-size: 1.2rem; font-weight: 800; letter-spacing: -.3px; }
-.ad .sidebar-section-label { font-size: .66rem; letter-spacing: .14em; color: #6f86ad; padding: 14px 20px 6px; }
-.ad .sidebar-link { margin: 2px 12px; padding: 9px 12px; border-radius: 11px; font-size: .92rem; color: #b6c5df; gap: .75rem; }
-.ad .sidebar-link:hover { background: rgba(255, 255, 255, .07); color: #fff; }
-.ad .sidebar-link.active { background: linear-gradient(90deg, rgba(18, 168, 158, .28), rgba(10, 108, 196, .22)); color: #fff; box-shadow: inset 3px 0 0 #2fd0c2; font-weight: 600; }
-.ad .sidebar-link-icon { width: 20px; opacity: .9; }
-.ad .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, .08); padding: 12px 12px 16px; }
-.ad .sidebar-user { background: rgba(255, 255, 255, .06); border-radius: 12px; padding: 10px; }
-.ad .sidebar-user-name { color: #fff; font-weight: 600; }
-.ad .sidebar-user-role { color: #8fb0d8; }
-.ad .sidebar-signout { border-radius: 10px; }
-.ad .avatar { background: linear-gradient(135deg, #12a89e, #0a6cc4); color: #fff; font-weight: 800; }
-
-/* ---- top bar ---- */
-.ad .app-topbar { background: rgba(255, 255, 255, .85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--ad-border); height: 58px; }
-
-/* ---- page frame ---- */
-.ad .page { max-width: 1280px; padding: 26px 28px 48px; }
-.ad .page-header { margin-bottom: 20px; align-items: center; gap: 12px; flex-wrap: wrap; }
-.ad .page-title { font-size: 1.65rem; font-weight: 800; letter-spacing: -.5px; color: var(--ad-navy); margin: 0; }
-.ad .card { border: 1px solid var(--ad-border); border-radius: 16px; box-shadow: 0 2px 12px rgba(10, 31, 68, .05); background: #fff; }
-.ad .card-body { padding: 18px 20px; }
-.ad h3 { color: var(--ad-navy); letter-spacing: -.2px; }
-.ad a { color: #0a6cc4; }
-
-/* ---- buttons and forms ---- */
-.ad .btn { border-radius: 11px; font-weight: 600; min-height: 38px; padding: 0 16px; transition: transform .1s, box-shadow .15s, background .15s; }
-.ad .btn-primary { background: #0a6cc4; border-color: #0a6cc4; box-shadow: 0 6px 16px rgba(10, 108, 196, .28); }
-.ad .btn-primary:hover:not(:disabled) { background: #0859a2; border-color: #0859a2; }
-.ad .btn-ghost { background: #fff; border: 1px solid #d6e0ee; color: #1f3a63; }
-.ad .btn-ghost:hover:not(:disabled) { background: #f1f6fc; border-color: #bccbe0; }
-.ad .btn-sm { min-height: 32px; padding: 0 12px; border-radius: 9px; }
-.ad .form-input, .ad .form-select, .ad textarea.form-input { border: 1.5px solid #d6e0ee; border-radius: 11px; background: #fff; }
-.ad .form-input:focus, .ad .form-select:focus { border-color: #0a6cc4; box-shadow: 0 0 0 4px rgba(10, 108, 196, .14); outline: none; }
-.ad label { font-weight: 600; color: #26395c; font-size: 13.5px; }
-.ad code { background: #eef4fc; color: #0a3d7a; padding: 2px 7px; border-radius: 6px; font-size: .88em; }
-
-/* ---- tables ---- */
-.ad table { border-collapse: collapse; }
-.ad tbody tr { transition: background .1s; }
-.ad tbody tr:hover td { background: #fafcff; }
-.ad .card > div[style*="overflow"] { border-radius: 16px; }
 
 /* ---- stat cards (Kpi) ---- */
 .ad-kpi { position: relative; flex: 1 1 200px; min-width: 180px; background: #fff; border: 1px solid var(--ad-border); border-radius: 16px; padding: 18px 18px 16px; box-shadow: 0 2px 12px rgba(10, 31, 68, .05); overflow: hidden; }

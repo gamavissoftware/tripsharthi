@@ -1,0 +1,75 @@
+/* Shared design language for the admin app (.ad) and the customer app (.cx): navy sidebar, glass top bar, rounded cards, buttons, inputs, tables.
+   Colours that a workspace can rebrand use var(--primary). The partner portal has its own file (partner/partner.css). */
+:is(.ad, .cx) { --ad-navy: #0a1f44; --ad-border: #e3eaf3; --ad-muted: #6b7a93; font-family: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; }
+/* ---- sidebar ---- */
+:is(.ad, .cx) .sidebar:not(.collapsed) { width: 252px; background: linear-gradient(180deg, #081a3b 0%, #0a2650 100%); border-right: 1px solid rgba(255, 255, 255, .06); }
+:is(.ad, .cx) .sidebar-logo { height: auto; padding: 22px 20px 14px; gap: .7rem; }
+:is(.ad, .cx) .sidebar-logo-icon { width: 38px; height: 38px; border-radius: 11px !important; }
+:is(.ad, .cx) .sidebar-logo-text { font-size: 1.2rem; font-weight: 800; letter-spacing: -.3px; }
+:is(.ad, .cx) .sidebar-section-label { font-size: .66rem; letter-spacing: .14em; color: #6f86ad; padding: 14px 20px 6px; }
+:is(.ad, .cx) .sidebar-link { margin: 2px 12px; padding: 9px 12px; border-radius: 11px; font-size: .92rem; color: #b6c5df; gap: .75rem; }
+:is(.ad, .cx) .sidebar-link:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+:is(.ad, .cx) .sidebar-link.active { background: linear-gradient(90deg, rgba(18, 168, 158, .28), rgba(10, 108, 196, .22)); color: #fff; box-shadow: inset 3px 0 0 #2fd0c2; font-weight: 600; }
+:is(.ad, .cx) .sidebar-link-icon { width: 20px; opacity: .9; }
+:is(.ad, .cx) .sidebar-footer { border-top: 1px solid rgba(255, 255, 255, .08); padding: 12px 12px 16px; }
+:is(.ad, .cx) .sidebar-user { background: rgba(255, 255, 255, .06); border-radius: 12px; padding: 10px; }
+:is(.ad, .cx) .sidebar-user-name { color: #fff; font-weight: 600; }
+:is(.ad, .cx) .sidebar-user-role { color: #8fb0d8; }
+:is(.ad, .cx) .sidebar-signout { border-radius: 10px; }
+:is(.ad, .cx) .avatar { background: linear-gradient(135deg, #12a89e, var(--primary, #0a6cc4)); color: #fff; font-weight: 800; }
+
+/* ---- top bar ---- */
+:is(.ad, .cx) .app-topbar { background: rgba(255, 255, 255, .85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--ad-border); height: 58px; }
+
+/* ---- page frame ---- */
+:is(.ad, .cx) .page { max-width: 1280px; padding: 26px 28px 48px; }
+:is(.ad, .cx) .page-header { margin-bottom: 20px; align-items: center; gap: 12px; flex-wrap: wrap; }
+:is(.ad, .cx) .page-title { font-size: 1.65rem; font-weight: 800; letter-spacing: -.5px; color: var(--ad-navy); margin: 0; }
+:is(.ad, .cx) .card { border: 1px solid var(--ad-border); border-radius: 16px; box-shadow: 0 2px 12px rgba(10, 31, 68, .05); background: #fff; }
+:is(.ad, .cx) .card-body { padding: 18px 20px; }
+.ad h3 { color: var(--ad-navy); letter-spacing: -.2px; }
+.ad a { color: var(--primary, #0a6cc4); }
+
+/* ---- buttons and forms ---- */
+:is(.ad, .cx) .btn { border-radius: 11px; font-weight: 600; min-height: 38px; padding: 0 16px; transition: transform .1s, box-shadow .15s, background .15s; }
+:is(.ad, .cx) .btn-primary { background: var(--primary, #0a6cc4); border-color: var(--primary, #0a6cc4); box-shadow: 0 6px 16px var(--primary-ring, rgba(10, 108, 196, .28)); }
+:is(.ad, .cx) .btn-primary:hover:not(:disabled) { background: var(--primary-dark, #0859a2); border-color: var(--primary-dark, #0859a2); }
+:is(.ad, .cx) .btn-ghost { background: #fff; border: 1px solid #d6e0ee; color: #1f3a63; }
+:is(.ad, .cx) .btn-ghost:hover:not(:disabled) { background: #f1f6fc; border-color: #bccbe0; }
+:is(.ad, .cx) .btn-sm { min-height: 32px; padding: 0 12px; border-radius: 9px; }
+:is(.ad, .cx) .form-input, :is(.ad, .cx) .form-select, .ad textarea.form-input { border: 1.5px solid #d6e0ee; border-radius: 11px; background: #fff; }
+:is(.ad, .cx) .form-input:focus, :is(.ad, .cx) .form-select:focus { border-color: var(--primary, #0a6cc4); box-shadow: 0 0 0 4px var(--primary-ring, rgba(10, 108, 196, .14)); outline: none; }
+.ad label { font-weight: 600; color: #26395c; font-size: 13.5px; }
+.ad code { background: #eef4fc; color: #0a3d7a; padding: 2px 7px; border-radius: 6px; font-size: .88em; }
+
+/* ---- tables ---- */
+.ad table { border-collapse: collapse; }
+.ad tbody tr { transition: background .1s; }
+.ad tbody tr:hover td { background: #fafcff; }
+:is(.ad, .cx) .card > div[style*="overflow"] { border-radius: 16px; }
+
+
+/* collapsible groups in the customer menu */
+:is(.ad, .cx) .nav-group-header { margin: 2px 12px; padding: 9px 12px; border-radius: 11px; color: #b6c5df; font-weight: 500; font-size: .92rem; gap: .75rem; }
+:is(.ad, .cx) .nav-group-header:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+:is(.ad, .cx) .nav-group-header.has-active { color: #fff; background: rgba(255, 255, 255, .05); }
+:is(.ad, .cx) .nav-group-items { padding-bottom: 4px; }
+:is(.ad, .cx) .sidebar-link.sidebar-sublink { margin: 1px 12px 1px 22px; padding: 7px 12px; font-size: .88rem; }
+:is(.ad, .cx) .sidebar-divider { background: rgba(255, 255, 255, .08); margin: 10px 16px 2px; }
+:is(.ad, .cx) .sidebar.collapsed .sidebar-link, :is(.ad, .cx) .sidebar.collapsed .nav-group-header { margin-left: 8px; margin-right: 8px; }
+:is(.ad, .cx) .sidebar.collapsed .sidebar-logo { padding: 18px 10px 12px; }
+:is(.ad, .cx) .nav-group-items .nav-flyout-title { color: #8fb0d8; }
+
+/* customer-app building blocks */
+.cx .data-table { border-collapse: collapse; }
+.cx .data-table th { background: #f8fafd; color: #7a889f; font-size: 11.5px; letter-spacing: .7px; font-weight: 700; text-transform: uppercase; padding: 12px 16px; }
+.cx .data-table td { padding: 13px 16px; border-bottom: 1px solid #edf1f7; }
+.cx .data-table tbody tr:hover { background: #fafcff; }
+.cx .badge { border-radius: 999px; font-weight: 700; padding: 3px 10px; }
+.cx .modal { border-radius: 18px; box-shadow: 0 24px 60px rgba(10, 31, 68, .28); border: 1px solid var(--ad-border); }
+.cx .modal-header { border-bottom: 1px solid #edf1f7; }
+.cx .empty-state { color: var(--ad-muted); }
+.cx .tabs, .cx .tab-bar { border-bottom-color: var(--ad-border); }
+.cx .app-topbar .topbar-search input { border-radius: 11px; background: #f3f7fc; border: 1px solid transparent; }
+.cx .app-topbar .topbar-search input:focus { background: #fff; border-color: var(--primary, #0a6cc4); box-shadow: 0 0 0 4px var(--primary-ring, rgba(10, 108, 196, .14)); }
+.cx .topbar-menu:hover, .cx .topbar-collapse:hover { background: #eaf1fb; color: var(--ad-navy); }

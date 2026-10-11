@@ -81,3 +81,35 @@
 .tbar.is-compact { margin: 0; min-width: 120px; }
 .tbar.is-compact .tbar-track { height: 16px; }
 .tbar-in { position: absolute; inset: 0; text-align: center; font-size: .7rem; line-height: 16px; font-weight: 600; color: #26292c; mix-blend-mode: normal; text-shadow: 0 0 3px rgba(255,255,255,.9); }
+
+/* ── 2026-10 design refresh (matches the admin and partner apps) ─────────────────────────────────────────── */
+.hd-head { position: relative; overflow: hidden; align-items: center; padding: 22px 26px; margin-bottom: 18px; border-radius: 20px; color: #fff; background: linear-gradient(125deg, #0a1f44 0%, #0a4aa0 55%, #0b8f94 100%); box-shadow: 0 16px 40px rgba(10, 31, 68, .18); }
+.hd-head::before { content: ''; position: absolute; width: 320px; height: 320px; right: -90px; top: -130px; border-radius: 50%; background: radial-gradient(circle, rgba(47, 208, 194, .35), transparent 68%); pointer-events: none; }
+.hd-head::after { content: ''; position: absolute; width: 260px; height: 260px; left: -70px; bottom: -140px; border-radius: 50%; background: radial-gradient(circle, rgba(249, 143, 38, .26), transparent 68%); pointer-events: none; }
+.hd-head > * { position: relative; z-index: 1; }
+.hd-title { color: #fff; font-size: 1.75rem; font-weight: 800; letter-spacing: -.5px; margin: 0; }
+.hd-sub { color: #d4e3f8; font-size: .92rem; margin-top: .3rem; }
+.hd-head .hd-tabs { background: rgba(255, 255, 255, .14); border: 1px solid rgba(255, 255, 255, .28); border-radius: 11px; padding: 3px; gap: 2px; }
+.hd-head .hd-tabs button { color: #e6efff; border-radius: 8px; border: 0; background: transparent; }
+.hd-head .hd-tabs button.is-on { background: #fff; color: #0a1f44; font-weight: 700; }
+.hd-head .hd-tabs button + button { border-left: 0; }
+.hd-head .hd-tools .btn, .hd-head .hd-tools button:not([role='tab']) { border-radius: 10px; }
+
+.hd-kpis { gap: 14px; margin-bottom: 18px; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.hd-kpi { position: relative; border: 1px solid #e3eaf3; border-radius: 16px; padding: 18px 18px 14px; box-shadow: 0 2px 12px rgba(10, 31, 68, .05); overflow: hidden; }
+.hd-kpi::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: linear-gradient(180deg, #12a89e, #0a6cc4); }
+.hd-kpi-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .7px; font-weight: 700; color: #6b7a93; }
+.hd-kpi-val { font-size: 1.95rem; font-weight: 800; letter-spacing: -.8px; color: #0a1f44; margin-top: .25rem; }
+.hd-attn { gap: 8px; margin-bottom: 18px; }
+.hd-chip { padding: 8px 14px; border-radius: 999px; font-weight: 600; box-shadow: 0 1px 4px rgba(10, 31, 68, .06); border-color: #e3eaf3; transition: transform .1s, box-shadow .15s; }
+.hd-chip:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(10, 31, 68, .1); }
+.hd-grid { gap: 18px; }
+.hd-col { gap: 18px; }
+.hd-card { border: 1px solid #e3eaf3; border-radius: 16px; box-shadow: 0 2px 12px rgba(10, 31, 68, .05); overflow: hidden; }
+.hd-card-h { padding: 14px 18px; border-bottom: 1px solid #edf1f7; }
+.hd-card-h h3 { color: #0a1f44; font-size: 1.02rem; font-weight: 700; margin: 0; }
+.hd-card-b { padding: 14px 18px 16px; }
+.hd-bar { height: 22px; background: #eef2f8; border-radius: 99px; }
+.hd-row { border-bottom: 1px solid #edf1f7; }
+.hd-tag { border-radius: 999px; padding: 2px 9px; font-weight: 700; }
+@media (max-width: 760px) { .hd-head { padding: 18px 16px; border-radius: 16px; } .hd-title { font-size: 1.4rem; } }

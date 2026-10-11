@@ -330,7 +330,7 @@ function Layout({ user, onLogout }) {
   }
   const initials = (user?.name ?? 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
   return (
-    <div className="app-shell">
+    <div className="app-shell cx">
       <Sidebar user={user} onLogout={onLogout} open={navOpen} onNavigate={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
       {navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
       <main className="app-main">
