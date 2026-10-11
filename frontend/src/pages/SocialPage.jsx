@@ -27,6 +27,7 @@ function InstagramGlyph({ size = 14, style }) {
 import { social } from '../api/social'
 import { toast } from '../components/Toast'
 import { confirmAsk } from '../components/confirmAsk'
+import SocialCalendar from './SocialCalendar'
 
 /**
  * Social Planner — schedule Facebook Page / Instagram Business posts.
@@ -90,6 +91,8 @@ function fmtWhen(s) {
 export default function SocialPage() {
   const [accounts, setAccounts] = useState([])
   const [posts, setPosts]       = useState([])
+  const [view, setView]         = useState(() => { try { return localStorage.getItem('tp_social_view') === 'list' ? 'list' : 'calendar' } catch { return 'calendar' } })
+  const pickView = (v) => { setView(v); try { localStorage.setItem('tp_social_view', v) } catch { /* private mode */ } }
   const [loading, setLoading]   = useState(true)
 
   // Connect form (manual fallback)
@@ -552,9 +555,13 @@ export default function SocialPage() {
       <div className="card soc-posts">
         <div className="soc-posts-head">
           <h3>Scheduled &amp; published posts</h3>
-          <span className="soc-count">{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
+          <div className="soc-toggle">
+            <button type="button" className={view === 'calendar' ? 'on' : ''} onClick={() => pickView('calendar')}>Calendar</button>
+            <button type="button" className={view === 'list' ? 'on' : ''} onClick={() => pickView('list')}>List</button>
+          </div>
         </div>
-        <div style={{ overflowX: 'auto' }}>
+        {view === 'calendar' && <SocialCalendar posts={posts} onRemove={handleRemovePost} renderPlatform={(pl) => <PlatformIcon platform={pl} size={16} />} />}
+        <div style={{ overflowX: 'auto', display: view === 'list' ? 'block' : 'none' }}>
         <table className="data-table">
           <thead>
             <tr>
