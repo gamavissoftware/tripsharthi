@@ -113,13 +113,14 @@ function ProviderCard({ provider, selected, onSelect }) {
   return (
     <button
       type="button"
+      className={'ps-provider' + (isSelected ? ' on' : '')}
       onClick={() => onSelect(provider.id)}
       style={{
         display: 'flex',
         alignItems: 'flex-start',
         gap: '1rem',
         padding: '1rem',
-        borderRadius: 10,
+        borderRadius: 14,
         border: isSelected ? `2px solid ${color}` : '2px solid #e2e8f0',
         background: isSelected ? color + '0d' : '#fff',
         cursor: 'pointer',

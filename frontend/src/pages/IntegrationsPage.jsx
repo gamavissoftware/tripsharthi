@@ -51,8 +51,8 @@ function IntegrationRow({ integration, metaWebhookUrl, onSubscribe, onDisconnect
   }
 
   return (
-    <div style={{
-      border: '1px solid var(--border)', borderRadius: 12, padding: '1.25rem',
+    <div className="ps-int-card" style={{
+      border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem',
       background: '#fff', marginBottom: '.75rem',
     }}>
       {/* Header row */}
@@ -311,8 +311,8 @@ function ConnectModal({ onClose, onConnected }) {
 // ── Coming soon integration card ───────────────────────────────────────────
 function ComingSoonCard({ icon, name, description }) {
   return (
-    <div style={{
-      border: '1px dashed var(--border)', borderRadius: 12, padding: '1.25rem',
+    <div className="ps-int-soon" style={{
+      border: '1px dashed var(--border)', borderRadius: 14, padding: '1.25rem',
       display: 'flex', alignItems: 'center', gap: 12, opacity: .6,
     }}>
       <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', color: 'var(--text-3)' }}>{icon}</span>
