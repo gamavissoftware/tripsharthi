@@ -79,6 +79,7 @@ final class CustomerDirectoryTest extends CIUnitTestCase
         $this->assertContains('not_activated', $keys('Delta Holidays'));
         $this->assertNotContains('not_activated', $keys('India New Co'), 'a workspace only 2 days old is not "not activated" yet');
         $this->assertContains('suspended', $keys('Golf Voyages'));
+        $this->assertNotContains('near_limit', $keys('Delta Holidays'), 'a free workspace with its one user is not "near a limit"');
         $this->assertContains('inactive', $keys('Hotel India Stays'));
         $this->assertTrue($this->row('Hotel India Stays')['attention'], 'a PAYING customer who has gone quiet needs attention');
         $this->assertFalse($this->row('Foxtrot Escapes')['attention'], 'a quiet FREE workspace is just listed, not escalated');

@@ -158,7 +158,7 @@ final class CustomerDirectoryService
             if ($quiet) { $flags[] = ['key' => 'inactive', 'tone' => $paidish ? 'warn' : 'muted', 'label' => 'Not seen for ' . self::INACTIVE_DAYS . '+ days']; }
             $unset = $isActive && $joinedDays >= self::NOT_ACTIVATED_DAYS && $nContacts === 0 && (int) ($trips[$id] ?? 0) === 0;
             if ($unset) { $flags[] = ['key' => 'not_activated', 'tone' => 'info', 'label' => 'Nothing set up yet']; }
-            $near = ($cLimit > 0 && $cLimit < 999 && $nContacts >= $cLimit * self::NEAR_LIMIT) || ($uLimit > 0 && $uLimit < 999 && $nUsers >= $uLimit);
+            $near = $cLimit > 0 && $cLimit < 999 && $nContacts >= $cLimit * self::NEAR_LIMIT;   // contacts only: one user on a one-user plan is simply the plan, not a warning
             if ($near) { $flags[] = ['key' => 'near_limit', 'tone' => 'warn', 'label' => 'Close to a plan limit']; }
             $keys = array_column($flags, 'key');
             $attention = (bool) array_intersect($keys, ['halted', 'expiring', 'tickets', 'wa_problem', 'not_activated']) || ($quiet && $paidish);
