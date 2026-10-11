@@ -4,6 +4,7 @@ import { support } from '../api/support'
 import { toast } from '../components/Toast'
 import LoadFailed from '../components/LoadFailed'
 import { SUPPORT_STATUS } from './supportUi'
+import { confirmAsk } from '../components/confirmAsk'
 
 const when = (s) => (s ? new Date(String(s).replace(' ', 'T') + 'Z').toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '')
 
@@ -25,7 +26,7 @@ export default function SupportTicketPage() {
     setBusy(false)
   }
   async function close() {
-    if (!window.confirm('Close this request? You can open a new one any time.')) return
+    if (!(await confirmAsk('Close this request? You can open a new one any time.'))) return
     try { setT(await support.close(id)) } catch (err) { toast.error('Could not close', err.message) }
   }
 

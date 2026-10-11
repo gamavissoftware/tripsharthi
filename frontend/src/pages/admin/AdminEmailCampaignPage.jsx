@@ -5,6 +5,7 @@ import { toast } from '../../components/Toast'
 import LoadFailed from '../../components/LoadFailed'
 import { Pill, Kpi } from './AdminUi'
 import { EMAIL_STATUS_COLOR } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const BLANK = { name: '', subject: '', body: '', segment: 'owners' }
 
@@ -53,16 +54,16 @@ export default function AdminEmailCampaignPage() {
     let n = audience?.count ?? 0
     try { const o = await admin.emailOverview(); setSegs(o.segments); n = o.segments.find(s => s.key === r.segment)?.count ?? 0 } catch { /* use the count we have */ }
     if (n === 0) { toast.error('Nobody to send to', 'No one in this audience has agreed to e-mails yet.'); return }
-    if (!window.confirm(`Send “${r.subject}” to ${n} ${n === 1 ? 'person' : 'people'} in “${r.segment_label}”?\n\nIt goes out gradually (about 30 a minute) and cannot be recalled once sent.`)) return
+    if (!(await confirmAsk(`Send “${r.subject}” to ${n} ${n === 1 ? 'person' : 'people'} in “${r.segment_label}”?\n\nIt goes out gradually (about 30 a minute) and cannot be recalled once sent.`))) return
     setBusy('send')
     try { setC(await admin.emailSend(r.id, n)); toast.success('Sending started') } catch (err) { toast.error('Not sent', err.message) } finally { setBusy('') }
   }
   async function cancel() {
-    if (!window.confirm('Stop sending? E-mails already sent cannot be recalled.')) return
+    if (!(await confirmAsk('Stop sending? E-mails already sent cannot be recalled.'))) return
     try { setC(await admin.emailCancel(id)); toast.success('Stopped') } catch (err) { toast.error('Could not stop', err.message) }
   }
   async function remove() {
-    if (!window.confirm('Delete this draft?')) return
+    if (!(await confirmAsk('Delete this draft?'))) return
     try { await admin.emailDelete(id); nav('/admin/email') } catch (err) { toast.error('Not deleted', err.message) }
   }
 

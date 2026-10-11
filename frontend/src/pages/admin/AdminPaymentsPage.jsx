@@ -3,6 +3,7 @@ import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
 import { Pill } from './AdminUi'
 import { fmtDate } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const MODE = { live: ['LIVE', 'var(--success)'], test: ['TEST', 'var(--warning)'], none: ['Not set', 'var(--text-3)'] }
 const SOURCE = { admin: 'Saved here (encrypted)', server: 'From the server settings', none: 'Nothing saved' }
@@ -19,7 +20,7 @@ export default function AdminPaymentsPage() {
   async function save(e) {
     e.preventDefault()
     const live = f.key_id.startsWith('rzp_live_')
-    if (live && !window.confirm('These are LIVE keys: customers will be charged real money through this account. Save them?')) return
+    if (live && !(await confirmAsk('These are LIVE keys: customers will be charged real money through this account. Save them?'))) return
     setBusy('save')
     try {
       const d = await admin.saveRazorpay(f)
@@ -37,7 +38,7 @@ export default function AdminPaymentsPage() {
   }
 
   async function clear() {
-    if (!window.confirm('Remove the keys saved here? Checkout will use the server settings if there are any, otherwise customers cannot pay.')) return
+    if (!(await confirmAsk('Remove the keys saved here? Checkout will use the server settings if there are any, otherwise customers cannot pay.'))) return
     setBusy('clear')
     try { const d = await admin.clearRazorpay(); setSt(d); setF({ key_id: d.key_id || '', key_secret: '', webhook_secret: '' }); toast.success('Saved keys removed') }
     catch (err) { toast.error('Could not remove', err.message) }

@@ -4,6 +4,7 @@ import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
 import { Kpi, Pill } from './AdminUi'
 import { th, td, fmtDateTime, QUALITY_COLOR, SEVERITY_COLOR, PLAN_COLOR } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const FILTERS = [['', 'All'], ['attention', 'Needs attention'], ['connected', 'Connected'], ['not_connected', 'Not connected'], ['paused', 'Marketing paused']]
 const WA_COLOR = { active: 'var(--success)', pending: 'var(--warning)', suspended: 'var(--danger)', none: 'var(--text-3)' }
@@ -96,7 +97,7 @@ function MarketingTab() {
     try { const r = await admin.waSegment(key); setPv(p => ({ ...p, [key]: r })) } catch (e) { toast.error('Could not preview', e.message) }
   }
   async function sync(s) {
-    if (!window.confirm(`Add the ${s.count} opted-in people in “${s.label}” to the marketing workspace? Nobody is messaged — this only adds them as contacts (and switches off anyone who has withdrawn consent).`)) return
+    if (!(await confirmAsk(`Add the ${s.count} opted-in people in “${s.label}” to the marketing workspace? Nobody is messaged — this only adds them as contacts (and switches off anyone who has withdrawn consent).`))) return
     setBusy(s.key)
     try { const r = await admin.waSync(s.key); toast.success('Segment synced', `${r.added} added · ${r.already_there} already there${r.skipped ? ` · ${r.skipped} skipped (replied STOP)` : ''}${r.withdrawn ? ` · ${r.withdrawn} withdrawn` : ''}`); load() }
     catch (e) { toast.error('Not synced', e.message) } finally { setBusy('') }

@@ -3,6 +3,7 @@ import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
 import { Pill } from './AdminUi'
 import { STATUS_COLOR, ago, fmtDateTime } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const TOPIC = { demo: 'Demo request', pricing: 'Pricing', support: 'Support', partner: 'Partnership', other: 'Other' }
 
@@ -49,7 +50,7 @@ function LiveChat() {
       loadList()
     } catch (er) { toast.error('Not sent', er.message) } finally { setBusy(false) }
   }
-  async function close() { if (!window.confirm('Close this chat? The visitor will see it has ended.')) return; try { await admin.chatClose(sel); setSel(null); setThread(null); loadList() } catch (er) { toast.error('Not closed', er.message) } }
+  async function close() { if (!(await confirmAsk('Close this chat? The visitor will see it has ended.'))) return; try { await admin.chatClose(sel); setSel(null); setThread(null); loadList() } catch (er) { toast.error('Not closed', er.message) } }
 
   const s = thread?.session
   return (

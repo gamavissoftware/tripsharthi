@@ -5,6 +5,7 @@ import { toast } from '../../components/Toast'
 import { Kpi, Pill } from './AdminUi'
 import { th, td, fmtDate, fmtDateTime, SEVERITY_COLOR, PLAN_COLOR } from './adminUtil'
 import { QualityDot } from './AdminWhatsappPage'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const TPL_COLOR = { approved: 'var(--success)', pending: 'var(--warning)', rejected: 'var(--danger)', draft: 'var(--text-3)', paused: 'var(--warning)', disabled: 'var(--text-3)' }
 const num = (v) => Number(v) || 0
@@ -31,7 +32,7 @@ function PausePanel({ ws, onChanged }) {
   const [busy, setBusy] = useState(false)
   async function pause(paused) {
     if (paused && reason.trim().length < 5) { toast.error('Give a reason', 'At least 5 characters — the workspace sees it.'); return }
-    if (!window.confirm(paused ? `Stop ${ws.name} from sending MARKETING messages? Booking confirmations and other utility messages keep working.` : `Let ${ws.name} send marketing again?`)) return
+    if (!(await confirmAsk(paused ? `Stop ${ws.name} from sending MARKETING messages? Booking confirmations and other utility messages keep working.` : `Let ${ws.name} send marketing again?`))) return
     setBusy(true)
     try { await admin.waPause(ws.id, paused, reason); toast.success(paused ? 'Marketing paused' : 'Marketing resumed', ws.name); setReason(''); onChanged() }
     catch (e) { toast.error('Not changed', e.message) } finally { setBusy(false) }

@@ -5,6 +5,7 @@ import { inr } from '../../api/travel'
 import { toast } from '../../components/Toast'
 import { Pill } from './AdminUi'
 import { th, td, fmtDate, ago, STATUS_COLOR, PLAN_COLOR } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const PLANS = ['free', 'starter', 'growth', 'pro']
 const lbl = { display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }
@@ -21,12 +22,12 @@ function CustomerDrawer({ id, onClose, onChanged }) {
   async function savePlan(force = false) {
     setBusy(true)
     try { const r = await admin.setPlan(id, { ...plan, days: Number(plan.days), amount_rs: Number(plan.amount_rs), force }); setD(r); toast.success('Plan updated', `${r.tenant.name} is now on ${r.tenant.plan}`); onChanged() }
-    catch (e) { if (e.status === 409 && window.confirm(e.message + '\n\nOverride anyway?')) { setBusy(false); return savePlan(true) } toast.error('Not changed', e.message) }
+    catch (e) { if (e.status === 409 && (await confirmAsk(e.message + '\n\nOverride anyway?'))) { setBusy(false); return savePlan(true) } toast.error('Not changed', e.message) }
     finally { setBusy(false) }
   }
   async function setStatus(status) {
     if (status === 'suspended' && !reason.trim()) { toast.error('Reason needed', 'Say why — it is kept in the audit log.'); return }
-    if (!window.confirm(status === 'suspended' ? 'Suspend this workspace? Everyone is signed out and cannot sign in.' : status === 'cancelled' ? 'Cancel this workspace?' : 'Reactivate this workspace?')) return
+    if (!(await confirmAsk(status === 'suspended' ? 'Suspend this workspace? Everyone is signed out and cannot sign in.' : status === 'cancelled' ? 'Cancel this workspace?' : 'Reactivate this workspace?'))) return
     setBusy(true)
     try { const r = await admin.setStatus(id, { status, reason }); setD(r); setReason(''); toast.success('Status updated'); onChanged() }
     catch (e) { toast.error('Not changed', e.message) } finally { setBusy(false) }

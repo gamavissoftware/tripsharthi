@@ -5,6 +5,7 @@ import { inr } from '../../api/travel'
 import { toast } from '../../components/Toast'
 import { Kpi, Pill, InviteBox } from './AdminUi'
 import { th, td, fmtDate, fmtDateTime, PLAN_COLOR, PARTNER_STATUS_COLOR } from './adminUtil'
+import { confirmAsk } from '../../components/confirmAsk'
 
 const COMM_COLOR = { pending: 'var(--warning)', paid: 'var(--success)', void: 'var(--text-3)' }
 const num = (v) => Number(v) || 0
@@ -45,7 +46,7 @@ function PayoutPanel({ d, onDone }) {
   const pd = d.payout_details
   async function save(e) {
     e.preventDefault()
-    if (!window.confirm(`Record a payout of ${inr(avail)} to ${d.partner.name}? Do this AFTER you have made the transfer. It settles every available commission.`)) return
+    if (!(await confirmAsk(`Record a payout of ${inr(avail)} to ${d.partner.name}? Do this AFTER you have made the transfer. It settles every available commission.`))) return
     setBusy(true)
     try { await admin.partnerPayout(d.partner.id, f); toast.success('Payout recorded', inr(avail)); setF({ ...f, reference: '', note: '' }); onDone() }
     catch (err) { toast.error('Not recorded', err.message) } finally { setBusy(false) }
@@ -96,11 +97,11 @@ export default function AdminPartnerDetailPage() {
 
   async function setStatus(st) {
     const msg = st === 'suspended' ? `Suspend ${p.name}? They are signed out at once and earn no new commissions (existing balances are kept).` : `Reactivate ${p.name}?`
-    if (!window.confirm(msg)) return
+    if (!(await confirmAsk(msg))) return
     try { await admin.partnerStatus(p.id, st); toast.success(st === 'suspended' ? 'Suspended' : 'Reactivated'); load() } catch (e) { toast.error('Not changed', e.message) }
   }
   async function newInvite() {
-    if (!window.confirm('Issue a new one-time set-password link? (Use this to reset a forgotten password.)')) return
+    if (!(await confirmAsk('Issue a new one-time set-password link? (Use this to reset a forgotten password.)'))) return
     try { const r = await admin.partnerInvite(p.id); setInvite(r.invite_url); load() } catch (e) { toast.error('Not issued', e.message) }
   }
   async function voidIt(c) {
