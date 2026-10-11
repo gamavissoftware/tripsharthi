@@ -27,7 +27,7 @@ final class CustomerDirectoryTest extends CIUnitTestCase
         parent::setUp();
         $this->now = strtotime('2026-10-11 12:00:00');
         $db = db_connect(); $db->query('SET FOREIGN_KEY_CHECKS=0');
-        foreach (['support_messages', 'support_tickets', 'subscriptions', 'contacts', 'users', 'partners', 'tenants'] as $t) { $db->table($t)->truncate(); }
+        foreach (['support_messages', 'support_tickets', 'subscriptions', 'contacts', 'waba_accounts', 'trips', 'bookings', 'users', 'partners', 'tenants'] as $t) { $db->table($t)->truncate(); }
         $d = fn (int $days) => date('Y-m-d H:i:s', $this->now - $days * 86400);
         $f = fn (int $days) => date('Y-m-d H:i:s', $this->now + $days * 86400);
         $db->table('partners')->insert(['id' => 1, 'name' => 'Diksha Partner', 'email' => 'p@example.com', 'code' => 'DIKSHA1', 'status' => 'active', 'created_at' => $d(90)]);
