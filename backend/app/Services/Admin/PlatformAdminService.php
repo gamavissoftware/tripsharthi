@@ -36,7 +36,8 @@ final class PlatformAdminService
             'subscriptions' => ['paying' => (int) $mrr['n'], 'complimentary' => (int) $comp['n'], 'halted' => $halted, 'mrr_paise' => (int) round((float) $mrr['m']), 'collected_30d_paise' => (int) $paid30['s'], 'payments_30d' => (int) $paid30['n'], 'expiring_7d' => $soon],
             'usage' => ['users' => (int) $one('SELECT COUNT(*) n FROM users WHERE deleted_at IS NULL')['n'], 'contacts' => (int) $one('SELECT COUNT(*) n FROM contacts WHERE deleted_at IS NULL')['n'],
                 'trips' => $table('trips') ? (int) $one('SELECT COUNT(*) n FROM trips WHERE deleted_at IS NULL')['n'] : 0, 'bookings' => $table('bookings') ? (int) $one('SELECT COUNT(*) n FROM bookings WHERE deleted_at IS NULL')['n'] : 0],
-            'inbox' => ['new_enquiries' => (int) $one("SELECT COUNT(*) n FROM contact_enquiries WHERE status = 'new'")['n'], 'open_chats' => (int) $one("SELECT COUNT(*) n FROM chat_sessions WHERE status = 'open'")['n'], 'unread_chats' => (int) $one("SELECT COUNT(*) n FROM chat_sessions WHERE status = 'open' AND unread_agent > 0")['n']],
+            'inbox' => ['new_enquiries' => (int) $one("SELECT COUNT(*) n FROM contact_enquiries WHERE status = 'new'")['n'], 'open_chats' => (int) $one("SELECT COUNT(*) n FROM chat_sessions WHERE status = 'open'")['n'], 'unread_chats' => (int) $one("SELECT COUNT(*) n FROM chat_sessions WHERE status = 'open' AND unread_agent > 0")['n'],
+                'support_unanswered' => $table('support_tickets') ? (int) $one("SELECT COUNT(*) n FROM support_tickets WHERE status = 'open' AND last_from = 'customer'")['n'] : 0],
         ];
     }
 

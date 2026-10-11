@@ -19,3 +19,6 @@ export const ago = (s) => {
   const m = Math.max(0, Math.round((Date.now() - parse(s).getTime()) / 60000))
   return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`
 }
+
+export const TICKET_STATUS = { open: ['Open', 'var(--primary)'], pending: ['Waiting on customer', 'var(--warning)'], resolved: ['Resolved', 'var(--success)'], closed: ['Closed', 'var(--text-3)'] }
+export const PRIORITY_COLOR = { urgent: 'var(--danger)', high: 'var(--warning)', normal: 'var(--text-3)', low: 'var(--text-3)' }

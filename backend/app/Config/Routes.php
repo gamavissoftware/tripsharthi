@@ -116,6 +116,16 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->delete('(:num)', 'Api\MeetingsController::delete/$1');
     });
 
+    // --- Support: this workspace's requests to the TripSarthi team (not the CRM tickets below) ---
+    $routes->group('support', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+        $routes->get('tickets',                 'Api\SupportController::index');
+        $routes->post('tickets',                'Api\SupportController::create');
+        $routes->get('unread',                  'Api\SupportController::unread');
+        $routes->get('tickets/(:num)',          'Api\SupportController::show/$1');
+        $routes->post('tickets/(:num)/reply',   'Api\SupportController::reply/$1');
+        $routes->post('tickets/(:num)/close',   'Api\SupportController::close/$1');
+    });
+
     // --- CRM: Tickets (service) ---
     $routes->group('tickets', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->get('',           'Api\TicketsController::index');
@@ -458,6 +468,11 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
         // WhatsApp: oversight of every workspace + TripSarthi's own marketing
+        $routes->get('support',                                    'Api\AdminSupportController::index');
+        $routes->get('support/(:num)',                             'Api\AdminSupportController::show/$1');
+        $routes->post('support/(:num)/reply',                      'Api\AdminSupportController::reply/$1');
+        $routes->post('support/(:num)/note',                       'Api\AdminSupportController::note/$1');
+        $routes->put('support/(:num)',                             'Api\AdminSupportController::update/$1');
         $routes->get('payments/razorpay',                          'Api\AdminPaymentsController::razorpay');
         $routes->put('payments/razorpay',                          'Api\AdminPaymentsController::save');
         $routes->post('payments/razorpay/test',                    'Api\AdminPaymentsController::test');

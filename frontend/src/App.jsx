@@ -7,7 +7,7 @@ import {
   ShoppingBag, IndianRupee, BarChart3, TrendingUp, Trophy, Copy, Trash2,
   Plug, Smartphone, Store, Webhook, Wallet, Bot, Settings, Shuffle, Target,
   Pin, Clock, Home, CircleUser, Palette, Bell, CreditCard, ScrollText,
-  Mail, Plane, Handshake, PanelLeftClose, PanelLeftOpen, LogOut, Menu } from 'lucide-react'
+  Mail, Plane, Handshake, PanelLeftClose, PanelLeftOpen, LogOut, Menu, LifeBuoy } from 'lucide-react'
 import { api, isLoggedIn, clearToken } from './api/client'
 import { ToastProvider } from './components/Toast'
 import GlobalSearch from './components/GlobalSearch'
@@ -45,6 +45,8 @@ import MetaLeadsMonthPage from './pages/MetaLeadsMonthPage'
 import WabaPage          from './pages/WabaPage'
 import IntegrationsPage  from './pages/IntegrationsPage'
 import BillingPage       from './pages/BillingPage'
+import SupportPage       from './pages/SupportPage'
+import SupportTicketPage from './pages/SupportTicketPage'
 import WebFormsPage      from './pages/WebFormsPage'
 import BrandingPage       from './pages/BrandingPage'
 import SegmentsPage      from './pages/SegmentsPage'
@@ -201,6 +203,7 @@ const SETTINGS_GROUPS = [
   ]},
   { label: 'Account', icon: CreditCard, items: [
     { to: '/settings/billing', label: 'Billing',   icon: CreditCard },
+    { to: '/support',          label: 'Help & support', icon: LifeBuoy },
     { to: '/settings/audit',   label: 'Audit Log', icon: ScrollText },
   ]},
 ]
@@ -431,6 +434,8 @@ function Layout({ user, onLogout }) {
           <Route path="/settings/waba"          element={<WabaPage />} />
           <Route path="/settings/integrations"  element={<IntegrationsPage />} />
           <Route path="/settings/billing"       element={<BillingPage />} />
+          <Route path="/support"                element={<SupportPage />} />
+          <Route path="/support/:id"            element={<SupportTicketPage />} />
           <Route path="/settings/branding"      element={<BrandingPage />} />
           <Route path="/settings/profile"       element={<ProfilePage />} />
           <Route path="/settings/team"          element={<TeamPage />} />

@@ -33,6 +33,13 @@ export const admin = {
   testRazorpay:       ()        => api.post('/admin/payments/razorpay/test', {}).then(unwrap),
   clearRazorpay:      ()        => api.delete('/admin/payments/razorpay').then(unwrap),
 
+  // Support tickets (customers -> the team)
+  supportList:        (p = {})  => api.get('/admin/support?' + qs(p)).then(unwrap),
+  supportTicket:      (id)      => api.get(`/admin/support/${id}`).then(unwrap),
+  supportReply:       (id, message, status) => api.post(`/admin/support/${id}/reply`, { message, status }).then(unwrap),
+  supportNote:        (id, message) => api.post(`/admin/support/${id}/note`, { message }).then(unwrap),
+  supportUpdate:      (id, b)   => api.put(`/admin/support/${id}`, b).then(unwrap),
+
   // Partner program
   partners:           ()        => api.get('/admin/partners').then(unwrap),
   partner:            (id)      => api.get(`/admin/partners/${id}`).then(unwrap),

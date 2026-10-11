@@ -37,6 +37,7 @@ export default function AdminOverviewPage() {
         <div className="card card-body">
           <h3 style={{ marginTop: 0 }}>Needs your attention</h3>
           <p style={{ margin: '0 0 8px' }}><Link to="/admin/inbox"><b>{i.unread_chats}</b> unread live chat{i.unread_chats === 1 ? '' : 's'}</Link> <span style={{ color: 'var(--text-3)' }}>({i.open_chats} open)</span></p>
+          <p style={{ margin: '0 0 8px' }}><Link to="/admin/support"><b>{i.support_unanswered || 0}</b> support request{i.support_unanswered === 1 ? '' : 's'} waiting for a reply</Link></p>
           <p style={{ margin: '0 0 8px' }}><Link to="/admin/inbox"><b>{i.new_enquiries}</b> new website enquir{i.new_enquiries === 1 ? 'y' : 'ies'}</Link></p>
           <p style={{ margin: '0 0 8px' }}><Link to="/admin/subscriptions"><b>{s.halted}</b> halted subscription{s.halted === 1 ? '' : 's'}</Link></p>
           <p style={{ margin: 0, color: 'var(--text-3)', fontSize: 13 }}>Platform totals: {u.users} users · {u.contacts} contacts · {u.trips} trips · {u.bookings} bookings</p>
