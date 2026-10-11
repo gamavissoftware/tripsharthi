@@ -123,7 +123,7 @@ final class PlatformMail
     {
         EmailService::$override = $cfg; EmailService::$lastError = '';
         try {
-            $ok = EmailService::send($to, 'TripSarthi mail test', '<p>This is a test e-mail from the TripSarthi admin app. If you can read it, e-mail is set up correctly.</p>', "This is a test e-mail from the TripSarthi admin app. If you can read it, e-mail is set up correctly.");
+            $ok = EmailService::sendTest($to);
             return ['ok' => $ok, 'error' => EmailService::$lastError];
         } finally { EmailService::$override = null; }
     }

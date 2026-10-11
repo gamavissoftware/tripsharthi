@@ -95,7 +95,12 @@ export default function AdminEmailCampaignPage() {
               {(segs.length ? segs : [{ key: c.segment, label: c.segment_label || c.segment, count: 0 }]).map(s => <option key={s.key} value={s.key}>{s.label} ({s.count} opted in)</option>)}</select></label>
           <label>Subject
             <input className="form-input" value={c.subject} onChange={e => set('subject', e.target.value)} disabled={!editable} maxLength={150} placeholder="Hi {{first_name}}, …" /></label>
-          <label>E-mail text <span style={{ color: 'var(--text-3)' }}>(blank line = new paragraph · {'{{first_name}}'} = their first name · web addresses become links)</span>
+          <label>E-mail text
+            <span style={{ display: 'block', color: 'var(--text-3)', fontSize: 12.5, fontWeight: 400, lineHeight: 1.5 }}>
+              Blank line = new paragraph · <code>{'{{first_name}}'}</code> = their first name · web addresses become links.<br />
+              <code># Title</code> on the first line = big heading (later = small headline) · lines starting <code>- </code> = bullet list · <code>&gt; text</code> = highlighted note<br />
+              <code>{'[[button: Claim my offer | https://app.tripsarthi.com]]'}</code> = a call-to-action button
+            </span>
             <textarea className="form-input" rows={14} value={c.body} onChange={e => set('body', e.target.value)} disabled={!editable} maxLength={20000} style={{ fontFamily: 'inherit' }} /></label>
           {editable && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

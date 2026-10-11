@@ -55,7 +55,7 @@ class AdminPartnersController extends TravelBaseController
         $b = $this->body();
         return $this->run(function () use ($id, $b) {
             $url = PartnerService::inviteUrl($this->svc()->newInvite((int) $id, CurrentUser::id()));
-            $p = db_connect()->table('partners')->select('name, email, code, password_hash')->where('id', (int) $id)->get()->getRowArray() ?: [];
+            $p = db_connect()->table('partners')->select('name, email, code, password_hash, commission_pct, commission_months')->where('id', (int) $id)->get()->getRowArray() ?: [];
             return ['invite_url' => $url] + $this->maybeEmail($p, $url, ! empty($p['password_hash']), $b);
         });
     }

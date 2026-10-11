@@ -234,13 +234,13 @@ final class SupportService
             if (! $t) { return false; }
             if (! $isNew && $t['team_notified_at'] && strtotime((string) $t['team_notified_at'] . ' UTC') > ($this->now ?? time()) - 600) { return false; }   // at most one e-mail per 10 minutes per ticket
             $db->table('support_tickets')->where('id', $id)->update(['team_notified_at' => $this->stamp()]);
-            $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             $no = self::number($id);
             $link = rtrim((string) env('ADMIN_URL', 'https://admin.tripsarthi.com'), '/') . '/#/admin/support/' . $id;
-            $html = '<div style="font-family:Arial,sans-serif;font-size:15px;color:#0f1f3a"><h2 style="margin:0 0 8px">' . $h($what) . ' · ' . $h($no) . '</h2><p style="margin:0 0 10px"><b>' . $h($t['subject']) . '</b><br>'
-                . $h($t['user_name']) . ' &lt;' . $h($t['user_email']) . '&gt; · ' . $h($t['tenant_name']) . ' (' . $h($t['tenant_plan']) . ')</p>'
-                . '<p style="white-space:pre-wrap;background:#f3f7fc;border-radius:8px;padding:14px">' . $h(mb_substr($body, 0, 1500)) . '</p><p><a href="' . $h($link) . '">Open in the admin app</a></p></div>';
-            $text = "{$what} {$no}\n{$t['subject']}\n{$t['user_name']} <{$t['user_email']}> - {$t['tenant_name']} ({$t['tenant_plan']})\n\n" . mb_substr($body, 0, 1500) . "\n\n{$link}";
+            $m = \App\Services\Email\EmailLayout::build(['subject' => $what . ' ' . $no, 'preheader' => mb_substr($t['user_name'] . ': ' . preg_replace('/\s+/', ' ', $body), 0, 110),
+                'eyebrow' => 'Support · ' . $no, 'title' => $what,
+                'blocks' => [['facts', [['Request', $t['subject']], ['From', $t['user_name'] . ' <' . $t['user_email'] . '>'], ['Workspace', $t['tenant_name'] . ' (' . $t['tenant_plan'] . ' plan)']]],
+                             ['callout', mb_substr($body, 0, 1500), 'info'], ['button', 'Open in the admin app', $link]]]);
+            $html = $m['html']; $text = $m['text'];
             $to = trim((string) env('CONTACT_NOTIFY_EMAIL', 'manglesh@gamavis.com'));
             return $this->send($to, '[' . $no . '] ' . $what . ': ' . mb_substr(str_replace(["\r", "\n"], ' ', $t['subject']), 0, 80), $html, $text, $t['user_email']);
         };
@@ -251,11 +251,13 @@ final class SupportService
         $this->pending[] = function () use ($id, $body): bool {
             $t = db_connect()->query('SELECT t.subject, u.name user_name, u.email user_email FROM support_tickets t JOIN users u ON u.id = t.user_id WHERE t.id = ?', [$id])->getRowArray();
             if (! $t || ! filter_var($t['user_email'], FILTER_VALIDATE_EMAIL)) { return false; }
-            $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
             $no = self::number($id); $url = EmailService::appUrl() . '/#/support/' . $id;
-            $html = '<div style="font-family:Arial,sans-serif;font-size:15px;color:#0f1f3a"><p>Hi ' . $h($t['user_name']) . ',</p><p>The TripSarthi team replied to <b>' . $h($t['subject']) . '</b> (' . $h($no) . '):</p>'
-                . '<p style="white-space:pre-wrap;background:#f3f7fc;border-radius:8px;padding:14px">' . $h(mb_substr($body, 0, 3000)) . '</p><p><a href="' . $h($url) . '">Open the request and reply</a></p><p style="color:#53657f;font-size:13px">TripSarthi by Gamavis Software Solutions</p></div>';
-            $text = "Hi {$t['user_name']},\n\nThe TripSarthi team replied to \"{$t['subject']}\" ({$no}):\n\n" . mb_substr($body, 0, 3000) . "\n\nOpen the request and reply: {$url}\n\nTripSarthi by Gamavis Software Solutions";
+            $first = \App\Services\Marketing\EmailBody::firstName((string) $t['user_name']);
+            $m = \App\Services\Email\EmailLayout::build(['subject' => 'Re: ' . $t['subject'], 'preheader' => mb_substr(preg_replace('/\s+/', ' ', $body), 0, 110),
+                'eyebrow' => 'Support · ' . $no, 'title' => 'The TripSarthi team replied',
+                'blocks' => [['p', "Hi {$first}, here is our reply to your request."], ['facts', [['Your request', $t['subject']], ['Reference', $no]]],
+                             ['callout', mb_substr($body, 0, 3000), 'ok'], ['p', 'Need to add something? Open the request and reply there, and it goes straight back to the team.'], ['button', 'Open the request', $url]]]);
+            $html = $m['html']; $text = $m['text'];
             return $this->send($t['user_email'], '[' . $no . '] Re: ' . mb_substr(str_replace(["\r", "\n"], ' ', $t['subject']), 0, 100), $html, $text, null);
         };
     }

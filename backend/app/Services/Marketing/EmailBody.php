@@ -4,10 +4,17 @@ declare(strict_types=1);
 
 namespace App\Services\Marketing;
 
+use App\Services\Email\EmailLayout;
+
 /**
- * Turns the plain text a team member writes into a safe, simple HTML e-mail + a text alternative.
- * Everything is escaped (nothing the author types can inject markup); blank lines make paragraphs, single line breaks stay, web addresses become links.
- * {{first_name}} is replaced per recipient ("there" when unknown). The footer carries the reason, the sender and the unsubscribe link.
+ * Turns the plain text a team member writes in Admin -> Email marketing into a branded, safe HTML e-mail (via EmailLayout) + a text twin.
+ * Nothing the author types can inject markup (everything is escaped by the layout). Simple writing rules:
+ *   blank line            = new paragraph            web addresses become links
+ *   # Heading             = the e-mail's big title (first line) or a small headline
+ *   - item (every line)   = bullet list              > text   = highlighted note
+ *   [[button: Label | https://link]]  = a call-to-action button
+ *   {{first_name}}        = the recipient's first name ("there" when unknown)
+ * The footer carries the reason, the sender and the one-click unsubscribe link.
  */
 final class EmailBody
 {
@@ -21,23 +28,24 @@ final class EmailBody
     public static function personalise(string $text, string $firstName): string { return str_replace('{{first_name}}', $firstName, $text); }
 
     /** @return array{html:string,text:string} */
-    public static function render(string $body, string $firstName, string $unsubscribeUrl): array
+    public static function render(string $body, string $firstName, string $unsubscribeUrl, string $subject = ''): array
     {
-        $h = static fn (string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
         $plain = self::personalise(str_replace(["\r\n", "\r"], "\n", $body), $firstName);
-        $paras = preg_split("/\n{2,}/", trim($plain)) ?: [];
-        $html = '';
-        foreach ($paras as $p) {
-            $e = $h(trim($p));
-            $e = preg_replace('~(https?://[^\s<]+)~i', '<a href="$1" style="color:#0a6cc4">$1</a>', $e) ?? $e;
-            $html .= '<p style="margin:0 0 14px">' . nl2br($e, false) . '</p>';
+        $paras = array_values(array_filter(array_map('trim', preg_split("/\n{2,}/", trim($plain)) ?: []), static fn ($p) => $p !== ''));
+        $title = ''; $blocks = [];
+        foreach ($paras as $i => $p) {
+            if (preg_match('/^#\s+(.+)$/s', $p, $m)) {
+                if ($i === 0 && $title === '') { $title = trim($m[1]); } else { $blocks[] = ['h2', trim($m[1])]; }
+                continue;
+            }
+            if (preg_match('/^\[\[button:\s*(.+?)\s*\|\s*(https?:\/\/[^\]\s]+)\s*\]\]$/i', $p, $m)) { $blocks[] = ['button', $m[1], $m[2]]; continue; }
+            $lines = array_map('trim', explode("\n", $p));
+            if (count(array_filter($lines, static fn ($l) => str_starts_with($l, '- '))) === count($lines)) { $blocks[] = ['list', array_map(static fn ($l) => trim(substr($l, 2)), $lines)]; continue; }
+            if (str_starts_with($p, '> ')) { $blocks[] = ['callout', trim(preg_replace('/^>\s?/m', '', $p) ?? ''), 'info']; continue; }
+            $blocks[] = ['p', $p];
         }
-        $page = '<!doctype html><html><body style="margin:0;background:#f3f7fc"><div style="max-width:600px;margin:0 auto;padding:24px 16px;font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#0f1f3a">'
-            . '<div style="font-weight:800;font-size:20px;color:#0a1f44;margin-bottom:14px">Trip<span style="color:#12a89e">Sarthi</span></div>'
-            . '<div style="background:#fff;border-radius:12px;padding:22px 24px">' . $html . '</div>'
-            . '<p style="color:#667;font-size:12.5px;margin:16px 4px 0">You are getting this because you chose to hear from TripSarthi (Gamavis Software Solutions). '
-            . '<a href="' . $h($unsubscribeUrl) . '" style="color:#667">Unsubscribe</a> any time with one click.</p></div></body></html>';
-        $text = trim($plain) . "\n\n--\nYou are getting this because you chose to hear from TripSarthi (Gamavis Software Solutions).\nUnsubscribe: " . $unsubscribeUrl;
-        return ['html' => $page, 'text' => $text];
+        $first = '';
+        foreach ($blocks as $b) { if ($b[0] === 'p') { $first = (string) $b[1]; break; } }
+        return EmailLayout::build(['subject' => $subject !== '' ? $subject : $title, 'title' => $title, 'preheader' => mb_substr(preg_replace('/\s+/', ' ', $first) ?? '', 0, 110), 'blocks' => $blocks, 'unsubscribe_url' => $unsubscribeUrl]);
     }
 }

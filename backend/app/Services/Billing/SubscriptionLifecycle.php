@@ -94,24 +94,31 @@ final class SubscriptionLifecycle
     private function tell(int $tenantId, int $subId, string $milestone, string $plan, int $endTs): void
     {
         $db = db_connect();
+        $t = $db->table('tenants')->select('name')->where('id', $tenantId)->get()->getRowArray() ?: ['name' => 'Your workspace'];
         $planName = ucfirst($plan);
         $date = (new \DateTime('@' . $endTs))->setTimezone(new \DateTimeZone('Asia/Kolkata'))->format('j M Y');
-        [$subject, $line] = match ($milestone) {
-            'd1'    => ["Your {$planName} plan ends tomorrow", "Your {$planName} plan ends tomorrow ({$date}). Renew in Billing to keep your features."],
-            'd3'    => ["Your {$planName} plan ends in 3 days", "Your {$planName} plan ends on {$date}. Renew in Billing to keep your features."],
-            'd7'    => ["Your {$planName} plan ends on {$date}", "Your {$planName} plan ends on {$date}. Renew in Billing any time before then - the new period starts when this one ends, so no days are lost."],
-            default => ["Your {$planName} plan has ended", "Your {$planName} plan ended on {$date} and the workspace is now on the Free plan. Your data is safe - renew in Billing to get your features back."],
+        [$subject, $line, $eyebrow, $title, $tone] = match ($milestone) {
+            'd1'    => ["Your {$planName} plan ends tomorrow", "Your {$planName} plan ends tomorrow ({$date}). Renew in Billing to keep your features.", 'Plan reminder', 'Your plan ends tomorrow', 'warn'],
+            'd3'    => ["Your {$planName} plan ends in 3 days", "Your {$planName} plan ends on {$date}. Renew in Billing to keep your features.", 'Plan reminder', 'Your plan ends in 3 days', 'warn'],
+            'd7'    => ["Your {$planName} plan ends on {$date}", "Your {$planName} plan ends on {$date}. Renew in Billing any time before then - the new period starts when this one ends, so no days are lost.", 'Plan reminder', 'Your plan ends in a week', 'info'],
+            default => ["Your {$planName} plan has ended", "Your {$planName} plan ended on {$date} and the workspace is now on the Free plan. Your data is safe - renew in Billing to get your features back.", 'Plan ended', 'Your plan has ended', 'warn'],
         };
         $owners = $db->table('users')->select('id, name, email')->where('tenant_id', $tenantId)->where('role', 'owner')->where('deleted_at', null)->get()->getResultArray();
         $url = EmailService::appUrl() . '/#/settings/billing';
+        $ended = $milestone === 'ended';
         $emailed = 0;
         foreach ($owners as $o) {
             try { NotificationService::notify($tenantId, (int) $o['id'], 'subscription', $line, '/settings/billing'); } catch (\Throwable) {}
             if (! filter_var($o['email'] ?? '', FILTER_VALIDATE_EMAIL)) { continue; }
-            $name = htmlspecialchars((string) $o['name'], ENT_QUOTES);
-            $html = "<p>Hi {$name},</p><p>" . htmlspecialchars($line, ENT_QUOTES) . "</p><p><a href=\"{$url}\">Open Billing</a></p><p style=\"color:#667\">TripSarthi by Gamavis Software Solutions</p>";
-            $text = "Hi {$o['name']},\n\n{$line}\n\nBilling: {$url}\n\nTripSarthi by Gamavis Software Solutions";
-            $ok = $this->mailer !== null ? (bool) ($this->mailer)($o['email'], $subject, $html, $text) : EmailService::send($o['email'], $subject, $html, $text);
+            $first = \App\Services\Marketing\EmailBody::firstName((string) $o['name']);
+            $m = \App\Services\Email\EmailLayout::build([
+                'subject' => $subject, 'preheader' => $ended ? 'Your data is safe. Renew any time to get your features back.' : "Renew before {$date} and no paid days are lost.",
+                'eyebrow' => $eyebrow, 'title' => $title,
+                'blocks' => [['p', "Hi {$first},"], ['facts', [['Workspace', (string) $t['name']], ['Plan', $planName], [$ended ? 'Ended on' : 'Ends on', $date]]],
+                             ['p', $ended ? 'Your workspace is on the Free plan now, and all your data is safe. Renew whenever you are ready to get your Starter, Growth or Pro features back.' : 'To keep every feature running without a break, renew from Billing. If you renew before the end date, the new period simply starts when this one ends, so you never lose a paid day.'],
+                             ['button', $ended ? 'Renew my plan' : 'Renew in Billing', $url], ['callout', 'Prefer to talk first? Reply to this e-mail or open Help & support in the app.', $tone === 'warn' ? 'info' : 'info']],
+            ]);
+            $ok = $this->mailer !== null ? (bool) ($this->mailer)($o['email'], $subject, $m['html'], $m['text']) : EmailService::send($o['email'], $subject, $m['html'], $m['text']);
             if ($ok) { $emailed++; }
         }
         $db->table('subscription_reminders')->where('subscription_id', $subId)->where('milestone', $milestone)->update(['emailed' => $emailed > 0 ? 1 : 0]);

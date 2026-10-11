@@ -19,7 +19,7 @@ final class PartnerInviteMailTest extends CIUnitTestCase
         $r = PartnerInviteMail::send(['name' => 'Diksha <b>S</b>', 'email' => 'diksha@example.com', 'code' => 'DIKSHA1'], self::URL, false, function ($to, $subject, $html, $text) use (&$got) { $got = compact('to', 'subject', 'html', 'text'); return true; });
         $this->assertTrue($r['ok']); $this->assertNull($r['error']);
         $this->assertSame('diksha@example.com', $got['to']);
-        $this->assertStringContainsString('invited', $got['subject']);
+        $this->assertStringContainsString('partner program', $got['subject']);
         $this->assertStringContainsString('DIKSHA1', $got['html']);
         $this->assertStringContainsString(self::URL, $got['text']);
         $this->assertStringNotContainsString('<b>S</b>', $got['html'], 'the name is escaped');

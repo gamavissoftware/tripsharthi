@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Email;
 
+use App\Services\Marketing\EmailBody;
 use Config\Services;
 
 class EmailService
@@ -13,6 +14,8 @@ class EmailService
      */
     /** Test/verify seam: mail settings to use instead of the saved ones (see PlatformMail). */
     public static ?array $override = null;
+    /** Dev/test seam: when set, send() hands each message to this callable (to, subject, html, text) instead of using SMTP. */
+    public static $capture = null;
     /** Short, secret-free reason of the last failed send (shown on the admin Mail server page). */
     public static string $lastError = '';
 
@@ -92,6 +95,7 @@ class EmailService
         ?string $replyTo = null,
         array $headers = []
     ): bool {
+        if (self::$capture !== null) { (self::$capture)($to, $subject, $htmlBody, $textBody); return true; }
         try {
             $email = self::makeEmailInstance();
 
@@ -139,219 +143,87 @@ class EmailService
         }
     }
 
-    /**
-     * Send a welcome email to a newly registered user.
-     *
-     * @param string $to     Recipient address.
-     * @param string $name   Recipient's display name.
-     * @param string $appUrl Base URL of the application.
-     *
-     * @return bool
-     */
+    /** Welcome e-mail for a newly registered workspace owner. */
     public static function sendWelcome(string $to, string $name, string $appUrl): bool
     {
-        $subject = "Welcome to TravelPilot, {$name}!";
-
-        $escapedName   = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-        $escapedAppUrl = htmlspecialchars($appUrl, ENT_QUOTES, 'UTF-8');
-
-        $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Welcome to TravelPilot</title></head>
-<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px;">
-  <h1 style="color:#1a73e8;">Welcome to TravelPilot, {$escapedName}!</h1>
-  <p>We're excited to have you on board. TravelPilot helps you capture, manage and engage your WhatsApp leads — all in one place.</p>
-  <p style="margin:32px 0;">
-    <a href="{$escapedAppUrl}" style="background:#1a73e8;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold;">
-      Get Started
-    </a>
-  </p>
-  <p style="color:#666;font-size:13px;">If you have any questions, just reply to this email — we're here to help.</p>
-  <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-  <p style="color:#999;font-size:12px;">TravelPilot by Gamavis Software Solutions</p>
-</body>
-</html>
-HTML;
-
-        $text = "Welcome to TravelPilot, {$name}!\n\n"
-            . "We're excited to have you on board.\n\n"
-            . "Get started here: {$appUrl}\n\n"
-            . "TravelPilot by Gamavis Software Solutions";
-
-        return self::send($to, $subject, $html, $text);
+        $first = EmailBody::firstName($name);
+        $m = EmailLayout::build([
+            'subject' => 'Welcome to TripSarthi', 'preheader' => 'Your workspace is ready. Here is how to get your first booking in.',
+            'eyebrow' => 'Welcome aboard', 'title' => "Welcome to TripSarthi, {$first}",
+            'blocks' => [
+                ['p', 'Your workspace is ready. TripSarthi brings your enquiries, quotes, bookings, payments and WhatsApp conversations into one calm place, so nothing falls through the cracks.'],
+                ['steps', [['Add your first enquiry', 'Type it in, or let leads from your website, ads and WhatsApp arrive on their own.'],
+                           ['Send a beautiful quote', 'Build an itinerary, add your price and share it in one tap.'],
+                           ['Collect payments and confirm', 'Payment links and reminders run on their own once a booking is made.']]],
+                ['button', 'Open my workspace', $appUrl],
+                ['p', 'Questions? Just reply to this e-mail or use Help & support inside the app. We read everything.'],
+            ],
+        ]);
+        return self::send($to, 'Welcome to TripSarthi, ' . $first, $m['html'], $m['text']);
     }
 
-    /**
-     * Send a password-reset email.
-     *
-     * @param string $to       Recipient address.
-     * @param string $name     Recipient's display name.
-     * @param string $resetUrl Password-reset URL (expires in 1 hour).
-     *
-     * @return bool
-     */
+    /** Password-reset e-mail (the link is valid for 1 hour). */
     public static function sendPasswordReset(string $to, string $name, string $resetUrl): bool
     {
-        $subject = 'Reset your TravelPilot password';
-
-        $escapedName     = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-        $escapedResetUrl = htmlspecialchars($resetUrl, ENT_QUOTES, 'UTF-8');
-
-        $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Reset your password</title></head>
-<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px;">
-  <h1 style="color:#1a73e8;">Reset your password</h1>
-  <p>Hi {$escapedName},</p>
-  <p>We received a request to reset the password for your TravelPilot account. Click the button below to choose a new password. This link is valid for <strong>1 hour</strong>.</p>
-  <p style="margin:32px 0;">
-    <a href="{$escapedResetUrl}" style="background:#d93025;color:#fff;padding:12px 24px;border-radius:4px;text-decoration:none;font-weight:bold;">
-      Reset Password
-    </a>
-  </p>
-  <p>If you didn't request a password reset, you can safely ignore this email — your password won't change.</p>
-  <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-  <p style="color:#999;font-size:12px;">TravelPilot by Gamavis Software Solutions</p>
-</body>
-</html>
-HTML;
-
-        $text = "Hi {$name},\n\n"
-            . "We received a request to reset the password for your TravelPilot account.\n\n"
-            . "Reset your password (valid for 1 hour): {$resetUrl}\n\n"
-            . "If you didn't request this, you can safely ignore this email.\n\n"
-            . "TravelPilot by Gamavis Software Solutions";
-
-        return self::send($to, $subject, $html, $text);
+        $first = EmailBody::firstName($name);
+        $m = EmailLayout::build([
+            'subject' => 'Reset your TripSarthi password', 'preheader' => 'Use this link within 1 hour to choose a new password.',
+            'eyebrow' => 'Account security', 'title' => 'Reset your password',
+            'blocks' => [
+                ['p', "Hi {$first}, we received a request to reset the password for your TripSarthi account. Choose a new one with the button below."],
+                ['button', 'Choose a new password', $resetUrl],
+                ['callout', 'This link is valid for 1 hour and works once.', 'info'],
+                ['p', 'If you did not ask for this, you can safely ignore this e-mail. Your password will not change.'],
+            ],
+        ]);
+        return self::send($to, 'Reset your TripSarthi password', $m['html'], $m['text']);
     }
 
-    /**
-     * Send a campaign-completion notification.
-     *
-     * @param string $to           Recipient address.
-     * @param string $name         Recipient's display name.
-     * @param string $campaignName Name of the completed campaign.
-     * @param int    $sent         Number of messages successfully sent.
-     * @param int    $failed       Number of messages that failed.
-     *
-     * @return bool
-     */
-    public static function sendCampaignComplete(
-        string $to,
-        string $name,
-        string $campaignName,
-        int $sent,
-        int $failed
-    ): bool {
-        $escapedCampaignName = htmlspecialchars($campaignName, ENT_QUOTES, 'UTF-8');
-        $subject             = "Campaign '{$campaignName}' complete";
-
-        $escapedName = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-        $total       = $sent + $failed;
-        $successRate = $total > 0 ? round(($sent / $total) * 100, 1) : 0.0;
-
-        $failedRow = $failed > 0
-            ? "<tr><td style='padding:8px;border:1px solid #eee;color:#d93025;'>Failed</td><td style='padding:8px;border:1px solid #eee;color:#d93025;'>{$failed}</td></tr>"
-            : '';
-
-        $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Campaign complete</title></head>
-<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px;">
-  <h1 style="color:#1a73e8;">Campaign Complete</h1>
-  <p>Hi {$escapedName},</p>
-  <p>Your campaign <strong>{$escapedCampaignName}</strong> has finished sending. Here's a summary:</p>
-  <table style="border-collapse:collapse;width:100%;margin:24px 0;">
-    <tr style="background:#f5f5f5;">
-      <th style="padding:8px;border:1px solid #eee;text-align:left;">Metric</th>
-      <th style="padding:8px;border:1px solid #eee;text-align:left;">Count</th>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid #eee;">Total recipients</td>
-      <td style="padding:8px;border:1px solid #eee;">{$total}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px;border:1px solid #eee;color:#188038;">Sent successfully</td>
-      <td style="padding:8px;border:1px solid #eee;color:#188038;">{$sent}</td>
-    </tr>
-    {$failedRow}
-    <tr>
-      <td style="padding:8px;border:1px solid #eee;">Success rate</td>
-      <td style="padding:8px;border:1px solid #eee;">{$successRate}%</td>
-    </tr>
-  </table>
-  <p>Log in to TravelPilot to view the full campaign report and per-contact delivery status.</p>
-  <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-  <p style="color:#999;font-size:12px;">TravelPilot by Gamavis Software Solutions</p>
-</body>
-</html>
-HTML;
-
-        $text = "Hi {$name},\n\n"
-            . "Your campaign '{$campaignName}' has finished sending.\n\n"
-            . "Total recipients : {$total}\n"
-            . "Sent successfully : {$sent}\n"
-            . "Failed            : {$failed}\n"
-            . "Success rate      : {$successRate}%\n\n"
-            . "Log in to TravelPilot to view the full report.\n\n"
-            . "TravelPilot by Gamavis Software Solutions";
-
-        return self::send($to, $subject, $html, $text);
+    /** Campaign-completion notification. */
+    public static function sendCampaignComplete(string $to, string $name, string $campaignName, int $sent, int $failed): bool
+    {
+        $first = EmailBody::firstName($name);
+        $total = $sent + $failed;
+        $rate = $total > 0 ? round(($sent / $total) * 100, 1) : 0.0;
+        $facts = [['Campaign', $campaignName], ['Recipients', (string) $total], ['Sent', (string) $sent]];
+        if ($failed > 0) { $facts[] = ['Failed', (string) $failed]; }
+        $facts[] = ['Success rate', $rate . '%'];
+        $m = EmailLayout::build([
+            'subject' => "Campaign '{$campaignName}' complete", 'preheader' => "{$sent} of {$total} messages were sent.",
+            'eyebrow' => 'Campaign report', 'title' => 'Your campaign has finished',
+            'blocks' => [['p', "Hi {$first}, here is how it went."], ['facts', $facts],
+                         ['p', 'Open TripSarthi to see the full report and the delivery status of each contact.'], ['button', 'View the report', self::appUrl()]],
+        ]);
+        return self::send($to, "Campaign '{$campaignName}' complete", $m['html'], $m['text']);
     }
 
-    /**
-     * Send a WABA quality-flag alert to the account owner.
-     *
-     * @param string $to          Recipient address.
-     * @param string $name        Recipient's display name.
-     * @param string $phoneNumber The flagged WhatsApp display number.
-     *
-     * @return bool
-     */
+    /** WhatsApp number quality-flag alert to the workspace owner. */
     public static function sendWabaFlagged(string $to, string $name, string $phoneNumber): bool
     {
-        $subject = '⚠️ WhatsApp number quality alert';
+        $first = EmailBody::firstName($name);
+        $m = EmailLayout::build([
+            'subject' => 'WhatsApp number quality alert', 'preheader' => "Quality dropped for {$phoneNumber}. Here is what to do.",
+            'eyebrow' => 'Needs attention', 'title' => 'WhatsApp quality alert',
+            'blocks' => [
+                ['p', "Hi {$first}, the quality rating of your WhatsApp number {$phoneNumber} has dropped."],
+                ['callout', 'A low rating means people recently blocked or reported messages. If it continues, Meta may limit or disable sending from this number.', 'warn'],
+                ['h2', 'What to do now'],
+                ['list', ['Review recent campaigns and automations for messages that may feel spammy or irrelevant.', 'Message only people who agreed to receive WhatsApp updates.', 'Lower the sending frequency if you have been running large broadcasts.',
+                          'Check WhatsApp Manager for details and any guidance from Meta: https://business.facebook.com/wa/manage/phone-numbers/']],
+                ['p', 'Acting early protects your number and keeps your messaging running.'],
+            ],
+        ]);
+        return self::send($to, 'WhatsApp number quality alert', $m['html'], $m['text']);
+    }
 
-        $escapedName   = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
-        $escapedPhone  = htmlspecialchars($phoneNumber, ENT_QUOTES, 'UTF-8');
-
-        $html = <<<HTML
-<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>WhatsApp number quality alert</title></head>
-<body style="font-family:Arial,sans-serif;color:#333;max-width:600px;margin:0 auto;padding:24px;">
-  <h1 style="color:#d93025;">⚠️ WhatsApp Number Quality Alert</h1>
-  <p>Hi {$escapedName},</p>
-  <p>We've detected a <strong>quality rating drop</strong> for your WhatsApp number <strong>{$escapedPhone}</strong> connected to TravelPilot.</p>
-  <p>A low quality rating means that recipients have recently blocked or reported your messages. If this continues, Meta may limit or disable your ability to send messages from this number.</p>
-  <h2 style="font-size:16px;color:#333;">Recommended actions</h2>
-  <ul>
-    <li>Review recent campaigns and flows for messages that may feel spammy or irrelevant.</li>
-    <li>Ensure you only contact leads who have opted in to receive WhatsApp messages.</li>
-    <li>Reduce sending frequency if you've been running high-volume broadcasts.</li>
-    <li>Check the <a href="https://business.facebook.com/wa/manage/phone-numbers/" style="color:#1a73e8;">WhatsApp Manager</a> for details and any Meta guidance.</li>
-  </ul>
-  <p>Improving your quality rating protects your WABA and keeps your messaging capabilities intact.</p>
-  <hr style="border:none;border-top:1px solid #eee;margin:32px 0;">
-  <p style="color:#999;font-size:12px;">TravelPilot by Gamavis Software Solutions</p>
-</body>
-</html>
-HTML;
-
-        $text = "Hi {$name},\n\n"
-            . "We've detected a quality rating drop for your WhatsApp number {$phoneNumber} connected to TravelPilot.\n\n"
-            . "A low quality rating means recipients have recently blocked or reported your messages. "
-            . "If this continues, Meta may limit or disable messaging from this number.\n\n"
-            . "Recommended actions:\n"
-            . "- Review recent campaigns and flows for potentially spammy messages.\n"
-            . "- Only contact leads who have opted in.\n"
-            . "- Reduce sending frequency if running high-volume broadcasts.\n"
-            . "- Check WhatsApp Manager: https://business.facebook.com/wa/manage/phone-numbers/\n\n"
-            . "TravelPilot by Gamavis Software Solutions";
-
-        return self::send($to, $subject, $html, $text);
+    /** The test e-mail sent by Admin -> Mail server. */
+    public static function sendTest(string $to): bool
+    {
+        $m = EmailLayout::build([
+            'subject' => 'TripSarthi mail test', 'preheader' => 'If you can read this, e-mail is set up correctly.', 'eyebrow' => 'Mail check', 'title' => 'E-mail is working',
+            'blocks' => [['p', 'This is a test message from the TripSarthi admin app. If it reached your inbox, the mail server settings are correct.'],
+                         ['callout', 'Support replies, plan reminders, password resets and campaigns now go out through this connection.', 'ok']],
+        ]);
+        return self::send($to, 'TripSarthi mail test', $m['html'], $m['text']);
     }
 }

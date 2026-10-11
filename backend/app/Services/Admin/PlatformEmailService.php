@@ -137,7 +137,7 @@ final class PlatformEmailService
     public function preview(int $id): array
     {
         $c = $this->row($id); $m = $this->members($c['segment']);
-        $r = EmailBody::render($c['body'], 'Priya', EmailService::appUrl() . '/api/v1/public/email/unsubscribe');
+        $r = EmailBody::render($c['body'], 'Priya', EmailService::appUrl() . '/api/v1/public/email/unsubscribe', EmailBody::personalise($c['subject'], 'Priya'));
         return ['subject' => EmailBody::personalise($c['subject'], 'Priya'), 'html' => $r['html'], 'audience' => ['label' => self::SEGMENTS[$c['segment']]['label'] ?? $c['segment'], 'count' => count($m),
             'sample' => array_map(fn ($x) => ['name' => $x['name'], 'email' => $this->mask($x['email']), 'context' => $x['context']], array_slice($m, 0, 5))]];
     }
@@ -224,9 +224,9 @@ final class PlatformEmailService
     private function deliver(string $to, string $name, string $subject, string $body, string $prefix = ''): bool
     {
         $first = EmailBody::firstName($name); $unsub = EmailUnsubscribe::url($to);
-        $r = EmailBody::render($body, $first, $unsub);
-        $headers = ['List-Unsubscribe' => '<' . $unsub . '>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click'];
         $subj = $prefix . EmailBody::personalise($subject, $first);
+        $r = EmailBody::render($body, $first, $unsub, $subj);
+        $headers = ['List-Unsubscribe' => '<' . $unsub . '>', 'List-Unsubscribe-Post' => 'List-Unsubscribe=One-Click'];
         return $this->mailer !== null ? (bool) ($this->mailer)($to, $subj, $r['html'], $r['text'], $headers) : EmailService::send($to, $subj, $r['html'], $r['text'], null, $headers);
     }
 
