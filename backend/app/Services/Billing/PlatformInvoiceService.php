@@ -21,8 +21,9 @@ use App\Services\Email\EmailService;
  * workspace owner with the PDF attached. Complimentary / free periods (amount 0) get no invoice.
  *
  * Rules (all tested):
- *  - Prices are GST-INCLUSIVE: what the customer paid is the invoice total; taxable value = total / (1 + rate), the rest is GST. So nothing the customer
- *    is charged changes, and taxable + CGST + SGST + IGST always equals the total to the paisa.
+ *  - Plan prices EXCLUDE GST: checkout charges price + GST, the order records the split (subscriptions.taxable_paise / gst_paise) and the invoice uses it
+ *    (price_basis 'exclusive'). A payment recorded by hand, or one that predates this rule, carries no split: the amount received is treated as
+ *    GST-inclusive and carved out (price_basis 'inclusive'). Either way taxable + CGST + SGST + IGST equals the total to the paisa.
  *  - Intra-state (buyer in the seller's state) = CGST + SGST; otherwise IGST. Place of supply = the buyer's state (from a valid GSTIN, else the state in
  *    their business profile); with neither, the seller's state.
  *  - B2B only when the buyer has a checksum-valid GSTIN (their Settings -> Business & invoicing profile); otherwise B2C.
@@ -51,6 +52,22 @@ final class PlatformInvoiceService
 
     private function ts(): int { return $this->now ?? time(); }
     private function stamp(?int $t = null): string { return date('Y-m-d H:i:s', $t ?? $this->ts()); }
+    /** The GST rate charged on plan prices (percent), from the invoice settings. */
+    public static function gstRate(): float
+    {
+        $r = PlatformSettings::get('inv_gst_rate');
+        return $r !== null && is_numeric($r) ? (float) $r : (float) self::defaults()['gst_rate'];
+    }
+
+    /**
+     * GST charged ON TOP of a price. @return array{rate:float,taxable:int,gst:int,total:int} amounts in paise; total is what the customer pays.
+     */
+    public static function gstOn(int $basePaise): array
+    {
+        $rate = self::gstRate(); $gst = (int) round($basePaise * $rate / 100);
+        return ['rate' => $rate, 'taxable' => $basePaise, 'gst' => $gst, 'total' => $basePaise + $gst];
+    }
+
     /** Today's date in India (invoice dates are Indian dates). */
     private function indiaDate(): string { return gmdate('Y-m-d', $this->ts() + 19800); }
 
@@ -64,7 +81,7 @@ final class PlatformInvoiceService
         return ['legal_name' => 'Gamavis Software Solutions', 'trade_name' => 'Gamavis Software Solutions', 'gstin' => '06ABCFG6551H1ZG', 'pan' => 'ABCFG6551H',
             'address_line1' => 'Cabin No. 1, Basement Floor, 2/14/3, Mathura Road', 'address_line2' => 'Near Idea Shacks Coworking, Sector 32', 'city' => 'Faridabad', 'state_code' => '06', 'pincode' => '121003',
             'phone' => '', 'email' => (string) (env('CONTACT_NOTIFY_EMAIL') ?: ''), 'website' => 'https://tripsarthi.com', 'sac_code' => '998314', 'gst_rate' => '18', 'prefix' => 'GS',
-            'signatory' => 'Mangleesh Kumar Upadhyay', 'terms' => "Subscription fees are for the plan period stated and are non-refundable except as required by law.\nAll prices are inclusive of GST.",
+            'signatory' => 'Mangleesh Kumar Upadhyay', 'terms' => "Subscription fees are for the plan period stated and are non-refundable except as required by law.\nGST is charged extra on plan prices at the applicable rate.",
             'bank_name' => '', 'bank_account_name' => '', 'bank_account_no' => '', 'bank_ifsc' => '', 'upi_id' => '', 'copy_to' => '', 'auto_email' => '1'];
     }
 
@@ -163,8 +180,10 @@ final class PlatformInvoiceService
         $buyerState = $buyer['gstin'] !== '' ? Gst::stateOfGstin($buyer['gstin']) : ($buyer['state_code'] ?: null);
         $pos = Gst::placeOfSupply($buyerState, $sellerState);
 
-        $rate = (float) $s['gst_rate'];
-        $taxable = (int) round($total * 100 / (100 + $rate)); $tax = $total - $taxable;
+        // GST charged ON TOP (the order recorded the split) or, for an older / offline-recorded payment, carved OUT of the amount received.
+        $recorded = $sub['taxable_paise'] !== null && $sub['gst_paise'] !== null && (int) $sub['taxable_paise'] + (int) $sub['gst_paise'] === $total;
+        if ($recorded) { $basis = 'exclusive'; $rate = (float) ($sub['gst_rate'] ?? $s['gst_rate']); $taxable = (int) $sub['taxable_paise']; $tax = (int) $sub['gst_paise']; }
+        else { $basis = 'inclusive'; $rate = (float) $s['gst_rate']; $taxable = (int) round($total * 100 / (100 + $rate)); $tax = $total - $taxable; }
         $sp = Gst::split($tax, $sellerState, $pos);
         $cycle = $sub['billing_cycle'] === 'annual' ? 'annual' : 'monthly';
         $desc = sprintf('TripSarthi %s plan - %s subscription', ucfirst((string) $sub['plan']), $cycle);
@@ -182,7 +201,7 @@ final class PlatformInvoiceService
                 'source' => $source === 'offline' ? 'offline' : 'online', 'payment_ref' => str_starts_with((string) $sub['razorpay_sub_id'], 'admin-') ? null : (string) $sub['razorpay_sub_id'],
                 'plan' => (string) $sub['plan'], 'billing_cycle' => $cycle, 'period_start' => $sub['current_period_start'], 'period_end' => $sub['current_period_end'], 'description' => mb_substr($desc, 0, 300),
                 'buyer_type' => $buyer['gstin'] !== '' ? 'b2b' : 'b2c', 'buyer_name' => mb_substr($buyer['name'], 0, 200), 'buyer_gstin' => $buyer['gstin'] !== '' ? $buyer['gstin'] : null, 'place_of_supply' => $pos, 'supply_type' => $sp['supply'],
-                'sac' => $s['sac_code'], 'gst_rate' => $rate, 'taxable_value' => $taxable, 'cgst' => $sp['cgst'], 'sgst' => $sp['sgst'], 'igst' => $sp['igst'], 'total' => $total,
+                'price_basis' => $basis, 'sac' => $s['sac_code'], 'gst_rate' => $rate, 'taxable_value' => $taxable, 'cgst' => $sp['cgst'], 'sgst' => $sp['sgst'], 'igst' => $sp['igst'], 'total' => $total,
                 'seller' => json_encode($seller, JSON_UNESCAPED_UNICODE), 'buyer' => json_encode($buyer, JSON_UNESCAPED_UNICODE), 'email_to' => $buyer['email'] ?: null, 'created_at' => $this->stamp()];
             $db->table('platform_invoices')->insert($row);
             $id = (int) $db->insertID();
@@ -241,7 +260,7 @@ final class PlatformInvoiceService
         $html = view('pdf/platform_invoice', ['mark' => $mark, 'seller' => $seller, 'buyer' => $buyer, 'bank' => $bank, 'doc' => [
             'number' => $inv['number'], 'date' => DocFormat::date($inv['issue_date']), 'place_name' => Gst::STATES[$inv['place_of_supply']] ?? '', 'place_of_supply' => $inv['place_of_supply'], 'supply_type' => $inv['supply_type'],
             'sac' => $inv['sac'], 'gst_rate' => (float) $inv['gst_rate'], 'description' => $inv['description'], 'taxable_value' => (int) $inv['taxable_value'], 'cgst' => (int) $inv['cgst'], 'sgst' => (int) $inv['sgst'], 'igst' => (int) $inv['igst'],
-            'total' => (int) $inv['total'], 'words' => AmountInWords::paise((int) $inv['total']), 'payment_ref' => $inv['payment_ref'], 'source' => $inv['source'], 'plan' => ucfirst((string) $inv['plan']), 'b2b' => $inv['buyer_type'] === 'b2b']]);
+            'total' => (int) $inv['total'], 'words' => AmountInWords::paise((int) $inv['total']), 'payment_ref' => $inv['payment_ref'], 'source' => $inv['source'], 'plan' => ucfirst((string) $inv['plan']), 'b2b' => $inv['buyer_type'] === 'b2b', 'basis' => $inv['price_basis'] ?? 'inclusive']]);
         return PdfRenderer::render($html, $inv['number'] . ' · ' . $seller['legal_name'] . ' · GSTIN ' . $seller['gstin'], 'Tax invoice ' . $inv['number']);
     }
 
@@ -288,7 +307,7 @@ final class PlatformInvoiceService
         $blocks = [
             ['p', 'Thank you for your payment. Your GST tax invoice is attached to this e-mail as a PDF.'],
             ['facts', array_values(array_filter([['Invoice no.', $inv['number']], ['Date', DocFormat::date($inv['issue_date'])], ['Plan', ucfirst((string) $inv['plan']) . ' (' . $inv['billing_cycle'] . ')'],
-                ['Amount paid', $rupees . ' (incl. GST)'], $inv['payment_ref'] ? ['Payment reference', $inv['payment_ref']] : null, ['Billed to', $inv['buyer_name'] . ($inv['buyer_gstin'] ? ' · GSTIN ' . $inv['buyer_gstin'] : '')]]))],
+                ['Amount paid', $rupees . ' (' . DocFormat::inr((int) $inv['taxable_value']) . ' + GST ' . DocFormat::inr((int) $inv['cgst'] + (int) $inv['sgst'] + (int) $inv['igst']) . ')'], $inv['payment_ref'] ? ['Payment reference', $inv['payment_ref']] : null, ['Billed to', $inv['buyer_name'] . ($inv['buyer_gstin'] ? ' · GSTIN ' . $inv['buyer_gstin'] : '')]]))],
         ];
         if ($inv['buyer_type'] === 'b2c') {
             $blocks[] = ['callout', 'This invoice has no GSTIN because none is saved in your workspace. If you are GST-registered and want to claim input credit, add your GSTIN under Settings > Business & invoicing before your next payment.', 'info'];

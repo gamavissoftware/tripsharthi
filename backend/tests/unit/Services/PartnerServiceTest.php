@@ -220,7 +220,8 @@ final class PartnerServiceTest extends CIUnitTestCase
         $this->assertSame([399_900, 99_975, 'pending', 'growth', 'monthly'], [(int) $c['base_paise'], (int) $c['amount_paise'], $c['status'], $c['plan'], $c['cycle']]);
         $this->assertEqualsWithDelta(time() + 10 * 86400, strtotime($c['payable_after']), 5);
         $this->assertSame(['pending_paise' => 99_975, 'available_paise' => 0, 'paid_paise' => 0, 'void_paise' => 0, 'earned_paise' => 99_975], $this->svc()->balances($p['id']));
-        $this->assertSame($o['amount'], (int) $c['base_paise'], 'commission is on what the customer actually paid');
+        $this->assertSame($o['taxable'], (int) $c['base_paise'], 'commission is on the price the customer paid WITHOUT the GST collected for the government');
+        $this->assertGreaterThan($o['taxable'], $o['amount'], 'the customer was charged GST on top');
     }
 
     public function testTheCommissionIsOnTheDiscountedAmountAfterACoupon(): void

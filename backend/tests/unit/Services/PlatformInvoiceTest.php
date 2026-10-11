@@ -46,6 +46,7 @@ final class PlatformInvoiceTest extends CIUnitTestCase
     protected function tearDown(): void
     {
         PlatformInvoiceService::$mailer = null; PlatformInvoiceService::$enableInTests = false;
+        db_connect()->query("DELETE FROM platform_settings WHERE setting_key LIKE 'inv\\_%'");   // a changed GST rate must not leak into other test classes
         foreach (glob($this->dir . '/*/*') ?: [] as $f) { @unlink($f); } foreach (glob($this->dir . '/*') ?: [] as $d) { @rmdir($d); } @rmdir($this->dir);
         putenv('PLATFORM_INVOICE_STORAGE_DIR'); unset($_ENV['PLATFORM_INVOICE_STORAGE_DIR'], $_SERVER['PLATFORM_INVOICE_STORAGE_DIR']);
         db_connect()->query('SET FOREIGN_KEY_CHECKS=1'); parent::tearDown();
@@ -307,6 +308,53 @@ final class PlatformInvoiceTest extends CIUnitTestCase
         $this->assertSame(2, $r['issued']); $this->assertSame([], $this->svc()->missing());
         $this->assertSame(2, count($this->mails), 'issuing also e-mails them');
         $this->assertSame(['online', 'offline'], array_column(db_connect()->table('platform_invoices')->orderBy('id')->get()->getResultArray(), 'source'));
+    }
+
+    // ---- GST charged ON TOP of the plan price -------------------------------------------------------------------------------------------------
+
+    public function testGstOnAPriceIsAddedNeverCarvedOut(): void
+    {
+        $g = PlatformInvoiceService::gstOn(399_900);
+        $this->assertSame([18.0, 399_900, 71_982, 471_882], [$g['rate'], $g['taxable'], $g['gst'], $g['total']]);
+        $this->assertSame(118, PlatformInvoiceService::gstOn(100)['total'], 'the smallest price: Re 1 + 18 paise');
+        $this->svc()->saveSettings(['gst_rate' => '12'], 1);
+        $this->assertSame(112_000, PlatformInvoiceService::gstOn(100_000)['total'], 'the rate comes from the invoice settings');
+    }
+
+    public function testAnOrderThatRecordedItsSplitGetsAnInvoiceThatShowsGstExtra(): void
+    {
+        $db = db_connect();
+        $db->table('subscriptions')->insert(['tenant_id' => 1, 'razorpay_sub_id' => 'pay_EXTRA', 'razorpay_customer_id' => 'c', 'plan' => 'growth', 'amount_paise' => 471_882, 'taxable_paise' => 399_900, 'gst_paise' => 71_982, 'gst_rate' => 18, 'billing_cycle' => 'monthly',
+            'status' => 'active', 'current_period_start' => '2026-10-11 10:00:00', 'current_period_end' => '2026-11-10 10:00:00', 'created_at' => '2026-10-11 10:00:00', 'updated_at' => '2026-10-11 10:00:00']);
+        $inv = $this->svc()->issueForSubscription((int) $db->insertID());
+        $this->assertSame('exclusive', $inv['price_basis']);
+        $this->assertSame([399_900, 35_991, 35_991, 0, 471_882], [(int) $inv['taxable_value'], (int) $inv['cgst'], (int) $inv['sgst'], (int) $inv['igst'], (int) $inv['total']], 'taxable is the PRICE, not the total divided by 1.18');
+        $pdf = $this->svc()->pdf((int) $inv['id']);
+        $this->assertStringStartsWith('%PDF', $pdf['bytes']);
+    }
+
+    public function testAnInconsistentRecordedSplitFallsBackToCarvingGstOutOfTheTotal(): void
+    {
+        $db = db_connect();
+        $db->table('subscriptions')->insert(['tenant_id' => 1, 'razorpay_sub_id' => 'pay_BAD', 'razorpay_customer_id' => 'c', 'plan' => 'growth', 'amount_paise' => 59_000, 'taxable_paise' => 50_000, 'gst_paise' => 1, 'gst_rate' => 18, 'billing_cycle' => 'monthly',
+            'status' => 'active', 'current_period_start' => '2026-10-11 10:00:00', 'current_period_end' => '2026-11-10 10:00:00', 'created_at' => '2026-10-11 10:00:00', 'updated_at' => '2026-10-11 10:00:00']);
+        $inv = $this->svc()->issueForSubscription((int) $db->insertID());
+        $this->assertSame('inclusive', $inv['price_basis']);
+        $this->assertSame(59_000, (int) $inv['taxable_value'] + (int) $inv['cgst'] + (int) $inv['sgst'] + (int) $inv['igst']);
+    }
+
+    public function testACheckoutPaidWithGstOnTopProducesTheMatchingInvoiceAndCommissionBase(): void
+    {
+        putenv('RAZORPAY_MOCK_MODE=true'); $_ENV['RAZORPAY_MOCK_MODE'] = 'true'; $_SERVER['RAZORPAY_MOCK_MODE'] = 'true';
+        PlatformInvoiceService::$enableInTests = true;
+        $this->svc()->saveSettings(['auto_email' => '0'], 1);
+        $b = new BillingService();
+        $o = $b->createOrder(1, 'growth', 'monthly');
+        $this->assertSame([399_900, 71_982, 471_882], [$o['taxable'], $o['gst'], $o['amount']]);
+        $b->verifyPayment(1, $o['order_id'], 'pay_FLOW1', 'sig', 'growth', 'monthly');
+        $inv = db_connect()->table('platform_invoices')->get()->getRowArray();
+        $this->assertSame([471_882, 399_900, 'exclusive'], [(int) $inv['total'], (int) $inv['taxable_value'], $inv['price_basis']], 'the invoice total is exactly what Razorpay charged');
+        putenv('RAZORPAY_MOCK_MODE'); unset($_ENV['RAZORPAY_MOCK_MODE'], $_SERVER['RAZORPAY_MOCK_MODE']);
     }
 
     // ---- wiring into payments -----------------------------------------------------------------------------------------------------------------------

@@ -133,7 +133,9 @@ class BillingController extends ResourceController
             catch (\DomainException $e) { if ($codeError === null || str_contains($codeError, 'not valid for this plan')) { $codeError = $e->getMessage(); } $q = $offers->quote($tenantId, $plan, $billing, $list, null); }   // keep the most specific reason ("already used" beats the generic one)
             $codeApplied = $codeApplied || $q['source'] === 'coupon';
             $notice ??= $q['notice'];
-            $plans[$plan] = ['list_paise' => $q['list_paise'], 'charged_paise' => $q['charged_paise'], 'discount_paise' => $q['discount_paise'], 'source' => $q['source'], 'label' => $q['label'], 'continuing' => $q['continuing']];
+            $g = \App\Services\Billing\PlatformInvoiceService::gstOn((int) $q['charged_paise']);   // prices exclude GST: what the customer actually pays is the price plus GST
+            $plans[$plan] = ['list_paise' => $q['list_paise'], 'charged_paise' => $q['charged_paise'], 'discount_paise' => $q['discount_paise'], 'source' => $q['source'], 'label' => $q['label'], 'continuing' => $q['continuing'],
+                'gst_rate' => $g['rate'], 'gst_paise' => $g['gst'], 'payable_paise' => $g['total']];
         }
         return $this->respond(['success' => true, 'data' => ['billing' => $billing, 'plans' => $plans,
             'code' => $code === '' ? null : ['code' => \App\Services\Billing\OfferService::normalizeCode($code), 'applied' => $codeApplied, 'message' => $codeApplied ? null : ($codeError ?? $notice)]]]);

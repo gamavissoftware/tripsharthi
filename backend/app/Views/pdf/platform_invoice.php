@@ -59,7 +59,9 @@ $tax = $doc['cgst'] + $doc['sgst'] + $doc['igst'];
   <td style="width:55%; padding-right:14px">
     <div class="eyebrow">Amount in words</div>
     <div class="bold" style="margin:2px 0 8px"><?= $e($doc['words']) ?></div>
-    <div class="tiny muted" style="border-left:2px solid #0a6cc4; padding-left:7px">The amount charged is inclusive of GST at <?= $e($rate) ?>%. Tax is shown above the taxable value for your input-tax-credit records.</div>
+    <div class="tiny muted" style="border-left:2px solid #0a6cc4; padding-left:7px"><?= ($doc['basis'] ?? 'inclusive') === 'exclusive'
+      ? 'GST at ' . $e($rate) . '% is charged in addition to the plan price.'
+      : 'The amount received is inclusive of GST at ' . $e($rate) . '%.' ?> Tax is shown separately for your input-tax-credit records.</div>
   </td>
   <td>
     <table class="sum">

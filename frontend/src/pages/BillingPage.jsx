@@ -236,6 +236,9 @@ function UsageBar({ icon, label, current, limit, color }) {
 }
 
 // ── Plan Card ─────────────────────────────────────────────────────────────
+/** Rupees with paise, for amounts that include GST ("₹4,718.82"). */
+const fmtPay = (paise) => '\u20B9' + (Number(paise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
 function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer }) {
   const isCurrent = currentPlan === plan.key
   const price = isAnnual ? plan.annual : plan.monthly
@@ -299,12 +302,15 @@ function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer
           <span style={{ fontSize:32, fontWeight:900, color: plan.color, lineHeight:1 }}>
             {fmtINR(shownPrice)}
           </span>
-          <span style={{ fontSize:13, color:'#9ca3af', marginBottom:4 }}>/mo</span>
+          <span style={{ fontSize:13, color:'#9ca3af', marginBottom:4 }}>/mo + GST</span>
         </div>
+        {offer?.payable_paise > 0 && (
+          <div style={{ fontSize:12, color:'#374151', marginTop:5 }}>You pay <b>{fmtPay(offer.payable_paise)}</b> {isAnnual ? 'for the year' : 'per month'} including {offer.gst_rate}% GST ({fmtPay(offer.gst_paise)})</div>
+        )}
         {hasOffer && (
           <div style={{ marginTop:6 }}>
             <span style={{ background:'linear-gradient(135deg,#fef3c7,#fde68a)', color:'#92400e', fontSize:11, fontWeight:800, padding:'.15rem .55rem', borderRadius:999 }}>{offer.label}</span>
-            <div style={{ fontSize:12, color:'#374151', marginTop:5 }}>You pay <b>{fmtINR(dueToday)}</b> {isAnnual ? 'today for the year' : 'today'}{offer.continuing ? ' (your code continues)' : ''}</div>
+            <div style={{ fontSize:12, color:'#374151', marginTop:5 }}>{isAnnual ? 'Price today for the year' : 'Price today'}: <b>{fmtINR(dueToday)}</b> + GST{offer.continuing ? ' (your code continues)' : ''}</div>
           </div>
         )}
         {isAnnual && (
@@ -555,7 +561,7 @@ function BillingHistory({ rows }) {
                   <td style={{ padding:'.65rem .6rem', fontWeight:600, color:'#111827', textTransform:'capitalize' }}>{r.plan}</td>
                   <td style={{ padding:'.65rem .6rem', color:'#6b7280', textTransform:'capitalize' }}>{r.cycle}</td>
                   <td style={{ padding:'.65rem .6rem', color:'#111827', fontWeight:700, textAlign:'right', fontVariantNumeric:'tabular-nums', whiteSpace:'nowrap' }}>
-                    {fmtINR(r.amount_inr)}{r.cycle === 'annual' ? '/yr' : '/mo'}
+                    {r.amount_paise ? fmtPay(r.amount_paise) : fmtINR(r.amount_inr)}{r.cycle === 'annual' ? '/yr' : '/mo'}
                     {r.estimated && <span style={{ marginLeft:5, fontSize:10.5, fontWeight:600, color:'#9ca3af', fontStyle:'italic' }}>est.</span>}
                   </td>
                   <td style={{ padding:'.65rem .6rem' }}>
@@ -802,7 +808,7 @@ function BillingPanel() {
               {currentPlan === 'free' ? 'Choose a Plan' : 'Switch Plan'}
             </div>
             <div style={{ fontSize:13, color:'#6b7280', marginTop:3 }}>
-              All plans include WhatsApp Cloud API + flow automation · prices include GST, a tax invoice is e-mailed with every payment
+              All plans include WhatsApp Cloud API + flow automation · prices exclude GST (added at checkout); a GST tax invoice is e-mailed with every payment
             </div>
           </div>
           {/* Monthly / Annual toggle */}

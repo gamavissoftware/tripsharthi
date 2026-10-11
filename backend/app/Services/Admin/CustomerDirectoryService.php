@@ -122,7 +122,7 @@ final class CustomerDirectoryService
         $contacts = $count('contacts'); $trips = $count('trips'); $bookings = $count('bookings');
 
         $active = [];
-        foreach ($db->query("SELECT id, tenant_id, plan, amount_paise, billing_cycle, current_period_end, razorpay_sub_id FROM subscriptions WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end >= ?) ORDER BY id", [$nowS])->getResultArray() as $s) { $active[(int) $s['tenant_id']] = $s; }
+        foreach ($db->query("SELECT id, tenant_id, plan, amount_paise, taxable_paise, billing_cycle, current_period_end, razorpay_sub_id FROM subscriptions WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end >= ?) ORDER BY id", [$nowS])->getResultArray() as $s) { $active[(int) $s['tenant_id']] = $s; }
         $lastStatus = array_column($db->query('SELECT tenant_id, status FROM subscriptions WHERE id IN (SELECT MAX(id) FROM subscriptions GROUP BY tenant_id)')->getResultArray(), 'status', 'tenant_id');
         $life = array_map('intval', array_column($db->query("SELECT tenant_id, SUM(amount_paise) s FROM subscriptions WHERE amount_paise > 0 AND status IN ('active','cancelled','downgraded') GROUP BY tenant_id")->getResultArray(), 's', 'tenant_id'));
         $lastPay = [];
@@ -143,7 +143,9 @@ final class CustomerDirectoryService
             $lastLogin = $users[$id]['last_login'] ?? null; $lastTs = $lastLogin ? strtotime($lastLogin) : null;
             $lifetime = (int) ($life[$id] ?? 0);
 
-            $amount = $a ? (int) $a['amount_paise'] : 0; $manual = $a && str_starts_with((string) $a['razorpay_sub_id'], PlatformAdminService::MANUAL_PREFIX);
+            $amount = $a ? (int) ($a["taxable_paise"] ?? $a["amount_paise"]) : 0; 
+            // ^ the price WITHOUT GST: this is the customer's revenue / MRR
+            $manual = $a && str_starts_with((string) $a['razorpay_sub_id'], PlatformAdminService::MANUAL_PREFIX);
             $state = $a ? ($amount > 0 ? 'paying' : 'complimentary') : (($lastStatus[$id] ?? '') === 'halted' ? 'halted' : ($lifetime > 0 ? 'lapsed' : 'free'));
             $ends = $a && $a['current_period_end'] ? strtotime((string) $a['current_period_end']) : null;
             $label = match ($state) {

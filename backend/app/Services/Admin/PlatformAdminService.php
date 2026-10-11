@@ -23,7 +23,7 @@ final class PlatformAdminService
         $one = static fn (string $sql, array $b = []) => $db->query($sql, $b)->getRowArray();
         $byPlan = array_fill_keys(self::PLANS, 0); $byStatus = ['active' => 0, 'suspended' => 0, 'cancelled' => 0];
         foreach ($db->query('SELECT plan, status, COUNT(*) n FROM tenants WHERE deleted_at IS NULL GROUP BY plan, status')->getResultArray() as $r) { $byPlan[$r['plan']] += (int) $r['n']; $byStatus[$r['status']] += (int) $r['n']; }
-        $mrr = $one("SELECT COALESCE(SUM(CASE WHEN billing_cycle = 'annual' THEN amount_paise / 12 ELSE amount_paise END), 0) m, COUNT(*) n FROM subscriptions WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end >= ?) AND amount_paise > 0", [$now]);
+        $mrr = $one("SELECT COALESCE(SUM(CASE WHEN billing_cycle = 'annual' THEN COALESCE(taxable_paise, amount_paise) / 12 ELSE COALESCE(taxable_paise, amount_paise) END), 0) m, COUNT(*) n FROM subscriptions WHERE status = 'active' AND (current_period_end IS NULL OR current_period_end >= ?) AND amount_paise > 0", [$now]);
         $comp = $one("SELECT COUNT(*) n FROM subscriptions WHERE status = 'active' AND amount_paise = 0 AND plan <> 'free' AND (current_period_end IS NULL OR current_period_end >= ?)", [$now]);
         $soon = $db->query("SELECT s.id, s.tenant_id, t.name, s.plan, s.current_period_end FROM subscriptions s JOIN tenants t ON t.id = s.tenant_id WHERE s.status = 'active' AND s.current_period_end BETWEEN ? AND ? ORDER BY s.current_period_end LIMIT 10", [$now, date('Y-m-d H:i:s', time() + 7 * 86400)])->getResultArray();
         $halted = (int) $one("SELECT COUNT(*) n FROM subscriptions WHERE status = 'halted'")['n'];

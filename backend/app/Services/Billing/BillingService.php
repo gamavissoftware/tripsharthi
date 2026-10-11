@@ -72,7 +72,9 @@ class BillingService
         $listPaise   = $this->resolveAmountInr($plan, $billingType) * 100;
         $offers      = new OfferService();
         $quote       = $offers->quote($tenantId, $plan, $billingType, $listPaise, $coupon);   // \DomainException = a typed code that cannot be used
-        $amountPaise = $quote['charged_paise'];                                                // Razorpay uses the smallest currency unit
+        // Plan prices EXCLUDE GST: the customer pays the (offer-adjusted) price PLUS GST. Offers discount the price, never the tax.
+        $gst         = PlatformInvoiceService::gstOn((int) $quote['charged_paise']);
+        $amountPaise = $gst['total'];                                                          // what Razorpay charges (smallest currency unit)
         $amountInr   = (int) round($amountPaise / 100);
 
         $periodDays = ($billingType === 'annual') ? 365 : 30;
@@ -113,6 +115,9 @@ class BillingService
             'razorpay_sub_id' => $orderId,   // order_id stored here until payment verified
             'plan'            => $plan,
             'amount_paise'    => $amountPaise,
+            'taxable_paise'   => $gst['taxable'],
+            'gst_paise'       => $gst['gst'],
+            'gst_rate'        => $gst['rate'],
             'billing_cycle'   => $billingType,
             'status'          => 'created',
             'created_at'      => date('Y-m-d H:i:s'),
@@ -132,6 +137,9 @@ class BillingService
             'description'  => $note,
             'mock'         => $this->isMockMode(),
             'list_amount'  => $quote['list_paise'],
+            'taxable'      => $gst['taxable'],       // price before GST (after any offer)
+            'gst'          => $gst['gst'],
+            'gst_rate'     => $gst['rate'],
             'discount'     => $quote['discount_paise'],
             'offer_label'  => $quote['label'],
             'coupon_code'  => $quote['coupon_code'],
@@ -259,7 +267,7 @@ class BillingService
         catch (\Throwable $e) { log_message('critical', "BillingService: could not record the coupon redemption for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
 
         // Partner program: a referred customer's verified payment earns the partner a commission. Same rule - never undo a payment over it.
-        try { (new \App\Services\Partner\PartnerService())->recordPayment($tenantId, (int) $order['id'], $amountPaise, $plan, $cycle); }
+        try { (new \App\Services\Partner\PartnerService())->recordPayment($tenantId, (int) $order['id'], ($order['taxable_paise'] ?? null) !== null ? (int) $order['taxable_paise'] : $amountPaise, $plan, $cycle); }   // commission on the price, never on the GST collected for the government
         catch (\Throwable $e) { log_message('critical', "BillingService: could not record the partner commission for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
 
         // GST tax invoice + e-mail to the owner (after the response). Same rule again: paperwork can never undo a payment (onPaid never throws).
@@ -435,7 +443,7 @@ class BillingService
 
             if ($hasRecorded) {
                 $cycle     = $row['billing_cycle'] ?: $this->inferCycle($row['current_period_start'] ?? null, $row['current_period_end'] ?? null);
-                $amountInr = (int) ((int) $row['amount_paise'] / 100);
+                $amountInr = (int) round((int) $row['amount_paise'] / 100);
             } else {
                 // Legacy row — reconstruct from period length + current list price.
                 $cycle     = $this->inferCycle($row['current_period_start'] ?? null, $row['current_period_end'] ?? null);
@@ -447,6 +455,8 @@ class BillingService
                 'status'       => $row['status'],
                 'cycle'        => $cycle,
                 'amount_inr'   => $amountInr,
+                'amount_paise' => $hasRecorded ? (int) $row['amount_paise'] : $amountInr * 100,
+                'gst_paise'    => ($row['gst_paise'] ?? null) !== null ? (int) $row['gst_paise'] : null,
                 'estimated'    => ! $hasRecorded,
                 'period_start' => $row['current_period_start'] ?? null,
                 'period_end'   => $row['current_period_end'] ?? null,

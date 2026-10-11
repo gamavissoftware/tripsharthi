@@ -188,10 +188,14 @@ final class OfferServiceTest extends CIUnitTestCase
     {
         $this->coupon();
         $order = (new BillingService())->createOrder(1, 'growth', 'monthly', 'SAVE20');
-        $this->assertSame(self::LIST - 79_980, $order['amount']);
-        $this->assertSame(79_980, $order['discount']);
+        $base = self::LIST - 79_980;                                     // the price after the offer, WITHOUT GST
+        $gst = (int) round($base * 0.18);                                // GST is charged on top of what the offer leaves
+        $this->assertSame($base + $gst, $order['amount'], 'the customer pays the discounted price PLUS GST');
+        $this->assertSame([$base, $gst], [$order['taxable'], $order['gst']]);
+        $this->assertSame(79_980, $order['discount'], 'the offer discounts the price, never the tax');
         $sub = db_connect()->table('subscriptions')->where('tenant_id', 1)->get()->getRowArray();
-        $this->assertSame(self::LIST - 79_980, (int) $sub['amount_paise'], 'the subscription row stores what was charged');
+        $this->assertSame($base + $gst, (int) $sub['amount_paise'], 'the subscription row stores what was charged');
+        $this->assertSame([$base, $gst], [(int) $sub['taxable_paise'], (int) $sub['gst_paise']], 'and how it splits');
         $r = db_connect()->table('coupon_redemptions')->get()->getRowArray();
         $this->assertSame(['pending', 79_980], [$r['status'], (int) $r['discount_paise']]);
         $this->assertSame(0, (int) db_connect()->table('coupons')->get()->getRowArray()['redeemed_count'], 'an unpaid order does not use up the code');
