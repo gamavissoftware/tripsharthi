@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -8,6 +8,7 @@ import AdminLoginPage from './AdminLoginPage'
 import AdminOverviewPage from '../pages/admin/AdminOverviewPage'
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage'
 import AdminAccessLogPage from '../pages/admin/AdminAccessLogPage'
+import AdminInvoicesPage from '../pages/admin/AdminInvoicesPage'
 import AdminSubscriptionsPage from '../pages/admin/AdminSubscriptionsPage'
 import AdminInboxPage from '../pages/admin/AdminInboxPage'
 import AdminOffersPage from '../pages/admin/AdminOffersPage'
@@ -28,6 +29,7 @@ const NAV = [
     { to: '/admin',               label: 'Overview',      icon: LayoutDashboard, end: true },
     { to: '/admin/customers',     label: 'Customers',     icon: Building2 },
     { to: '/admin/subscriptions', label: 'Subscriptions', icon: CreditCard },
+    { to: '/admin/invoices',      label: 'GST invoices',  icon: FileText },
     { to: '/admin/email',          label: 'Email marketing', icon: Mail },
     { to: '/admin/support',        label: 'Support',       icon: LifeBuoy },
     { to: '/admin/mail',           label: 'Mail server',   icon: Send },
@@ -86,6 +88,7 @@ function Shell({ user, onLogout }) {
           <Route path="/admin" element={<AdminOverviewPage />} />
           <Route path="/admin/customers" element={<AdminCustomersPage />} />
           <Route path="/admin/subscriptions" element={<AdminSubscriptionsPage />} />
+          <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
           <Route path="/admin/email" element={<AdminEmailPage />} />
           <Route path="/admin/email/new" element={<AdminEmailCampaignPage />} />
           <Route path="/admin/email/:id" element={<AdminEmailCampaignPage />} />

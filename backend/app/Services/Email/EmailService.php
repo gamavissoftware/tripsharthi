@@ -93,9 +93,11 @@ class EmailService
         string $htmlBody,
         string $textBody = '',
         ?string $replyTo = null,
-        array $headers = []
+        array $headers = [],
+        array $attachments = [],      // list of ['filename' => 'x.pdf', 'content' => <bytes>, 'mime' => 'application/pdf']
+        ?string $bcc = null
     ): bool {
-        if (self::$capture !== null) { (self::$capture)($to, $subject, $htmlBody, $textBody); return true; }
+        if (self::$capture !== null) { (self::$capture)($to, $subject, $htmlBody, $textBody, $attachments, $bcc); return true; }
         try {
             $email = self::makeEmailInstance();
 
@@ -117,6 +119,11 @@ class EmailService
 
             foreach ($headers as $name => $value) {
                 $email->setHeader((string) $name, str_replace(["\r", "\n"], '', (string) $value));
+            }
+
+            if ($bcc !== null && filter_var($bcc, FILTER_VALIDATE_EMAIL)) { $email->setBCC($bcc); }
+            foreach ($attachments as $a) {
+                $email->attach((string) $a['content'], 'attachment', (string) $a['filename'], (string) ($a['mime'] ?? 'application/octet-stream'));   // a buffer, not a path: the mime type is what tells CI4 so
             }
 
             $result = $email->send(false);

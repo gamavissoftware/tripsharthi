@@ -471,6 +471,17 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('tenants/(:num)/plan',        'Api\PlatformAdminController::setPlan/$1');
         $routes->post('tenants/(:num)/status',     'Api\PlatformAdminController::setStatus/$1');
         $routes->post('tenants/(:num)/impersonate', 'Api\AdminImpersonationController::start/$1');   // "log in as customer" (reason required, audited, visible to the customer)
+        // TripSarthi's own GST invoices (static paths first, then the numeric ones)
+        $routes->get('invoices',                   'Api\AdminInvoicesController::list');
+        $routes->get('invoices/summary',           'Api\AdminInvoicesController::summary');
+        $routes->get('invoices/export',            'Api\AdminInvoicesController::export');
+        $routes->get('invoices/bundle',            'Api\AdminInvoicesController::bundle');
+        $routes->get('invoices/missing',           'Api\AdminInvoicesController::missing');
+        $routes->post('invoices/issue-missing',    'Api\AdminInvoicesController::issueMissing');
+        $routes->get('invoices/settings',          'Api\AdminInvoicesController::settings');
+        $routes->put('invoices/settings',          'Api\AdminInvoicesController::saveSettings');
+        $routes->get('invoices/(:num)/pdf',        'Api\AdminInvoicesController::pdf/$1');
+        $routes->post('invoices/(:num)/resend',    'Api\AdminInvoicesController::resend/$1');
         $routes->get('impersonations',             'Api\AdminImpersonationController::list');
         $routes->post('impersonations/(:num)/end', 'Api\AdminImpersonationController::end/$1');
         $routes->get('subscriptions',              'Api\PlatformAdminController::subscriptions');
@@ -709,6 +720,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('history',          'Api\BillingController::history');
         $routes->post('create-order',    'Api\BillingController::createOrder');
         $routes->post('verify-payment',  'Api\BillingController::verifyPayment');
+        $routes->get('invoices',         'Api\BillingController::invoices');
+        $routes->get('invoices/(:num)/pdf', 'Api\BillingController::invoicePdf/$1');
     });
 
     // --- License (owner only — self_hosted; controller gates via FeatureGate) ---

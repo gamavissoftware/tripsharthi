@@ -220,4 +220,21 @@ class BillingController extends ResourceController
             'data'    => $history,
         ]);
     }
+
+    // ------------------------------------------------------------------
+    // GET /api/v1/billing/invoices  [owner]  - this workspace's TripSarthi GST invoices
+    // GET /api/v1/billing/invoices/:id/pdf
+    // ------------------------------------------------------------------
+    public function invoices(): ResponseInterface
+    {
+        return $this->respond(['success' => true, 'data' => (new \App\Services\Billing\PlatformInvoiceService())->forTenant(CurrentUser::tenantId())]);
+    }
+
+    public function invoicePdf($id = null): ResponseInterface
+    {
+        try { $f = (new \App\Services\Billing\PlatformInvoiceService())->pdf((int) $id, CurrentUser::tenantId()); }   // another workspace's id answers 404
+        catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => 'Invoice not found.'], 404); }
+        catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 409); }
+        return $this->response->setHeader('Content-Type', 'application/pdf')->setHeader('Content-Disposition', 'inline; filename="' . $f['filename'] . '"')->setHeader('X-Content-Type-Options', 'nosniff')->setBody($f['bytes']);
+    }
 }

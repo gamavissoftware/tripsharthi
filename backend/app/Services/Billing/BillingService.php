@@ -262,6 +262,9 @@ class BillingService
         try { (new \App\Services\Partner\PartnerService())->recordPayment($tenantId, (int) $order['id'], $amountPaise, $plan, $cycle); }
         catch (\Throwable $e) { log_message('critical', "BillingService: could not record the partner commission for tenant#{$tenantId} order row {$order['id']}: " . $e->getMessage()); }
 
+        // GST tax invoice + e-mail to the owner (after the response). Same rule again: paperwork can never undo a payment (onPaid never throws).
+        PlatformInvoiceService::onPaid((int) $order['id'], 'online');
+
         log_message('info', "BillingService: tenant#{$tenantId} activated plan={$plan} via payment={$paymentId}");
         return true;
     }

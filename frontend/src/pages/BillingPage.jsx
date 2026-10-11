@@ -3,6 +3,7 @@ import { billing as billingApi } from '../api/billing'
 import { analytics as analyticsApi } from '../api/analytics'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { openPdf } from '../api/client'
 import { Rocket, Zap, Crown, Check, AlertTriangle, Info, Users, User, Smartphone, CheckCircle2, XCircle, Clock, KeyRound, Sparkles, Briefcase, BarChart3, Boxes, Route } from 'lucide-react'
 
 // CRM plan-usage bars (Phase K2) — fetches its own data; renders nothing if empty.
@@ -490,6 +491,32 @@ const HISTORY_STATUS = {
   authenticated: { label:'Pending', bg:'#e0f2fe', color:'#0369a1' },
 }
 
+/** TripSarthi's GST tax invoices for this workspace (also e-mailed when each payment is made). */
+function BillingInvoices({ rows }) {
+  if (!rows || rows.length === 0) return null
+  const open = (r) => openPdf(`/billing/invoices/${r.id}/pdf`).catch(e => toast.error('Could not open the invoice', e.message))
+  return (
+    <div style={{ background:'#fff', border:'1px solid #e5e7eb', borderRadius:18, padding:'1.4rem 1.6rem', marginBottom:'1.5rem' }}>
+      <div style={{ fontSize:15, fontWeight:700, color:'#111827', marginBottom:'.3rem' }}>GST invoices</div>
+      <div style={{ fontSize:12.5, color:'#6b7280', marginBottom:'.9rem' }}>A tax invoice is e-mailed to you with every payment. To have your GSTIN printed on future invoices, add it under Settings &rarr; Business &amp; invoicing.</div>
+      <div style={{ overflowX:'auto' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13.5 }}>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.id} style={{ borderTop:'1px solid #f0f2f5' }}>
+                <td style={{ padding:'.6rem' }}><b>{r.number}</b><div style={{ fontSize:12, color:'#6b7280' }}>{new Date(r.issue_date).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}</div></td>
+                <td style={{ padding:'.6rem', color:'#374151' }}>{r.description}</td>
+                <td style={{ padding:'.6rem', textAlign:'right', fontWeight:700 }}>&#8377;{(r.total / 100).toLocaleString('en-IN', { minimumFractionDigits:2 })}</td>
+                <td style={{ padding:'.6rem', textAlign:'right' }}><button type="button" className="btn btn-ghost btn-sm" onClick={() => open(r)}>Download PDF</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 function BillingHistory({ rows }) {
   if (!rows || rows.length === 0) {
     return (
@@ -568,6 +595,7 @@ function BillingPanel() {
   const [analyticsData, setAnalyticsData] = useState(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
   const [history, setHistory]             = useState([])
+  const [invoices, setInvoices]           = useState([])
 
   const loadBilling = useCallback(async () => {
     setLoading(true); setError('')
@@ -578,6 +606,7 @@ function BillingPanel() {
       ])
       setBillingData(status)
       setHistory(hist?.data ?? [])
+      billingApi.invoices().then(r => setInvoices(r?.data ?? [])).catch(() => {})
     } catch (err) {
       setError(err.message ?? 'Failed to load billing.')
     } finally { setLoading(false) }
@@ -773,7 +802,7 @@ function BillingPanel() {
               {currentPlan === 'free' ? 'Choose a Plan' : 'Switch Plan'}
             </div>
             <div style={{ fontSize:13, color:'#6b7280', marginTop:3 }}>
-              All plans include WhatsApp Cloud API + flow automation
+              All plans include WhatsApp Cloud API + flow automation · prices include GST, a tax invoice is e-mailed with every payment
             </div>
           </div>
           {/* Monthly / Annual toggle */}
@@ -838,6 +867,7 @@ function BillingPanel() {
       </div>
 
       {/* Billing history */}
+      <BillingInvoices rows={invoices} />
       <BillingHistory rows={history} />
 
       {/* Cancel modal */}

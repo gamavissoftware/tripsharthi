@@ -8,6 +8,9 @@ export const billing = {
   billingHistory: () =>
     api.get('/billing/history'),
 
+  invoices: () =>
+    api.get('/billing/invoices'),
+
   subscribe: (plan) =>
     api.post('/billing/subscribe', { plan }),
 

@@ -98,8 +98,10 @@ final class PlatformAdminService
                 'amount_paise' => (int) round($amountRupees * 100), 'billing_cycle' => $days >= 360 ? 'annual' : 'monthly', 'status' => 'active', 'current_period_start' => $now, 'current_period_end' => date('Y-m-d H:i:s', time() + $days * 86400), 'created_at' => $now, 'updated_at' => $now]);
         }
         $db->table('tenants')->where('id', $tenantId)->update(['plan' => $plan, 'updated_at' => $now]);
+        $newSubId = $plan !== 'free' ? (int) $db->query('SELECT MAX(id) m FROM subscriptions WHERE tenant_id = ?', [$tenantId])->getRowArray()['m'] : 0;
         $db->transComplete();
         if (! $db->transStatus()) { throw new \RuntimeException('Could not change the plan.'); }
+        if ($newSubId > 0 && $amountRupees > 0) { \App\Services\Billing\PlatformInvoiceService::onPaid($newSubId, 'offline'); }   // money received by hand still needs a GST invoice
         AuditLogger::log('admin.tenant.plan', 'tenant', $tenantId, ['plan' => $t['plan']], ['plan' => $plan, 'days' => $plan === 'free' ? 0 : $days, 'amount_rs' => $amountRupees, 'note' => mb_substr($note, 0, 200), 'forced' => $force && $live > 0], $tenantId, $adminId);
         return $this->tenant($tenantId);
     }
