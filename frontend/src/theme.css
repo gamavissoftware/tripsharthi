@@ -95,3 +95,10 @@
 .cx .ps-int-card:hover { box-shadow: 0 8px 22px rgba(10,31,68,.09); border-color: #bcdcf5 !important; }
 .cx .ps-int-soon { background: #f7fafd; }
 .cx code { background: #eef5fd; color: #074a8c; border-radius: 6px; }
+
+/* Remaining customer pages: lists, tabs, tables */
+.cx .dep-card { transition: box-shadow .15s, border-color .15s; }
+.cx .dep-card:hover { box-shadow: 0 8px 22px rgba(10,31,68,.09); border-color: #bcdcf5; }
+.cx .page-title { letter-spacing: -.3px; }
+.cx .card-body table { max-width: 100%; }
+.cx .btn-sm.btn-ghost:hover { background: #eef5fd; color: var(--primary); border-color: #bcdcf5; }

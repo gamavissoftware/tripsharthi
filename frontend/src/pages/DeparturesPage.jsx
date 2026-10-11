@@ -102,15 +102,15 @@ export default function DeparturesPage() {
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}
       {list && list.length === 0 && <div className="card card-body" style={{ color: 'var(--text-3)' }}>No departures here yet.</div>}
       {list && list.map(d => { const [bg, fg, label] = STATE[d.state] || STATE.open; const pct = d.total_seats ? Math.round(((d.confirmed + d.held) / d.total_seats) * 100) : 0; return (
-        <div key={d.id} className="card card-body" style={{ marginBottom: 12 }}>
+        <div key={d.id} className="card card-body dep-card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             <div><b>{d.title}</b> <small style={{ color: 'var(--text-3)' }}>{d.code} · {d.start_date} → {d.end_date}</small>{' '}
               <span style={{ background: bg, color: fg, padding: '1px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 700 }}>{label}</span>
               {d.at_risk && <span style={{ background: '#fee2e2', color: '#b91c1c', padding: '1px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 700, marginLeft: 6 }}>⚠ below minimum ({d.confirmed}/{d.min_pax})</span>}</div>
             <div style={{ fontWeight: 700 }}>{inr(d.price_pax)} <small style={{ fontWeight: 400, color: 'var(--text-3)' }}>/ person + GST</small></div>
           </div>
-          <div style={{ height: 8, background: 'var(--border)', borderRadius: 999, margin: '10px 0 6px', overflow: 'hidden', display: 'flex' }}>
-            <div style={{ width: `${(d.confirmed / d.total_seats) * 100}%`, background: 'var(--success, #16a34a)' }} /><div style={{ width: `${(d.held / d.total_seats) * 100}%`, background: '#f59e0b' }} /></div>
+          <div style={{ height: 8, background: '#e6eef8', borderRadius: 999, margin: '10px 0 6px', overflow: 'hidden', display: 'flex' }}>
+            <div style={{ width: `${(d.confirmed / d.total_seats) * 100}%`, background: 'linear-gradient(90deg,#12a89e,#0a6cc4)' }} /><div style={{ width: `${(d.held / d.total_seats) * 100}%`, background: '#f59e0b' }} /></div>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', fontSize: 13 }}>
             <span>{d.confirmed} confirmed · {d.held} held · <b>{d.available} available</b> of {d.total_seats} ({pct}% sold/held)</span>
             <span style={{ display: 'flex', gap: 6 }}>
