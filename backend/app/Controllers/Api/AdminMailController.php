@@ -24,7 +24,7 @@ class AdminMailController extends TravelBaseController
         return $e;
     }
 
-    public function show()  { return $this->run(fn () => PlatformMail::status()); }
+    public function current() { return $this->run(fn () => PlatformMail::status()); }
     public function save()
     {
         $b = $this->body();

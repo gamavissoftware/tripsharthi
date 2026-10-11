@@ -486,7 +486,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('support/(:num)/reply',                      'Api\AdminSupportController::reply/$1');
         $routes->post('support/(:num)/note',                       'Api\AdminSupportController::note/$1');
         $routes->put('support/(:num)',                             'Api\AdminSupportController::update/$1');
-        $routes->get('mail',                                       'Api\AdminMailController::show');
+        $routes->get('mail',                                       'Api\AdminMailController::current');
         $routes->put('mail',                                       'Api\AdminMailController::save');
         $routes->post('mail/test',                                 'Api\AdminMailController::test');
         $routes->delete('mail',                                    'Api\AdminMailController::clear');
