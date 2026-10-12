@@ -3,6 +3,8 @@ import { waba as wabaApi } from '../api/waba'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import { Copy, MessageCircle, CheckCircle2, XCircle, FlaskConical, Settings2, AlertTriangle, Phone } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Plug as IcPlug, Smartphone as IcPhone, Gauge as IcGauge, FileText as IcFile, Clock as IcClock } from 'lucide-react'
 
 const PROVIDER_COLORS = {
   meta:      '#25D366',
@@ -385,6 +387,13 @@ export default function WabaPage() {
   const [testResult, setTestResult]             = useState(null)
   const [testLoading, setTestLoading]           = useState(false)
   const [connectResult, setConnectResult]       = useState(null)
+  const [tplCounts, setTplCounts]               = useState(null)   // { approved, pending, rejected, total } for the status tiles
+  useEffect(() => {
+    api.get('/templates').then(r => {
+      const rows = r.data ?? []
+      setTplCounts({ total: rows.length, approved: rows.filter(t => t.meta_status === 'approved').length, pending: rows.filter(t => t.meta_status === 'pending').length, rejected: rows.filter(t => t.meta_status === 'rejected').length })
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     loadAll()
@@ -537,6 +546,21 @@ export default function WabaPage() {
           <div style={{ color: '#94a3b8', fontSize: '.95rem' }}>Loading…</div>
         </div>
       )}
+
+      {!loading && (() => {
+        const rank = { RED: 3, YELLOW: 2, GREEN: 1 }
+        const worst = [...phoneNumbers].map(p => String(p.quality_rating || '').toUpperCase()).sort((a, b) => (rank[b] || 0) - (rank[a] || 0))[0] || ''
+        const qTone = worst === 'RED' ? '#e5484d' : worst === 'YELLOW' ? '#f59e0b' : worst === 'GREEN' ? '#1a9d57' : '#8393ad'
+        const prov = account?.provider ? String(account.provider) : ''
+        return (
+          <StatRow>
+            <StatTile icon={IcPlug} tone={isConnected ? '#1a9d57' : '#8393ad'} label="Connection" value={isConnected ? 'Connected' : 'Not connected'} sub={isConnected ? [prov && prov.charAt(0).toUpperCase() + prov.slice(1), account?.display_name].filter(Boolean).join(' · ') : 'connect below to start'} />
+            <StatTile icon={IcPhone} tone="#0a6cc4" label="Numbers" value={isConnected ? phoneNumbers.length : '—'} sub={phoneNumbers.find(p => p.is_default)?.display_number ? `default ${phoneNumbers.find(p => p.is_default).display_number}` : undefined} />
+            <StatTile icon={IcGauge} tone={qTone} label="Number quality" value={worst ? worst.charAt(0) + worst.slice(1).toLowerCase() : '—'} accent={worst === 'RED' ? 'var(--danger)' : undefined} sub={worst === 'YELLOW' || worst === 'RED' ? 'marketing is held back' : worst === 'GREEN' ? 'healthy' : 'from Meta'} />
+            <StatTile icon={IcFile} tone="#12a89e" label="Approved templates" value={tplCounts ? tplCounts.approved : '…'} sub={tplCounts ? `${tplCounts.total} in all` : undefined} />
+            <StatTile icon={IcClock} tone={tplCounts?.rejected ? '#e5484d' : '#f98f26'} label="Waiting / rejected" value={tplCounts ? `${tplCounts.pending} / ${tplCounts.rejected}` : '…'} accent={tplCounts?.rejected ? 'var(--danger)' : undefined} sub="pending · rejected by Meta" />
+          </StatRow>)
+      })()}
 
       {!loading && (
         <>

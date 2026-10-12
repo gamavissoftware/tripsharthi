@@ -5,6 +5,8 @@ import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { openPdf } from '../api/client'
 import { Rocket, Zap, Crown, Check, AlertTriangle, Info, Users, User, Smartphone, CheckCircle2, XCircle, Clock, KeyRound, Sparkles, Briefcase, BarChart3, Boxes, Route } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Crown as IcCrown, CalendarClock as IcCal, Users as IcUsers, User as IcUser, Smartphone as IcPhone, Receipt as IcReceipt } from 'lucide-react'
 
 // CRM plan-usage bars (Phase K2) — fetches its own data; renders nothing if empty.
 function CrmUsageBars() {
@@ -774,6 +776,24 @@ function BillingPanel() {
           <AlertTriangle size={15} strokeWidth={2} style={{ flexShrink:0, marginTop:1 }} /> {error || actionError}
         </div>
       )}
+
+      {(() => {
+        const unl = (n) => n >= 999999
+        const pctOf = (cur, lim) => (cur == null || unl(lim) || !lim ? null : Math.round(cur / lim * 100))
+        const dayLeft = isLiveSub && sub.current_period_end ? Math.ceil((new Date(String(sub.current_period_end).replace(' ', 'T') + 'Z').getTime() - new Date().getTime()) / 86400000) : null
+        const use = (cur, lim) => cur == null ? '…' : `${cur.toLocaleString('en-IN')} / ${unl(lim) ? '∞' : lim.toLocaleString('en-IN')}`
+        const hot = (cur, lim) => (pctOf(cur, lim) ?? 0) >= 90
+        const paid = history.find(h => Number(h.amount_paise) > 0)
+        return (
+          <StatRow>
+            <StatTile icon={IcCrown} tone="#6366f1" label="Plan" value={currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} sub={subStatus === 'free' ? 'free plan' : subStatus} />
+            <StatTile icon={IcCal} tone={dayLeft !== null && dayLeft <= 7 ? '#e5484d' : '#0a6cc4'} label={subStatus === 'cancelled' ? 'Ends in' : 'Renews in'} value={dayLeft === null ? '—' : dayLeft <= 0 ? 'today' : `${dayLeft} day${dayLeft === 1 ? '' : 's'}`} accent={dayLeft !== null && dayLeft <= 7 ? 'var(--danger)' : undefined} sub={renewsOn ?? 'no paid plan running'} />
+            <StatTile icon={IcUsers} tone="#0a6cc4" label="Contacts" value={use(contacts, limits.contacts)} accent={hot(contacts, limits.contacts) ? 'var(--danger)' : undefined} sub={pctOf(contacts, limits.contacts) !== null ? `${pctOf(contacts, limits.contacts)}% used` : undefined} />
+            <StatTile icon={IcUser} tone="#0891b2" label="Team seats" value={use(agents, limits.agents)} accent={hot(agents, limits.agents) ? 'var(--danger)' : undefined} />
+            <StatTile icon={IcPhone} tone="#059669" label="WhatsApp numbers" value={use(waba, limits.waba)} />
+            <StatTile icon={IcReceipt} tone="#f98f26" label="GST invoices" value={invoices.length} sub={paid ? `last payment ₹${Math.round(Number(paid.amount_paise) / 100).toLocaleString('en-IN')}` : 'none yet'} />
+          </StatRow>)
+      })()}
 
       {/* Current plan hero */}
       <CurrentPlanHero

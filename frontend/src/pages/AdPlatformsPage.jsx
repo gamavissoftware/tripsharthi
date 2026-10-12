@@ -5,6 +5,8 @@ import { toast } from '../components/Toast'
 import { metaAds } from '../api/metaAds'
 import { social as socialApi } from '../api/social'
 import { Link } from 'react-router-dom'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Share2 as IcMeta, Search as IcGoogle, Send as IcSend, PackageCheck as IcDelivery } from 'lucide-react'
 
 const EVENT_LABEL = { Lead: 'Enquiry received', QuoteSent: 'Quote sent', Purchase: 'Booking confirmed (with value)' }
 const DELIVERY = { sent: ['#dcfce7', '#15803d'], pending: ['#fef9c3', '#a16207'], failed: ['#fee2e2', '#b91c1c'], skipped: ['#f1f5f9', '#475569'] }
@@ -212,6 +214,8 @@ export default function AdPlatformsPage() {
   const nav = useNavigate()
   const reload = useCallback(() => travel.adPlatforms().then(setSt).catch(e => setErr(e.message)), [])
   useEffect(() => { reload() }, [reload])
+  const [deliveryTile, setDeliveryTile] = useState({})
+  useEffect(() => { travel.deliveries().then(d => setDeliveryTile({ delivered: d.counts?.sent || 0, failed: (d.counts?.failed || 0) + (d.counts?.skipped || 0) })).catch(() => {}) }, [])
 
   // Back from Google's consent screen: #/settings/ads?google_connected=1 | ?google_error=...
   useEffect(() => {
@@ -230,6 +234,12 @@ export default function AdPlatformsPage() {
   return (
     <div className="page page-form">
       <div className="page-header"><h1 className="page-title">Ad platforms</h1></div>
+      <StatRow>
+        <StatTile icon={IcMeta} tone={st.meta.connected ? '#1a9d57' : '#8393ad'} label="Meta" value={st.meta.connected ? 'Connected' : 'Not connected'} sub={st.meta.connected ? (st.meta.dataset_name || `dataset ${st.meta.dataset_id}`) : 'conversion feedback off'} />
+        <StatTile icon={IcGoogle} tone={st.google.connected && st.google.customer_id ? '#1a9d57' : st.google.connected ? '#f59e0b' : '#8393ad'} label="Google Ads" value={st.google.connected ? (st.google.customer_id ? 'Connected' : 'Pick an account') : st.google.server_configured === false ? 'Not available' : 'Not connected'} sub={st.google.customer_id ? `account ${st.google.customer_id}` : undefined} />
+        <StatTile icon={IcSend} tone="#0a6cc4" label="Events we report" value={(st.event_names || []).length} sub={(st.event_names || []).join(' · ')} />
+        <StatTile icon={IcDelivery} tone={deliveryTile.failed ? '#e5484d' : '#12a89e'} label="Delivered · recent" value={deliveryTile.delivered ?? '…'} accent={deliveryTile.failed ? 'var(--danger)' : undefined} sub={deliveryTile.failed ? `${deliveryTile.failed} failed or skipped — see the log below` : 'from the delivery log'} />
+      </StatRow>
       <div className="card card-body" style={{ marginBottom: 16 }}>
         <p style={{ margin: 0 }}>Connect your own Meta and Google accounts so TripSarthi can report <b>enquiries, quotes and confirmed bookings</b> back to the ad platforms. Your credentials are encrypted and never shown again after saving. Lead capture from Meta and Google lead forms is set up under <a href="#/settings/integrations">Integrations</a>.</p>
       </div>
