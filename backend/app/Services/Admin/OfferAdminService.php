@@ -124,10 +124,13 @@ final class OfferAdminService
     public function promotions(): array
     {
         $now = $this->stamp();
-        return array_map(function (array $p) use ($now) {
+        $agg = [];
+        foreach (db_connect()->query("SELECT promotion_id, COUNT(*) payments, COALESCE(SUM(discount_paise), 0) discount, COALESCE(SUM(COALESCE(taxable_paise, amount_paise)), 0) revenue FROM subscriptions WHERE promotion_id IS NOT NULL AND status IN ('active','cancelled','downgraded') GROUP BY promotion_id")->getResultArray() as $r) { $agg[(int) $r['promotion_id']] = $r; }
+        return array_map(function (array $p) use ($now, $agg) {
             $state = (int) $p['active'] !== 1 ? 'inactive' : ($p['ends_at'] <= $now ? 'ended' : ($p['starts_at'] > $now ? 'scheduled' : 'live'));
             return ['id' => (int) $p['id'], 'name' => $p['name'], 'badge' => $p['badge'], 'percent' => (int) $p['percent'], 'plans' => $p['plans'] ? json_decode($p['plans'], true) : [], 'cycle' => $p['cycle'],
-                'starts_at' => $p['starts_at'], 'ends_at' => $p['ends_at'], 'active' => (bool) $p['active'], 'state' => $state];
+                'starts_at' => $p['starts_at'], 'ends_at' => $p['ends_at'], 'active' => (bool) $p['active'], 'state' => $state,
+                'payments' => (int) ($agg[(int) $p['id']]['payments'] ?? 0), 'discount_paise' => (int) ($agg[(int) $p['id']]['discount'] ?? 0), 'revenue_paise' => (int) ($agg[(int) $p['id']]['revenue'] ?? 0)];
         }, db_connect()->table('promotions')->orderBy('id', 'DESC')->get()->getResultArray());
     }
 
@@ -150,6 +153,35 @@ final class OfferAdminService
         if ($existing === null) { $db->table('promotions')->insert($row + ['created_by' => $adminId, 'created_at' => $this->stamp()]); $id = (int) $db->insertID(); AuditLogger::log('admin.promotion.create', 'promotion', $id, null, ['name' => $name, 'percent' => $percent], $this->tid($adminId), $adminId); }
         else { $db->table('promotions')->where('id', $id)->update($row); AuditLogger::log('admin.promotion.update', 'promotion', $id, null, ['name' => $name, 'percent' => $percent, 'active' => $row['active']], $this->tid($adminId), $adminId); }
         return array_values(array_filter($this->promotions(), fn ($p) => $p['id'] === $id))[0];
+    }
+
+    // ---- the page's headline numbers ---------------------------------------------------------------------------------------------------------
+
+    /**
+     * What the offers have done: how many are live, how many paid orders used one in the last 30 days and what they cost, how many free days were
+     * given, plus the list prices (so the form can preview what a customer would pay). Revenue figures are the price WITHOUT GST.
+     */
+    public function summary(): array
+    {
+        $db = db_connect(); $now = $this->ts(); $since = $this->stamp($now - 30 * 86400);
+        $states = ['live' => 0, 'scheduled' => 0, 'used_up' => 0, 'expired' => 0, 'inactive' => 0];
+        foreach ($this->coupons() as $c) { $states[$c['state']] = ($states[$c['state']] ?? 0) + 1; }
+        $promoLive = 0; $promoTotal = 0; foreach ($this->promotions() as $p) { $promoTotal++; if ($p['state'] === 'live') { $promoLive++; } }
+        $one = static fn (string $sql, array $b = []) => $db->query($sql, $b)->getRowArray();
+        $cp30 = $one("SELECT COUNT(*) n, COALESCE(SUM(discount_paise), 0) d, COALESCE(SUM(charged_paise), 0) r FROM coupon_redemptions WHERE status = 'applied' AND applied_at >= ?", [$since]);
+        $cpAll = $one("SELECT COUNT(*) n, COALESCE(SUM(discount_paise), 0) d FROM coupon_redemptions WHERE status = 'applied'");
+        $pr30 = $one("SELECT COUNT(*) n, COALESCE(SUM(discount_paise), 0) d, COALESCE(SUM(COALESCE(taxable_paise, amount_paise)), 0) r FROM subscriptions WHERE promotion_id IS NOT NULL AND status IN ('active','cancelled','downgraded') AND COALESCE(current_period_start, created_at) >= ?", [$since]);
+        $prAll = $one("SELECT COUNT(*) n, COALESCE(SUM(discount_paise), 0) d FROM subscriptions WHERE promotion_id IS NOT NULL AND status IN ('active','cancelled','downgraded')");
+        $paid30 = (int) $one("SELECT COUNT(*) n FROM subscriptions WHERE amount_paise > 0 AND status IN ('active','cancelled','downgraded') AND COALESCE(current_period_start, created_at) >= ?", [$since])['n'];
+        $gr = $one('SELECT COUNT(*) n, COALESCE(SUM(days), 0) d FROM offer_grants WHERE created_at >= ?', [$since]);
+        $billing = new \App\Services\Billing\BillingService(); $prices = [];
+        foreach (OfferService::PLANS as $plan) { $prices[$plan] = ['monthly' => $billing->listPricePaise($plan, 'monthly'), 'annual' => $billing->listPricePaise($plan, 'annual')]; }
+        $top = $db->query("SELECT c.id, c.code, COUNT(*) payments, COALESCE(SUM(r.discount_paise), 0) discount FROM coupon_redemptions r JOIN coupons c ON c.id = r.coupon_id WHERE r.status = 'applied' GROUP BY c.id, c.code ORDER BY discount DESC LIMIT 3")->getResultArray();
+        return ['coupons' => ['total' => array_sum($states), 'by_state' => $states], 'promotions' => ['total' => $promoTotal, 'live' => $promoLive],
+            'last_30_days' => ['orders_with_offer' => (int) $cp30['n'] + (int) $pr30['n'], 'paid_orders' => $paid30, 'discount_paise' => (int) $cp30['d'] + (int) $pr30['d'], 'revenue_paise' => (int) $cp30['r'] + (int) $pr30['r'],
+                'by_coupon' => (int) $cp30['n'], 'by_promotion' => (int) $pr30['n']],
+            'all_time' => ['orders_with_offer' => (int) $cpAll['n'] + (int) $prAll['n'], 'discount_paise' => (int) $cpAll['d'] + (int) $prAll['d']],
+            'grants_30d' => ['count' => (int) $gr['n'], 'days' => (int) $gr['d']], 'prices' => $prices, 'gst_rate' => \App\Services\Billing\PlatformInvoiceService::gstRate(), 'top_coupons' => array_map(fn ($r) => ['id' => (int) $r['id'], 'code' => $r['code'], 'payments' => (int) $r['payments'], 'discount_paise' => (int) $r['discount']], $top)];
     }
 
     // ---- free days ------------------------------------------------------------------------------------------------------------------------

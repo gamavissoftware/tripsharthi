@@ -53,7 +53,11 @@ class PlatformAdminController extends TravelBaseController
         return $this->run(fn () => $this->svc()->setStatus((int) $id, (string) ($b['status'] ?? ''), CurrentUser::id(), CurrentUser::tenantId(), (string) ($b['reason'] ?? '')));
     }
 
-    public function subscriptions() { return $this->run(fn () => $this->svc()->subscriptions($this->g('status'), $this->g('plan'), (int) $this->g('page', '1'), (int) $this->g('per_page', '25'))); }
+    public function subscriptions()
+    {
+        return $this->run(fn () => (new \App\Services\Admin\SubscriptionDirectoryService())->list(['q' => $this->g('q'), 'view' => $this->g('view'), 'status' => $this->g('status'), 'plan' => $this->g('plan'), 'source' => $this->g('source'), 'sort' => $this->g('sort'),
+            'page' => (int) $this->g('page', '1'), 'per_page' => (int) $this->g('per_page', '25')]));
+    }
 
     // ---- website enquiries ------------------------------------------------------------------------------------------------------------------
 

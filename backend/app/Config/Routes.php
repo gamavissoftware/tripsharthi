@@ -531,6 +531,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('partners/(:num)/payout',    'Api\AdminPartnersController::payout/$1');
         $routes->post('commissions/(:num)/void',   'Api\AdminPartnersController::voidCommission/$1');
         // Offers: coupon codes, plan promotions, free-day grants
+        $routes->get('offers/summary',             'Api\AdminOffersController::summary');
         $routes->get('coupons',                    'Api\AdminOffersController::coupons');
         $routes->post('coupons',                   'Api\AdminOffersController::createCoupon');
         $routes->put('coupons/(:num)',             'Api\AdminOffersController::updateCoupon/$1');

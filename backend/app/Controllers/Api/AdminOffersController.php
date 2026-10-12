@@ -23,6 +23,7 @@ class AdminOffersController extends TravelBaseController
         catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'conflict'], 409); }
     }
 
+    public function summary()                    { return $this->run(fn () => $this->svc()->summary()); }
     public function coupons()                    { return $this->run(fn () => $this->svc()->coupons()); }
     public function createCoupon()               { return $this->run(fn () => $this->svc()->saveCoupon($this->body(), null, CurrentUser::id()), 201); }
     public function updateCoupon($id = null)     { return $this->run(fn () => $this->svc()->saveCoupon($this->body(), (int) $id, CurrentUser::id())); }

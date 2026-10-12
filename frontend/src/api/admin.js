@@ -7,6 +7,7 @@ const qs = (o) => Object.entries(o).filter(([, v]) => v !== '' && v != null).map
 export const admin = {
   overview:      ()          => api.get('/admin/overview').then(unwrap),
   dashboard:     ()          => api.get('/admin/dashboard').then(unwrap),
+  offersSummary: ()          => api.get('/admin/offers/summary').then(unwrap),
   tenants:       (p = {})    => api.get('/admin/tenants?' + qs(p)).then(unwrap),
   tenant:        (id)        => api.get(`/admin/tenants/${id}`).then(unwrap),
   setPlan:       (id, b)     => api.put(`/admin/tenants/${id}/plan`, b).then(unwrap),

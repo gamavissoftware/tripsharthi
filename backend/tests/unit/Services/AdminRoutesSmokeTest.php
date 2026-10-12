@@ -26,7 +26,7 @@ final class AdminRoutesSmokeTest extends CIUnitTestCase
 
     public function testEveryAdminAndSupportRouteLoadsAndRequiresALogin(): void
     {
-        $get = ['admin/overview', 'admin/dashboard', 'admin/tenants', 'admin/subscriptions', 'admin/coupons', 'admin/promotions', 'admin/grants', 'admin/partners', 'admin/whatsapp/overview', 'admin/whatsapp/marketing',
+        $get = ['admin/overview', 'admin/dashboard', 'admin/offers/summary', 'admin/tenants', 'admin/subscriptions', 'admin/coupons', 'admin/promotions', 'admin/grants', 'admin/partners', 'admin/whatsapp/overview', 'admin/whatsapp/marketing',
                 'admin/payments/razorpay', 'admin/mail', 'admin/support', 'admin/email', 'admin/impersonations', 'admin/invoices', 'admin/invoices/summary', 'admin/invoices/missing', 'admin/invoices/settings', 'admin/invoices/export', 'admin/invoices/bundle', 'admin/invoices/1/pdf', 'admin/invoices/1/credit-notes', 'admin/credit-notes', 'admin/credit-notes/1/pdf', 'billing/invoices', 'billing/invoices/1/pdf', 'billing/credit-notes', 'billing/credit-notes/1/pdf', 'support/tickets', 'support/unread'];
         foreach ($get as $path) { $this->get('api/v1/' . $path)->assertStatus(401, "GET $path should answer 401, not crash"); }
         foreach (['admin/support/1/reply', 'admin/email/campaigns/1/send', 'admin/mail/test', 'admin/payments/razorpay/test', 'support/tickets', 'admin/tenants/1/impersonate', 'admin/impersonations/1/end', 'admin/invoices/issue-missing', 'admin/invoices/1/resend', 'admin/invoices/1/credit-note', 'admin/credit-notes/1/resend'] as $path) {
