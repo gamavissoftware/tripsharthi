@@ -38,6 +38,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('export',      'Api\ContactsController::export');
         // Before the (:num) routes — a literal segment must not be read as an id.
         $routes->get('categories',  'Api\ContactsController::categories');
+        $routes->get('summary',     'Api\ContactsController::summary');
         $routes->post('',           'Api\ContactsController::create');
         $routes->get('(:num)',      'Api\ContactsController::show/$1');
         $routes->put('(:num)',      'Api\ContactsController::update/$1');

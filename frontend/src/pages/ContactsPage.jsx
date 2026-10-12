@@ -4,6 +4,8 @@ import { Plus, Upload, Download, Search, User } from 'lucide-react'
 import { contacts as contactsApi } from '../api/contacts'
 import { tags as tagsApi } from '../api/tags'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Users as IcUsers, MessageCircle as IcMsg, Target as IcTarget, Reply as IcReply, Trophy as IcTrophy } from 'lucide-react'
 
 // ── Inject styles once ──────────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('lp-contacts-css')) {
@@ -61,6 +63,8 @@ export default function ContactsPage() {
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => { tagsApi.list().then(r => setTagList(r.data ?? [])).catch(() => {}) }, [])
+  const [sum, setSum] = useState(null)
+  useEffect(() => { contactsApi.summary().then(r => setSum(r.data)).catch(() => {}) }, [])
   useEffect(() => { contactsApi.categories().then(r => setCatList(r.data ?? [])).catch(() => {}) }, [])
 
   const load = useCallback(async () => {
@@ -119,7 +123,7 @@ export default function ContactsPage() {
   return (
     <div className="page page-wide">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.75rem', marginBottom: '1.4rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.75rem', marginBottom: '.9rem' }}>
         <div>
           <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>
             Contacts {!loading && <span style={{ fontSize: 14, fontWeight: 600, color: '#9ca3af' }}>· {total.toLocaleString('en-IN')}</span>}
@@ -134,6 +138,15 @@ export default function ContactsPage() {
           </button>
         </div>
       </div>
+
+      {sum && (
+        <StatRow>
+          <StatTile icon={IcUsers} tone="#0a6cc4" label="All contacts" value={sum.total.toLocaleString('en-IN')} sub={`${sum.new_30d.toLocaleString('en-IN')} added in 30 days`} />
+          <StatTile icon={IcMsg} tone="#1a9d57" label="Can be messaged" value={sum.opted_in.toLocaleString('en-IN')} sub="opted in, with a number" />
+          <StatTile icon={IcTarget} tone="#f98f26" label="Open leads" value={sum.open_leads.toLocaleString('en-IN')} sub="new, contacted, qualified" />
+          <StatTile icon={IcReply} tone="#12a89e" label="Replied · 30 days" value={sum.replied_30d.toLocaleString('en-IN')} />
+          <StatTile icon={IcTrophy} tone="#6366f1" label="Won" value={sum.won.toLocaleString('en-IN')} />
+        </StatRow>)}
 
       {/* Filter bar */}
       <div className="lp-ct-card" style={{ padding: '.9rem 1rem', marginBottom: '1.1rem', display: 'flex', gap: '.7rem', flexWrap: 'wrap', alignItems: 'center' }}>

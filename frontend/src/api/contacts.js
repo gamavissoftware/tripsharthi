@@ -10,6 +10,7 @@ export const contacts = {
   remove:   (id)          => api.delete(`/contacts/${id}`),
   attachTag:(id, tagId)   => api.post(`/contacts/${id}/tags/${tagId}`, {}),
   detachTag:(id, tagId)   => api.delete(`/contacts/${id}/tags/${tagId}`),
+  summary:      ()         => api.get('/contacts/summary'),
   messaging:    (id)       => api.get(`/contacts/${id}/messaging`),
   sendTemplate: (id, data) => api.post(`/contacts/${id}/send-template`, data),
 

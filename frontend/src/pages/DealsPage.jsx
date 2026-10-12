@@ -4,6 +4,8 @@ import { crm, rupees } from '../api/crm'
 import { toast } from '../components/Toast'
 import CrmListView from '../components/CrmListView'
 import { Briefcase } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Briefcase as IcBrief, IndianRupee as IcRupee, Target as IcTarget, AlertTriangle as IcAlert, Trophy as IcTrophy } from 'lucide-react'
 
 const initials = (n) => (n || '#').trim().split(/\s+/).map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -142,6 +144,14 @@ export default function DealsPage() {
   }
 
   const grandTotal = board ? board.columns.reduce((s, c) => s + c.total_value, 0) : 0
+  const openCols = board ? board.columns.filter(c => !Number(c.stage.is_won) && !Number(c.stage.is_lost)) : []
+  const openCount = openCols.reduce((s, c) => s + c.count, 0)
+  const openValue = openCols.reduce((s, c) => s + c.total_value, 0)
+  const weighted = openCols.reduce((s, c) => s + c.total_value * (Number(c.stage.probability || 0) / 100), 0)
+  const rotting = openCols.reduce((s, c) => s + c.deals.filter(d => d.is_rotting).length, 0)
+  const wonCols = board ? board.columns.filter(c => Number(c.stage.is_won) === 1) : []
+  const wonCount = wonCols.reduce((s, c) => s + c.count, 0)
+  const wonValue = wonCols.reduce((s, c) => s + c.total_value, 0)
 
   return (
     <div className="page" style={{ maxWidth: '100%' }}>
@@ -167,6 +177,14 @@ export default function DealsPage() {
         </div>
       </div>
 
+      {board && (
+        <StatRow>
+          <StatTile icon={IcBrief} tone="#0a6cc4" label="Open deals" value={openCount} sub={`${board.columns.length} stages`} />
+          <StatTile icon={IcRupee} tone="#0e8f8c" label="Open value" value={rupees(openValue)} />
+          <StatTile icon={IcTarget} tone="#12a89e" label="Weighted forecast" value={rupees(Math.round(weighted))} sub="by stage probability" />
+          <StatTile icon={IcAlert} tone="#f59e0b" label="Stuck deals" value={rotting} accent={rotting ? '#c2410c' : undefined} sub="idle past their stage limit" />
+          <StatTile icon={IcTrophy} tone="#1a9d57" label="Won" value={wonCount} sub={rupees(wonValue)} />
+        </StatRow>)}
       {view === 'list' ? (
         <CrmListView key={listKey} entity="deal" onRowClick={d => navigate(`/deals/${d.id}`)} />
       ) : loading ? (

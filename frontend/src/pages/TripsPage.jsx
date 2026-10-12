@@ -8,6 +8,8 @@ import Pill from '../components/Pill'
 import TripBoard from '../components/travel/TripBoard'
 import { activityState } from '../components/travel/tripActivity'
 import { LayoutGrid, List } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Inbox as IcInbox, FileText as IcFile, Plane as IcPlane, IndianRupee as IcRupee, AlertTriangle as IcAlert } from 'lucide-react'
 
 const TYPES = ['leisure', 'honeymoon', 'family', 'friends', 'solo', 'pilgrimage', 'adventure', 'corporate', 'group_departure', 'student', 'umrah_hajj', 'visa_only', 'flight_only', 'hotel_only', 'other']
 const FILTERS = ['all', 'enquiry', 'quoted', 'negotiating', 'booked', 'travelling', 'completed', 'lost']
@@ -168,6 +170,21 @@ export default function TripsPage({ user }) {
           <button className="btn btn-primary" onClick={() => setShowNew(true)}>+ New enquiry</button>
         </div>
       </div>
+      {scoped && (view === 'board' || filter === 'all') && !q.trim() && (() => {
+        const n = (...st) => scoped.filter(r => st.includes(r.status)).length
+        const open = scoped.filter(r => ['enquiry', 'quoted', 'negotiating'].includes(r.status))
+        const value = open.reduce((a, r) => a + Number(r.budget_max || 0), 0)
+        const weekAgo = now.getTime() - 7 * 86400000
+        const fresh = scoped.filter(r => r.created_at && new Date(String(r.created_at).replace(' ', 'T') + 'Z').getTime() >= weekAgo).length
+        return (
+          <StatRow>
+            <StatTile icon={IcInbox} tone="#0a6cc4" label="Open enquiries" value={n('enquiry')} sub={`${fresh} new in 7 days`} />
+            <StatTile icon={IcFile} tone="#f98f26" label="Quotes out" value={n('quoted', 'negotiating')} sub="quoted + negotiating" />
+            <StatTile icon={IcPlane} tone="#1a9d57" label="Booked / travelling" value={n('booked', 'travelling')} />
+            <StatTile icon={IcRupee} tone="#0e8f8c" label="Open pipeline" value={inr(value, true)} sub="customers' budgets" />
+            <StatTile icon={IcAlert} tone="#e5484d" label="Need a next step" value={nOverdue + nNone} accent={nOverdue + nNone ? 'var(--danger)' : undefined} sub={`${nOverdue} overdue · ${nNone} nothing scheduled`} onClick={() => { pickView('board'); setAct(nOverdue ? 'overdue' : 'none') }} />
+          </StatRow>)
+      })()}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14, alignItems: 'center' }}>
         {view === 'list' && FILTERS.map(s => <button key={s} className={'btn btn-sm ' + (filter === s ? 'btn-primary' : 'btn-ghost')} onClick={() => setFilter(s)}>{s === 'all' ? 'All' : TRIP_STATUS[s].label}</button>)}
         {isManager ? (

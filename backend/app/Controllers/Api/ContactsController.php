@@ -51,6 +51,28 @@ class ContactsController extends ResourceController
         ]);
     }
 
+    // GET /api/v1/contacts/summary — headline numbers for the list page (whole workspace, ignores the list filters)
+    public function summary(): ResponseInterface
+    {
+        $tenantId = CurrentUser::tenantId();
+        $since    = gmdate('Y-m-d H:i:s', time() - 30 * 86400);
+        $r = db_connect()->query(
+            "SELECT COUNT(*) total,
+                    SUM(opt_in = 1 AND wa_number IS NOT NULL AND wa_number <> '') opted_in,
+                    SUM(created_at >= ?) new_30d,
+                    SUM(status IN ('new','contacted','qualified')) open_leads,
+                    SUM(status = 'won') won,
+                    SUM(last_inbound_at IS NOT NULL AND last_inbound_at >= ?) replied_30d
+               FROM contacts WHERE tenant_id = ? AND deleted_at IS NULL",
+            [$since, $since, $tenantId]
+        )->getRowArray();
+
+        return $this->respond(['success' => true, 'data' => [
+            'total' => (int) ($r['total'] ?? 0), 'opted_in' => (int) ($r['opted_in'] ?? 0), 'new_30d' => (int) ($r['new_30d'] ?? 0),
+            'open_leads' => (int) ($r['open_leads'] ?? 0), 'won' => (int) ($r['won'] ?? 0), 'replied_30d' => (int) ($r['replied_30d'] ?? 0),
+        ]]);
+    }
+
     // GET /api/v1/contacts/categories — distinct company categories, for the list filter
     public function categories(): ResponseInterface
     {
