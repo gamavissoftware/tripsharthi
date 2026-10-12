@@ -25,6 +25,10 @@ class CrmDashboardController extends ResourceController
         $p        = $db->DBPrefix;
         $now      = date('Y-m-d H:i:s');
         $today    = date('Y-m-d');
+        $days     = (int) ($this->request->getGet('days') ?? 30);
+        $days     = in_array($days, [7, 30, 90], true) ? $days : 30;
+        $sincePeriod = date('Y-m-d H:i:s', strtotime("-{$days} days"));
+        $chartDays   = min($days, 30);
 
         // ── Deals ─────────────────────────────────────────────────────
         $d = $db->query(
@@ -244,12 +248,12 @@ class CrmDashboardController extends ResourceController
                     SUM(CASE WHEN direction='out' THEN 1 ELSE 0 END) AS o,
                     SUM(CASE WHEN direction='in'  THEN 1 ELSE 0 END) AS i
              FROM {$p}messages WHERE tenant_id=? AND created_at >= ? GROUP BY DATE(created_at)",
-            [$tenantId, date('Y-m-d', strtotime('-13 days')) . ' 00:00:00']
+            [$tenantId, date('Y-m-d', strtotime('-' . ($chartDays - 1) . ' days')) . ' 00:00:00']
         )->getResultArray() as $r) {
             $byDay[$r['d']] = ['out' => (int) $r['o'], 'in' => (int) $r['i']];
         }
         $volume = [];
-        for ($i = 13; $i >= 0; $i--) {
+        for ($i = $chartDays - 1; $i >= 0; $i--) {
             $day = date('Y-m-d', strtotime("-{$i} days"));
             $volume[] = ['date' => $day, 'out' => $byDay[$day]['out'] ?? 0, 'in' => $byDay[$day]['in'] ?? 0];
         }
@@ -259,6 +263,93 @@ class CrmDashboardController extends ResourceController
             static fn ($r) => ['name' => $r['name'], 'won_revenue' => $r['won_revenue'], 'conversions' => $r['conversions'], 'score' => $r['score']],
             array_slice((new \App\Services\Crm\LeaderboardService())->ranking($tenantId, date('Y-m-01'), $today), 0, 4)
         );
+
+
+        // ── Period totals: messages ───────────────────────────────────
+        $pm = $db->query(
+            "SELECT SUM(direction='in') AS inbound, SUM(direction='out') AS outbound,
+                    SUM(direction='out' AND status IN ('delivered','read')) AS delivered,
+                    SUM(direction='out' AND status='read') AS read_count,
+                    SUM(direction='out' AND status='failed') AS failed
+             FROM {$p}messages WHERE tenant_id=? AND created_at >= ?",
+            [$tenantId, $sincePeriod]
+        )->getRowArray() ?: [];
+        $messages = ['inbound' => (int) ($pm['inbound'] ?? 0), 'outbound' => (int) ($pm['outbound'] ?? 0), 'delivered' => (int) ($pm['delivered'] ?? 0),
+                     'read' => (int) ($pm['read_count'] ?? 0), 'failed' => (int) ($pm['failed'] ?? 0)];
+
+        // ── Inbox health ──────────────────────────────────────────────
+        $ib = $db->query(
+            "SELECT COUNT(*) AS total, SUM(unread_count > 0) AS unread, SUM(assigned_user_id IS NULL) AS unassigned
+             FROM {$p}conversations WHERE tenant_id=? AND status='open'",
+            [$tenantId]
+        )->getRowArray() ?: [];
+        $inbox = ['open' => (int) ($ib['total'] ?? 0), 'unread' => (int) ($ib['unread'] ?? 0), 'unassigned' => (int) ($ib['unassigned'] ?? 0)];
+
+        // ── Contacts: size, consent, growth ───────────────────────────
+        $ct = $db->query(
+            "SELECT COUNT(*) AS total, SUM(opt_in = 1) AS opted_in, SUM(opt_in = 0) AS opted_out,
+                    SUM(created_at >= ?) AS new_period, SUM(email IS NOT NULL AND email <> '') AS with_email
+             FROM {$p}contacts WHERE tenant_id=? AND deleted_at IS NULL",
+            [$sincePeriod, $tenantId]
+        )->getRowArray() ?: [];
+        $contacts = ['total' => (int) ($ct['total'] ?? 0), 'opted_in' => (int) ($ct['opted_in'] ?? 0), 'opted_out' => (int) ($ct['opted_out'] ?? 0),
+                     'new_period' => (int) ($ct['new_period'] ?? 0), 'with_email' => (int) ($ct['with_email'] ?? 0)];
+
+        $newByDay = [];
+        foreach ($db->query(
+            "SELECT DATE(created_at) AS d, COUNT(*) AS c FROM {$p}contacts WHERE tenant_id=? AND deleted_at IS NULL AND created_at >= ? GROUP BY DATE(created_at)",
+            [$tenantId, date('Y-m-d', strtotime('-' . ($chartDays - 1) . ' days')) . ' 00:00:00']
+        )->getResultArray() as $r) {
+            $newByDay[$r['d']] = (int) $r['c'];
+        }
+        $newContacts = [];
+        for ($i = $chartDays - 1; $i >= 0; $i--) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $newContacts[] = ['date' => $day, 'count' => $newByDay[$day] ?? 0];
+        }
+
+        // ── Campaign performance in the period ────────────────────────
+        $cp = $db->query(
+            "SELECT COUNT(*) AS n, COALESCE(SUM(total_contacts),0) AS total, COALESCE(SUM(sent_count),0) AS sent, COALESCE(SUM(failed_count),0) AS failed
+             FROM {$p}campaigns WHERE tenant_id=? AND deleted_at IS NULL AND created_at >= ?",
+            [$tenantId, $sincePeriod]
+        )->getRowArray() ?: [];
+        $campaignTotals = ['count' => (int) ($cp['n'] ?? 0), 'audience' => (int) ($cp['total'] ?? 0), 'sent' => (int) ($cp['sent'] ?? 0), 'failed' => (int) ($cp['failed'] ?? 0)];
+
+        // ── Deals created / won in the period ─────────────────────────
+        $df = $db->query(
+            "SELECT SUM(created_at >= ?) AS created, COALESCE(SUM(CASE WHEN created_at >= ? THEN value_amount END),0) AS created_value,
+                    SUM(status='won' AND won_at >= ?) AS won, COALESCE(SUM(CASE WHEN status='won' AND won_at >= ? THEN value_amount END),0) AS won_value
+             FROM {$p}deals WHERE tenant_id=? AND deleted_at IS NULL",
+            [$sincePeriod, $sincePeriod, $sincePeriod, $sincePeriod, $tenantId]
+        )->getRowArray() ?: [];
+        $dealFlow = ['created' => (int) ($df['created'] ?? 0), 'created_value' => (int) ($df['created_value'] ?? 0), 'won' => (int) ($df['won'] ?? 0), 'won_value' => (int) ($df['won_value'] ?? 0)];
+
+        // ── Coming up: open tasks and meetings in the next 7 days ─────
+        $upTasks = array_map(
+            static fn ($r) => ['id' => (int) $r['id'], 'title' => $r['title'], 'due_at' => $r['due_at'], 'priority' => $r['priority'], 'overdue' => $r['due_at'] !== null && $r['due_at'] < $now],
+            $db->query(
+                "SELECT id, title, due_at, priority FROM {$p}tasks WHERE tenant_id=? AND deleted_at IS NULL AND status='open'
+                 ORDER BY (due_at IS NULL), due_at ASC LIMIT 5",
+                [$tenantId]
+            )->getResultArray()
+        );
+        $upMeetings = array_map(
+            static fn ($r) => ['id' => (int) $r['id'], 'title' => $r['title'], 'start_at' => $r['start_at'], 'location' => $r['location']],
+            $db->query(
+                "SELECT id, title, start_at, location FROM {$p}meetings WHERE tenant_id=? AND deleted_at IS NULL AND start_at >= ? AND start_at <= ?
+                 AND (status IS NULL OR status NOT IN ('cancelled','completed')) ORDER BY start_at ASC LIMIT 5",
+                [$tenantId, $now, date('Y-m-d H:i:s', strtotime('+7 days'))]
+            )->getResultArray()
+        );
+
+        // ── WhatsApp connection: is the channel actually set up? ──────
+        $waba = $db->query("SELECT display_name, status, provider FROM {$p}waba_accounts WHERE tenant_id=? AND deleted_at IS NULL ORDER BY id DESC LIMIT 1", [$tenantId])->getRowArray();
+        $numbers = array_map(
+            static fn ($r) => ['number' => $r['display_number'], 'quality' => $r['quality_rating'] ?: 'unknown', 'is_default' => (bool) $r['is_default']],
+            $db->query("SELECT display_number, quality_rating, is_default FROM {$p}phone_numbers WHERE tenant_id=? ORDER BY is_default DESC, id ASC LIMIT 5", [$tenantId])->getResultArray()
+        );
+        $connection = ['connected' => $waba !== null, 'status' => $waba['status'] ?? null, 'name' => $waba['display_name'] ?? null, 'provider' => $waba['provider'] ?? null, 'numbers' => $numbers];
 
         return $this->respond(['success' => true, 'data' => [
             'deals'           => $deals,
@@ -278,6 +369,16 @@ class CrmDashboardController extends ResourceController
             'campaigns'       => $campaigns,
             'message_volume'  => $volume,
             'top_agents'      => $topAgents,
+            'period_days'     => $days,
+            'messages'        => $messages,
+            'inbox'           => $inbox,
+            'contacts'        => $contacts,
+            'new_contacts'    => $newContacts,
+            'campaign_totals' => $campaignTotals,
+            'deal_flow'       => $dealFlow,
+            'upcoming_tasks'  => $upTasks,
+            'upcoming_meetings' => $upMeetings,
+            'connection'      => $connection,
         ]]);
     }
 }

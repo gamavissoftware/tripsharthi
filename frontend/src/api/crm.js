@@ -157,7 +157,7 @@ export const crm = {
   updateBusinessHours: (data) => api.put('/crm/business-hours', data),
 
   // Dashboard (Phase F)
-  dashboard: () => api.get('/crm/dashboard'),
+  dashboard: (days = 30) => api.get(`/crm/dashboard?days=${days}`),
 
   // Configurable dashboards + report widgets (Phase I)
   dashboards:      ()              => api.get('/crm/dashboards'),

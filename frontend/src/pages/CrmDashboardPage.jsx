@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { crm, rupees } from '../api/crm'
 import { toast } from '../components/Toast'
-import { BarChart3 } from 'lucide-react'
+import { BarChart3, CheckCircle2, Circle } from 'lucide-react'
 import { StatRow, StatTile } from '../components/StatTile'
 
 const LIFECYCLE_LABEL = { subscriber: 'Subscriber', lead: 'Lead', mql: 'MQL', sql: 'SQL', opportunity: 'Opportunity', customer: 'Customer', evangelist: 'Evangelist', other: 'Other' }
@@ -111,15 +111,94 @@ function VolumeChart({ data }) {
   )
 }
 
+const QUALITY_TINT = { green: { bg: '#dcfce7', c: '#15803d' }, yellow: { bg: '#fef3c7', c: '#92400e' }, red: { bg: '#fee2e2', c: '#b91c1c' }, unknown: { bg: '#f1f5f9', c: '#475569' } }
+const fmtWhen = (dt) => {
+  if (!dt) return 'No due date'
+  const d = new Date(String(dt).replace(' ', 'T'))
+  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+}
+const linkStyle = { fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }
+const muted = { color: '#94a3b8', fontSize: '.85rem' }
+
+function Empty({ children, to, cta }) {
+  return (
+    <div style={{ ...muted, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+      <span>{children}</span>
+      {to && <Link to={to} style={linkStyle}>{cta} →</Link>}
+    </div>
+  )
+}
+
+// Counts per day as slim bars (new contacts).
+function MiniBars({ data, color = '#12a89e' }) {
+  const max = Math.max(1, ...data.map(p => p.count))
+  const W = 560, H = 96, pad = 8, slot = (W - pad * 2) / data.length, bw = Math.max(2, slot * 0.6)
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+      {data.map((p, i) => {
+        const h = (p.count / max) * (H - 28)
+        return <rect key={p.date} x={pad + slot * i + (slot - bw) / 2} y={H - 18 - h} width={bw} height={Math.max(2, h)} rx={2} fill={color} opacity={p.count ? 1 : 0.2} />
+      })}
+      <text x={pad} y={H - 4} fontSize="9" fill="#94a3b8">{data[0]?.date.slice(8)}/{data[0]?.date.slice(5, 7)}</text>
+      <text x={W - pad} y={H - 4} fontSize="9" fill="#94a3b8" textAnchor="end">{data[data.length - 1]?.date.slice(8)}/{data[data.length - 1]?.date.slice(5, 7)}</text>
+    </svg>
+  )
+}
+
+function Stat({ label, value, sub, color }) {
+  return (
+    <div style={{ flex: '1 1 110px', minWidth: 0 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: '#64748b' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: color ?? '#0f1f3a', lineHeight: 1.2 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11.5, color: '#94a3b8' }}>{sub}</div>}
+    </div>
+  )
+}
+
+function SetupBanner({ connection, tpl, contacts }) {
+  const steps = [
+    { done: connection.connected, label: 'Connect WhatsApp', to: '/settings/waba' },
+    { done: tpl.approved > 0, label: 'Get a template approved', to: '/templates' },
+    { done: contacts.total > 0, label: 'Add or import contacts', to: '/imports' },
+  ]
+  if (steps.every(x => x.done)) return null
+  const left = steps.filter(x => !x.done).length
+  return (
+    <div style={{ background: 'linear-gradient(120deg,#eef6ff,#f0fbf9)', border: '1px solid #cfe3f7', borderRadius: 14, padding: '.9rem 1.2rem', marginBottom: '1rem', display: 'flex', flexWrap: 'wrap', gap: '.6rem 1.4rem', alignItems: 'center' }}>
+      <div style={{ fontWeight: 800, color: '#0a1f44' }}>Finish setup <span style={{ fontWeight: 500, color: '#53657f', fontSize: 13 }}>— {left} step{left === 1 ? '' : 's'} left to see live data here</span></div>
+      {steps.map(x => (
+        <Link key={x.label} to={x.to} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none', fontSize: 13.5, fontWeight: 600, color: x.done ? '#15803d' : '#0a6cc4' }}>
+          {x.done ? <CheckCircle2 size={16} /> : <Circle size={16} />}<span style={{ textDecoration: x.done ? 'line-through' : 'none' }}>{x.label}</span>
+        </Link>
+      ))}
+    </div>
+  )
+}
+
+function Periods({ days, onChange }) {
+  return (
+    <div role="group" aria-label="Period" style={{ display: 'inline-flex', background: '#f1f5f9', borderRadius: 999, padding: 3, gap: 2 }}>
+      {[7, 30, 90].map(n => (
+        <button key={n} type="button" onClick={() => onChange(n)} aria-pressed={days === n}
+          style={{ border: 0, cursor: 'pointer', borderRadius: 999, padding: '.3rem .85rem', fontSize: 12.5, fontWeight: 700, background: days === n ? '#fff' : 'transparent', color: days === n ? '#0a6cc4' : '#64748b', boxShadow: days === n ? '0 1px 3px rgba(0,0,0,.12)' : 'none' }}>
+          {n} days
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function CrmDashboardPage() {
   const [d, setD] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [days, setDays] = useState(30)
 
   useEffect(() => {
-    crm.dashboard().then(r => setD(r.data)).catch(e => toast.error('Failed to load dashboard', e.message)).finally(() => setLoading(false))
-  }, [])
+    setLoading(true)
+    crm.dashboard(days).then(r => setD(r.data)).catch(e => toast.error('Failed to load dashboard', e.message)).finally(() => setLoading(false))
+  }, [days])
 
-  if (loading || !d) return <div className="page" style={{ maxWidth: 1180 }}><div style={{ height: 300, borderRadius: 14, background: '#f3f4f6', animation: 'lp-pulse 1.2s infinite' }} /><style>{`@keyframes lp-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style></div>
+  if (!d) return <div className="page" style={{ maxWidth: 1180 }}><div style={{ height: 300, borderRadius: 14, background: '#f3f4f6', animation: 'lp-pulse 1.2s infinite' }} /><style>{`@keyframes lp-pulse{0%,100%{opacity:1}50%{opacity:.45}}`}</style></div>
 
   const maxFunnel = Math.max(1, ...d.funnel.map(s => s.value))
   const maxLife   = Math.max(1, ...d.lifecycle.map(s => s.count))
@@ -132,26 +211,47 @@ export default function CrmDashboardPage() {
   const topDeals  = d.top_deals ?? []
   const maxTop    = Math.max(1, ...topDeals.map(t => t.value))
   const wa        = d.whatsapp ?? { open_windows: 0, expiring_soon: 0, inbound_today: 0, sent_7d: 0, delivered_7d: 0, read_7d: 0, failed_7d: 0 }
-  const maxWa     = Math.max(1, wa.sent_7d, wa.failed_7d)
-  const readRate  = wa.sent_7d ? Math.round((wa.read_7d / wa.sent_7d) * 100) : 0
   const closing   = d.closing_windows ?? []
   const tpl       = d.templates ?? { approved: 0, pending: 0, rejected: 0 }
   const campaigns = d.campaigns ?? []
   const volume    = d.message_volume ?? []
   const topAgents = d.top_agents ?? []
+  const msg       = d.messages ?? { inbound: 0, outbound: 0, delivered: 0, read: 0, failed: 0 }
+  const inbox     = d.inbox ?? { open: 0, unread: 0, unassigned: 0 }
+  const contacts  = d.contacts ?? { total: 0, opted_in: 0, opted_out: 0, new_period: 0, with_email: 0 }
+  const newContacts = d.new_contacts ?? []
+  const campT     = d.campaign_totals ?? { count: 0, audience: 0, sent: 0, failed: 0 }
+  const flow      = d.deal_flow ?? { created: 0, created_value: 0, won: 0, won_value: 0 }
+  const upTasks   = d.upcoming_tasks ?? []
+  const upMeet    = d.upcoming_meetings ?? []
+  const conn      = d.connection ?? { connected: false, numbers: [] }
+  const period    = `last ${d.period_days ?? days} days`
+  const maxMsg    = Math.max(1, msg.outbound, msg.failed)
+  const readPct   = msg.outbound ? Math.round((msg.read / msg.outbound) * 100) : 0
+  const optPct    = contacts.total ? Math.round((contacts.opted_in / contacts.total) * 100) : 0
 
   return (
     <div className="page" style={{ maxWidth: 1180 }}>
-      <div style={{ marginBottom: '1.25rem' }}>
-        <h1 className="ps-h1"><span className="ps-ico"><BarChart3 size={18} /></span>CRM Dashboard</h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your whole business at a glance — WhatsApp, leads, pipeline, revenue, service and tasks.</p>
+      <div style={{ marginBottom: '1.25rem', display: 'flex', flexWrap: 'wrap', gap: '.75rem 1.5rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
+        <div>
+          <h1 className="ps-h1"><span className="ps-ico"><BarChart3 size={18} /></span>CRM Dashboard</h1>
+          <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your whole business at a glance — WhatsApp, leads, pipeline, revenue, service and tasks.</p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: loading ? .6 : 1 }}>
+          <span style={{ fontSize: 12.5, color: '#64748b' }}>Showing the {period}</span>
+          <Periods days={days} onChange={setDays} />
+        </div>
       </div>
+
+      <SetupBanner connection={conn} tpl={tpl} contacts={contacts} />
 
       {/* Metric cards */}
       <StatRow>
         <Metric label="Open windows" value={wa.open_windows} sub={wa.expiring_soon ? `⏳ ${wa.expiring_soon} expiring soon` : '24h free-message'} accent={wa.open_windows ? '#16a34a' : undefined} to="/inbox" />
         <Metric label="Replies today" value={wa.inbound_today} sub="inbound on WhatsApp" accent={wa.inbound_today ? '#16a34a' : undefined} to="/inbox" />
-        <Metric label="Total leads" value={leads.total} sub={`+${leads.new_30d} in 30 days`} to="/contacts" />
+        <Metric label="Unread chats" value={inbox.unread} sub={`${inbox.open} open · ${inbox.unassigned} unassigned`} accent={inbox.unread ? '#c2410c' : undefined} to="/inbox" />
+        <Metric label="Messages sent" value={msg.outbound} sub={`${msg.inbound} received · ${period}`} to="/inbox" />
+        <Metric label="Contacts" value={leads.total} sub={`+${contacts.new_period} in ${d.period_days} days · ${contacts.opted_in} opted in`} to="/contacts" />
         <Metric label="Hot leads" value={leads.hot} sub="high score" accent={leads.hot ? '#dc2626' : undefined} to="/contacts" />
         <Metric label="Open pipeline" value={rupees(d.deals.open_value)} sub={`${d.deals.open_count} open deals`} to="/deals" />
         <Metric label="Revenue won" value={rupees(d.deals.won_value)} sub={`${d.deals.won_count} won`} accent="#15803d" />
@@ -166,7 +266,7 @@ export default function CrmDashboardPage() {
 
       {/* Message volume + revenue trend — full width */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: '1rem', marginBottom: '1rem' }}>
-        <Card title="💬 Message volume — last 14 days" action={<Link to="/inbox" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Inbox →</Link>}>
+        <Card title={`💬 Message volume — last ${volume.length} days`} action={<Link to="/inbox" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Inbox →</Link>}>
           <VolumeChart data={volume} />
         </Card>
         <Card title="📈 Revenue won — last 6 months">
@@ -176,17 +276,17 @@ export default function CrmDashboardPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', gap: '1rem' }}>
         {/* WhatsApp delivery funnel — the messaging core of the product */}
-        <Card title="💬 WhatsApp delivery — last 7 days" action={<Link to="/inbox" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Inbox →</Link>}>
-          {wa.sent_7d === 0 && wa.failed_7d === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No outbound messages in the last 7 days.</div>
+        <Card title={`💬 WhatsApp delivery — ${period}`} action={<Link to="/inbox" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Inbox →</Link>}>
+          {msg.outbound === 0 && msg.failed === 0 ? (
+            <Empty to="/templates" cta="Send your first template">No outbound messages in the {period}.</Empty>
           ) : (
             <>
-              <BarRow label="Sent"      value={wa.sent_7d}      display={wa.sent_7d}      max={maxWa} color="#86efac" />
-              <BarRow label="Delivered" value={wa.delivered_7d} display={wa.delivered_7d} max={maxWa} color="#22c55e" />
-              <BarRow label="Read"      value={wa.read_7d}      display={wa.read_7d}      max={maxWa} color="#15803d" />
-              {wa.failed_7d > 0 && <BarRow label="Failed" value={wa.failed_7d} display={wa.failed_7d} max={maxWa} color="#dc2626" />}
+              <BarRow label="Sent"      value={msg.outbound}  display={msg.outbound}  max={maxMsg} color="#86efac" />
+              <BarRow label="Delivered" value={msg.delivered} display={msg.delivered} max={maxMsg} color="#22c55e" />
+              <BarRow label="Read"      value={msg.read}      display={msg.read}      max={maxMsg} color="#15803d" />
+              {msg.failed > 0 && <BarRow label="Failed" value={msg.failed} display={msg.failed} max={maxMsg} color="#dc2626" />}
               <div style={{ fontSize: '.78rem', color: '#64748b', marginTop: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-                Read rate <strong style={{ color: '#15803d' }}>{readRate}%</strong> · {wa.open_windows} open 24h window{wa.open_windows === 1 ? '' : 's'} right now
+                Read rate <strong style={{ color: '#15803d' }}>{readPct}%</strong> · {wa.open_windows} open 24h window{wa.open_windows === 1 ? '' : 's'} right now
               </div>
             </>
           )}
@@ -195,7 +295,7 @@ export default function CrmDashboardPage() {
         {/* Windows closing soon — reach them before the 24h free-message window shuts */}
         <Card title="⏳ Windows closing soon" action={<Link to="/inbox" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Inbox →</Link>}>
           {closing.length === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No open 24h windows. Send an approved template to start a conversation.</div>
+            <Empty to="/templates" cta="Send a template">No open 24h windows. Send an approved template to start a conversation.</Empty>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {closing.map(c => {
@@ -217,7 +317,7 @@ export default function CrmDashboardPage() {
         {/* Recent broadcast campaigns */}
         <Card title="📢 Recent campaigns" action={<Link to="/campaigns" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>All →</Link>}>
           {campaigns.length === 0 ? (
-            <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No campaigns yet.</div>
+            <Empty to="/campaigns" cta="Create a campaign">No campaigns yet.</Empty>
           ) : campaigns.map(c => {
             const pct = c.total ? Math.round((c.sent / c.total) * 100) : 0
             const tint = CAMP_TINT[c.status] ?? CAMP_TINT.draft
@@ -238,6 +338,97 @@ export default function CrmDashboardPage() {
           })}
         </Card>
 
+        {/* WhatsApp connection */}
+        <Card title="🔌 WhatsApp connection" action={<Link to="/settings/waba" style={linkStyle}>Manage →</Link>}>
+          {!conn.connected ? (
+            <Empty to="/settings/waba" cta="Connect WhatsApp">WhatsApp is not connected yet, so there are no live chats or sends to show.</Empty>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 13.5 }}><strong>{conn.name || 'WhatsApp Business'}</strong> <span style={{ color: '#64748b' }}>· {conn.status || 'connected'}</span></div>
+              {conn.numbers.length === 0 ? <div style={muted}>No numbers registered yet.</div> : conn.numbers.map(n => {
+                const t = QUALITY_TINT[String(n.quality).toLowerCase()] ?? QUALITY_TINT.unknown
+                return (
+                  <div key={n.number} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: '.35rem .55rem', border: '1px solid #eef0f3', borderRadius: 9, fontSize: 13 }}>
+                    <span style={{ fontFamily: 'monospace' }}>{n.number}{n.is_default ? <span style={{ color: '#94a3b8', fontFamily: 'inherit' }}> · default</span> : null}</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', background: t.bg, color: t.c, borderRadius: 999, padding: '.08rem .5rem' }}>{n.quality}</span>
+                  </div>
+                )
+              })}
+              {tpl.rejected > 0 && <div style={{ fontSize: 12.5, color: '#b91c1c' }}>{tpl.rejected} template{tpl.rejected === 1 ? '' : 's'} rejected by Meta — <Link to="/templates" style={linkStyle}>review</Link></div>}
+            </div>
+          )}
+        </Card>
+
+        {/* Inbox health */}
+        <Card title="📥 Inbox health" action={<Link to="/inbox" style={linkStyle}>Open inbox →</Link>}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <Stat label="Open chats" value={inbox.open} />
+            <Stat label="Unread" value={inbox.unread} color={inbox.unread ? '#c2410c' : undefined} />
+            <Stat label="Unassigned" value={inbox.unassigned} color={inbox.unassigned ? '#c2410c' : undefined} />
+          </div>
+          <div style={{ fontSize: '.78rem', color: '#64748b', marginTop: 12, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
+            {msg.inbound} message{msg.inbound === 1 ? '' : 's'} received and {msg.outbound} sent in the {period}.
+            {inbox.open === 0 && ' No conversations yet — they appear when a customer messages you.'}
+          </div>
+        </Card>
+
+        {/* Contacts and consent */}
+        <Card title="👤 Contacts & consent" action={<Link to="/contacts" style={linkStyle}>Contacts →</Link>}>
+          {contacts.total === 0 ? <Empty to="/imports" cta="Import contacts">No contacts yet.</Empty> : (
+            <>
+              <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 10 }}>
+                <Stat label="Total" value={contacts.total} />
+                <Stat label="New" value={`+${contacts.new_period}`} sub={period} color="#12a89e" />
+                <Stat label="Opted in" value={`${optPct}%`} sub={`${contacts.opted_in} can get marketing`} color="#15803d" />
+              </div>
+              <MiniBars data={newContacts} />
+              <div style={{ fontSize: '.78rem', color: '#64748b', marginTop: 4 }}>{contacts.opted_out} opted out · {contacts.with_email} with an e-mail address</div>
+            </>
+          )}
+        </Card>
+
+        {/* Campaign performance */}
+        <Card title="📣 Campaigns in the period" action={<Link to="/campaigns" style={linkStyle}>Campaigns →</Link>}>
+          {campT.count === 0 ? <Empty to="/campaigns" cta="Create a campaign">No campaigns created in the {period}.</Empty> : (
+            <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+              <Stat label="Campaigns" value={campT.count} />
+              <Stat label="Audience" value={campT.audience.toLocaleString('en-IN')} />
+              <Stat label="Sent" value={campT.sent.toLocaleString('en-IN')} color="#15803d" />
+              <Stat label="Failed" value={campT.failed} color={campT.failed ? '#dc2626' : undefined} />
+            </div>
+          )}
+        </Card>
+
+        {/* Deals this period */}
+        <Card title="💼 Deals in the period" action={<Link to="/deals" style={linkStyle}>Deals →</Link>}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            <Stat label="Created" value={flow.created} sub={compact(flow.created_value)} />
+            <Stat label="Won" value={flow.won} sub={compact(flow.won_value)} color="#15803d" />
+            <Stat label="Open now" value={d.deals.open_count} sub={compact(d.deals.open_value)} />
+          </div>
+          {flow.created === 0 && flow.won === 0 && <div style={{ ...muted, marginTop: 10 }}>No deals created or won in the {period}.</div>}
+        </Card>
+
+        {/* Coming up */}
+        <Card title="🗓️ Coming up" action={<Link to="/tasks" style={linkStyle}>Tasks →</Link>}>
+          {upTasks.length === 0 && upMeet.length === 0 ? <Empty to="/tasks" cta="Add a task">Nothing scheduled — no open tasks or meetings in the next 7 days.</Empty> : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {upMeet.map(m => (
+                <Link key={`m${m.id}`} to="/meetings" style={{ textDecoration: 'none', display: 'flex', justifyContent: 'space-between', gap: 8, padding: '.35rem .55rem', border: '1px solid #eef0f3', borderRadius: 9 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13.5, color: '#111827' }}>📅 {m.title}</span>
+                  <span style={{ fontSize: 12, color: '#64748b', flexShrink: 0 }}>{fmtWhen(m.start_at)}</span>
+                </Link>
+              ))}
+              {upTasks.map(t => (
+                <Link key={`t${t.id}`} to="/tasks" style={{ textDecoration: 'none', display: 'flex', justifyContent: 'space-between', gap: 8, padding: '.35rem .55rem', border: '1px solid #eef0f3', borderRadius: 9 }}>
+                  <span style={{ fontWeight: 600, fontSize: 13.5, color: '#111827' }}>✅ {t.title}</span>
+                  <span style={{ fontSize: 12, fontWeight: t.overdue ? 800 : 400, color: t.overdue ? '#dc2626' : '#64748b', flexShrink: 0 }}>{t.overdue ? 'Overdue · ' : ''}{fmtWhen(t.due_at)}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+
         {/* Pipeline funnel */}
         <Card title="💼 Pipeline by stage">
           {d.funnel.map(s => (
@@ -247,7 +438,7 @@ export default function CrmDashboardPage() {
 
         {/* Top open deals */}
         <Card title="🏆 Top open deals" action={<Link to="/deals" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>View all →</Link>}>
-          {topDeals.length === 0 ? <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No open deals.</div>
+          {topDeals.length === 0 ? <Empty to="/deals/new" cta="Add a deal">No open deals.</Empty>
             : topDeals.map(t => (
               <Link key={t.id} to={`/deals/${t.id}`} style={{ textDecoration: 'none' }}>
                 <BarRow label={t.title} value={t.value} display={rupees(t.value)} max={maxTop} color="#0ea5e9" />
@@ -257,7 +448,7 @@ export default function CrmDashboardPage() {
 
         {/* Leads by source */}
         <Card title="🎯 Leads by source">
-          {sources.length === 0 ? <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No leads yet.</div>
+          {sources.length === 0 ? <Empty to="/imports" cta="Import contacts">No leads yet.</Empty>
             : sources.map(s => (
               <BarRow key={s.source} label={s.source.replace(/_/g, ' ')} value={s.count} display={s.count} max={maxSource} color="#14b8a6" />
             ))}
@@ -272,7 +463,7 @@ export default function CrmDashboardPage() {
 
         {/* Top agents this month */}
         <Card title="🏅 Top agents this month" action={<Link to="/leaderboard" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--primary,#0a6cc4)', textDecoration: 'none' }}>Full →</Link>}>
-          {topAgents.length === 0 ? <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No ranked activity yet this month.</div>
+          {topAgents.length === 0 ? <Empty to="/leaderboard" cta="See how ranking works">No ranked activity yet this month.</Empty>
             : topAgents.map((a, i) => (
               <div key={a.name + i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '.45rem 0', borderBottom: i < topAgents.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -289,7 +480,7 @@ export default function CrmDashboardPage() {
 
         {/* Lifecycle breakdown */}
         <Card title="👥 Contacts by lifecycle">
-          {d.lifecycle.length === 0 ? <div style={{ color: '#94a3b8', fontSize: '.85rem' }}>No contacts yet.</div>
+          {d.lifecycle.length === 0 ? <Empty to="/imports" cta="Import contacts">No contacts yet.</Empty>
             : d.lifecycle.map(s => (
               <BarRow key={s.stage} label={LIFECYCLE_LABEL[s.stage] ?? s.stage} value={s.count} display={s.count} max={maxLife} color="#12a89e" />
             ))}
