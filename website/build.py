@@ -81,10 +81,9 @@ def faq_ld(items):
 
 def head(fname, title, desc, p='', robots='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1', og_type='website', ld='', extra='', inline_css=False):
     url = f'{SITE}/{fname}' if fname != 'index.html' else SITE + '/'
-    css_tag = ('<style>' + open(os.path.join(ROOT, 'assets/css/all.min.css'), encoding='utf-8').read().replace('url(../fonts/', 'url(assets/fonts/') + '</style>') if inline_css else f'<link rel="stylesheet" href="{p}assets/css/all.min.css{ver("assets/css/all.min.css")}">'
+    css_tag = ('<style>' + open(os.path.join(ROOT, 'assets/css/core.min.css'), encoding='utf-8').read().replace('url(../fonts/', 'url(assets/fonts/') + '</style>') if inline_css else f'<link rel="stylesheet" href="{p}assets/css/all.min.css{ver("assets/css/all.min.css")}">'
     v2_href = f'{p}assets/css/v2.min.css{ver("assets/css/v2.min.css")}'
-    v2_tag = (f'<link rel="preload" href="{v2_href}" as="style" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" href="{v2_href}"></noscript>' if inline_css
-              else f'<link rel="stylesheet" href="{v2_href}">')
+    v2_tag = (f'<link rel="preload" href="{v2_href}" as="style"><noscript><link rel="stylesheet" href="{v2_href}"></noscript>' if inline_css else '')
     verify = (f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else '') + (f'<meta name="msvalidate.01" content="{BING_TOKEN}">' if BING_TOKEN else '')
     return f"""<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -414,13 +413,14 @@ def minify_css():
     css = _re.sub(r'\s+', ' ', css)
     css = _re.sub(r'\s*([{};,>])\s*', r'\1', css)
     css = css.replace(';}', '}')
-    open(os.path.join(ROOT, 'assets/css/all.min.css'), 'w', encoding='utf-8').write(css.strip())
-    print('wrote assets/css/all.min.css', len(css) // 1024, 'KB')
+    open(os.path.join(ROOT, 'assets/css/core.min.css'), 'w', encoding='utf-8').write(css.strip())
+    print('wrote assets/css/core.min.css', len(css) // 1024, 'KB')
     v2 = open(os.path.join(ROOT, 'assets/css/v2.css'), encoding='utf-8').read()
     v2 = _re.sub(r'/\*.*?\*/', '', v2, flags=_re.S)
     v2 = _re.sub(r'\s+', ' ', v2)
     v2 = _re.sub(r'\s*([{};,>])\s*', r'\1', v2).replace(';}', '}')
     open(os.path.join(ROOT, 'assets/css/v2.min.css'), 'w', encoding='utf-8').write(v2.strip())
+    open(os.path.join(ROOT, 'assets/css/all.min.css'), 'w', encoding='utf-8').write(css.strip() + v2.strip())
 
 def ensure_variants():
     """900px-wide copies of the screenshots (and a 390px phone) for srcset, made with cwebp/dwebp when installed."""

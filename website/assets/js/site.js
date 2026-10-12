@@ -1,6 +1,8 @@
 /* TripSarthi marketing site — small, dependency-free. */
 (function () {
   'use strict';
+  // non-critical stylesheet preloaded by the home page (inline handlers are blocked by the CSP)
+  document.querySelectorAll('link[rel=preload][as=style]').forEach(function (l) { l.rel = 'stylesheet'; });
   // Where the product lives. Local dev -> the Vite dev server; production -> app.tripsarthi.com. Change APP_URL if you host the app elsewhere.
   var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var APP_URL = window.TRIPSARTHI_APP_URL || (local ? 'http://localhost:5917' : 'https://app.tripsarthi.com');
