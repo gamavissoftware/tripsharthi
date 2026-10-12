@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -44,10 +44,12 @@ const NAV = [
 
 function Shell({ user, onLogout }) {
   const [navOpen, setNavOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('ts_admin_nav_collapsed') === '1' } catch { return false } })
+  const toggleCollapse = () => setCollapsed(c => { const n = !c; try { localStorage.setItem('ts_admin_nav_collapsed', n ? '1' : '0') } catch { /* private mode */ } return n })
   const initials = (user?.name ?? 'A').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
   return (
     <div className="app-shell ad">
-      <aside className={'sidebar' + (navOpen ? ' open' : '')}>
+      <aside className={'sidebar' + (navOpen ? ' open' : '') + (collapsed ? ' collapsed' : '')}>
         <div className="sidebar-logo">
           <span className="sidebar-logo-icon" style={{ background: '#fff', padding: 3 }}><img src="/brand/tripsarthi-mark.png" alt="" width="30" height="30" style={{ display: 'block' }} /></span>
           <span className="sidebar-logo-text">Trip<span style={{ color: '#2fd0c2' }}>Sarthi</span> <span style={{ fontSize: '.6rem', opacity: .8, letterSpacing: '.6px', textTransform: 'uppercase' }}>Admin</span></span>
@@ -57,7 +59,7 @@ function Shell({ user, onLogout }) {
             <div key={g.section}>
               <div className="sidebar-section-label">{g.section}</div>
               {g.items.map(({ to, label, icon: Icon, end }) => (
-                <NavLink key={to} to={to} end={end} onClick={() => setNavOpen(false)} className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}>
+                <NavLink key={to} to={to} end={end} title={collapsed ? label : undefined} onClick={() => setNavOpen(false)} className={({ isActive }) => 'sidebar-link' + (isActive ? ' active' : '')}>
                   <span className="sidebar-link-icon"><Icon size={17} strokeWidth={1.8} /></span>
                   <span className="sidebar-link-text">{label}</span>
                 </NavLink>
@@ -73,6 +75,9 @@ function Shell({ user, onLogout }) {
               <div className="sidebar-user-role"><ShieldCheck size={11} style={{ verticalAlign: '-1px' }} /> Platform admin</div>
             </div>
           </div>
+          <button className="sidebar-signout" onClick={toggleCollapse} aria-label={collapsed ? 'Expand menu' : 'Collapse menu'} title={collapsed ? 'Expand menu' : 'Collapse menu'}>
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}<span className="sidebar-link-text">Collapse menu</span>
+          </button>
           <button className="sidebar-signout" onClick={onLogout} title="Sign out"><LogOut size={16} /><span className="sidebar-link-text">Sign out</span></button>
         </div>
       </aside>
