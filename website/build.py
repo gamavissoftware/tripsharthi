@@ -55,9 +55,10 @@ def footer(p=''):
     <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a></div>
     <div><p class="fh">Solutions</p>{sol}</div>
     <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}partners.html">Partner programme</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
-    <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><p class="fh" style="margin-top:22px">Legal</p><a href="{p}privacy.html">Privacy policy</a><a href="{p}terms.html">Terms of service</a></div>
+    <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><a class="fwa" href="https://wa.me/{WHATSAPP}" rel="noopener">{ico('chat')} Chat on WhatsApp</a></div>
   </div>
-  <div class="wrap foot-bot"><span>© <span id="yr">2026</span> {COMPANY}. TripSarthi is a product of {COMPANY}.</span><span>WhatsApp, Meta, Google and Razorpay are trademarks of their respective owners.</span></div>
+  <div class="wrap foot-bot"><span>© <span id="yr">2026</span> {COMPANY}. TripSarthi is a product of {COMPANY}.</span><nav class="flegal" aria-label="Legal"><a href="{p}privacy.html">Privacy policy</a><a href="{p}terms.html">Terms of service</a><a href="{p}contact.html">Contact</a></nav></div>
+  <div class="wrap foot-tm">WhatsApp, Meta, Google and Razorpay are trademarks of their respective owners.</div>
 </footer>"""
 
 SPRITE = None  # filled from index.html so icons stay in one place
