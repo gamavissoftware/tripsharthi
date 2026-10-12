@@ -20,7 +20,7 @@ class AdminEmailController extends TravelBaseController
 
     private function svc(): PlatformEmailService { return new PlatformEmailService(); }
 
-    public function index()          { return $this->run(fn () => ['campaigns' => $this->svc()->campaigns(), 'segments' => $this->svc()->segments()]); }
+    public function index()          { return $this->run(fn () => ['campaigns' => $this->svc()->campaigns(), 'segments' => $this->svc()->segments(), 'summary' => $this->svc()->summary()]); }
     public function show($id = null) { return $this->run(fn () => $this->svc()->campaign((int) $id)); }
     public function create()         { return $this->run(fn () => $this->svc()->save($this->body(), null, CurrentUser::id()), 201); }
     public function update($id = null) { return $this->run(fn () => $this->svc()->save($this->body(), (int) $id, CurrentUser::id())); }

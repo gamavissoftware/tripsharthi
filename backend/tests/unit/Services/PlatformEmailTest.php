@@ -85,6 +85,22 @@ final class PlatformEmailTest extends CIUnitTestCase
         $this->assertSame(0, array_sum($s->process()), 'nothing is sent twice');
     }
 
+    public function testSummaryCountsPeopleAndRecentSends(): void
+    {
+        $s = $this->svc();
+        $sum = $s->summary();
+        $this->assertSame(4, $sum['opted_in'], 'three owners + one partner, one per address');
+        $this->assertSame(0, $sum['campaigns']); $this->assertSame(0, $sum['sent_30d']); $this->assertNull($sum['failure_pct']);
+        $id = $this->draft($s);
+        $this->assertSame(1, $s->summary()['drafts']);
+        $s->send($id, 7, 3); $s->process(2);
+        $sum = $s->summary();
+        $this->assertSame(2, $sum['sent_30d']); $this->assertSame(1, $sum['queued']); $this->assertSame(0, $sum['drafts']); $this->assertSame(1, $sum['campaigns']);
+        $this->mailOk = false; $s->process();
+        $sum = $s->summary();
+        $this->assertSame(1, $sum['failed_30d']); $this->assertEqualsWithDelta(33.3, $sum['failure_pct'], 0.05);
+    }
+
     public function testRateLimitSpreadsTheSendAcrossRuns(): void
     {
         $s = $this->svc(); $id = $this->draft($s); $s->send($id, 7, 3);

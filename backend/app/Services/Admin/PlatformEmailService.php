@@ -77,6 +77,25 @@ final class PlatformEmailService
         return $out;
     }
 
+    /**
+     * Headline numbers for the Email marketing page: how many distinct people agreed to hear from us, what went out in the last 30 days,
+     * what is still queued, and whether the mail server is ready. Counts only.
+     * @return array{opted_in:int,campaigns:int,drafts:int,sent_30d:int,failed_30d:int,failure_pct:?float,queued:int,per_minute:int,mail_ready:bool,mail_host:string}
+     */
+    public function summary(): array
+    {
+        $db = db_connect(); $since = $this->stamp($this->ts() - 30 * 86400);
+        $all = [];
+        foreach (['owners', 'partners'] as $k) { foreach ($this->members($k) as $m) { $all[$m['email']] = true; } }
+        $c = $db->query("SELECT COUNT(*) n, SUM(status = 'draft') drafts FROM platform_email_campaigns")->getRowArray();
+        $s = $db->query("SELECT SUM(status = 'sent' AND sent_at >= ?) sent, SUM(status = 'failed' AND sent_at >= ?) failed, SUM(status IN ('queued','sending')) queued FROM platform_email_sends", [$since, $since])->getRowArray();
+        $sent = (int) ($s['sent'] ?? 0); $failed = (int) ($s['failed'] ?? 0);
+        $mail = \App\Services\Email\PlatformMail::status();
+        return ['opted_in' => count($all), 'campaigns' => (int) ($c['n'] ?? 0), 'drafts' => (int) ($c['drafts'] ?? 0), 'sent_30d' => $sent, 'failed_30d' => $failed,
+                'failure_pct' => ($sent + $failed) > 0 ? round($failed * 100 / ($sent + $failed), 1) : null, 'queued' => (int) ($s['queued'] ?? 0), 'per_minute' => self::PER_MINUTE,
+                'mail_ready' => (bool) $mail['configured'], 'mail_host' => (string) ($mail['host'] ?? '')];
+    }
+
     // ==== campaigns ==================================================================================================================================
 
     public function campaigns(): array

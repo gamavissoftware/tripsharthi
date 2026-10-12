@@ -2,20 +2,23 @@ import { useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
+import { MessageCircle, CheckCheck, XCircle, Megaphone, IndianRupee } from 'lucide-react'
 import { Kpi, Pill } from './AdminUi'
-import { th, td, fmtDate, fmtDateTime, SEVERITY_COLOR, PLAN_COLOR } from './adminUtil'
-import { QualityDot } from './AdminWhatsappPage'
+import { th, td, fmtDate, SEVERITY_COLOR, PLAN_COLOR } from './adminUtil'
+import { QualityDot, CampaignTable, Meter } from './AdminWhatsappPage'
 import { confirmAsk } from '../../components/confirmAsk'
 
 const TPL_COLOR = { approved: 'var(--success)', pending: 'var(--warning)', rejected: 'var(--danger)', draft: 'var(--text-3)', paused: 'var(--warning)', disabled: 'var(--text-3)' }
 const num = (v) => Number(v) || 0
+const day = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', timeZone: 'UTC' })
 
 /** 30 daily bars: height = messages sent, red part = failed. */
 function DailyBars({ daily }) {
   if (!daily.length) return <p style={{ color: 'var(--text-3)', margin: 0 }}>No messages in the last 30 days.</p>
   const max = Math.max(1, ...daily.map(d => num(d.sent)))
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 110 }}>
+    <div>
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 120, borderBottom: '1px solid #dbe6f3' }}>
       {daily.map(d => {
         const sent = num(d.sent), failed = num(d.failed), h = Math.max(3, Math.round(sent * 100 / max))
         return (
@@ -24,8 +27,12 @@ function DailyBars({ daily }) {
           </div>)
       })}
     </div>
+    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: 'var(--text-3)', marginTop: 4 }}><span>{day(daily[0].d)}</span><span>peak {max.toLocaleString('en-IN')} a day</span><span>{day(daily[daily.length - 1].d)}</span></div>
+    </div>
   )
 }
+
+const pc = (a, b) => (num(b) > 0 ? Math.round(num(a) * 1000 / num(b)) / 10 : null)
 
 function PausePanel({ ws, onChanged }) {
   const [reason, setReason] = useState('')
@@ -63,44 +70,56 @@ export default function AdminWhatsappWorkspacePage() {
   if (err && !d) return <div className="page"><div className="card card-body" style={{ textAlign: 'center' }}><h3 style={{ marginTop: 0 }}>Workspace not found</h3><p style={{ color: 'var(--text-3)' }}>{err}</p><Link className="btn btn-primary" to="/admin/whatsapp">Back to WhatsApp</Link></div></div>
   if (!d) return <div className="page"><p style={{ color: 'var(--text-3)' }}>Loading…</p></div>
   const w = d.workspace
+  const dl = pc(w.delivered, w.sent), rd = pc(w.read, w.sent)
+  const critical = w.flags.some(f => f.severity === 'critical')
   return (
     <div className="page">
       <div style={{ marginBottom: 6 }}><Link to="/admin/whatsapp" style={{ fontSize: 13 }}>← WhatsApp</Link></div>
       <div className="page-header">
         <div>
-          <h1 className="page-title" style={{ margin: 0 }}>{w.name} <Pill color={PLAN_COLOR[w.plan]}>{w.plan}</Pill></h1>
-          <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 2 }}>{d.owner ? `${d.owner.name} · ${d.owner.email} · ` : ''}WhatsApp {w.whatsapp === 'none' ? 'not connected' : w.whatsapp}{w.provider ? ` (${w.provider})` : ''} · <Link to={`/admin/customers?open=${w.id}`}>customer record</Link></div>
+          <h1 className="page-title" style={{ margin: 0 }}>{w.name} <Pill color={PLAN_COLOR[w.plan]}>{w.plan}</Pill> <Pill color={w.whatsapp === 'active' ? 'var(--success)' : w.whatsapp === 'suspended' ? 'var(--danger)' : 'var(--text-3)'}>{w.whatsapp === 'none' ? 'not connected' : w.whatsapp}</Pill></h1>
+          <div style={{ color: 'var(--text-3)', fontSize: 13.5, marginTop: 4 }}>{d.owner ? `${d.owner.name} · ${d.owner.email} · ` : ''}{w.provider ? `${w.provider} · ` : ''}last {d.window_days} days</div>
         </div>
+        <Link className="btn btn-ghost" to={`/admin/customers?open=${w.id}`}>Customer record →</Link>
       </div>
 
-      {w.flags.length > 0 && <div className="card card-body" style={{ marginBottom: 14 }}>{w.flags.map(f => <div key={f.code} style={{ padding: '3px 0' }}><Pill color={SEVERITY_COLOR[f.severity]}>{f.severity}</Pill> {f.text}</div>)}</div>}
+      {w.flags.length > 0 && <div className={'wa-banner' + (critical ? ' bad' : '')} style={{ display: 'grid', gap: 6 }}>{w.flags.map(f => <div key={f.code}><Pill color={SEVERITY_COLOR[f.severity]}>{f.severity}</Pill> {f.text}</div>)}</div>}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-        <Kpi label={`Sent · ${d.window_days} days`} value={w.sent.toLocaleString('en-IN')} sub={`${w.marketing.toLocaleString('en-IN')} marketing · ${w.received.toLocaleString('en-IN')} received`} />
-        <Kpi label="Delivered" value={w.sent ? `${Math.round(w.delivered * 1000 / w.sent) / 10}%` : '—'} sub={`${w.read.toLocaleString('en-IN')} read`} accent="var(--success)" />
-        <Kpi label="Failed" value={w.failure_pct == null ? '—' : `${w.failure_pct}%`} sub={`${w.failed.toLocaleString('en-IN')} messages`} accent={w.failure_pct >= 10 ? 'var(--danger)' : undefined} />
-        <Kpi label="Campaigns" value={w.campaigns} sub={`last ${d.window_days} days`} />
-        <Kpi label="Meta cost · this month" value={w.cost_this_month != null ? `₹${w.cost_this_month.toLocaleString('en-IN')}` : '—'} sub="synced billing" />
+      <div className="cu-kpis">
+        <Kpi icon={MessageCircle} tone="#0a6cc4" label="Sent" value={w.sent.toLocaleString('en-IN')} sub={`${w.marketing.toLocaleString('en-IN')} marketing · ${w.received.toLocaleString('en-IN')} received`} />
+        <Kpi icon={CheckCheck} tone="#1a9d57" label="Delivered" value={dl === null ? '—' : `${dl}%`} sub={`${w.read.toLocaleString('en-IN')} read`} />
+        <Kpi icon={XCircle} tone={w.failure_pct >= 10 ? '#e5484d' : '#8393ad'} label="Failed" value={w.failure_pct == null ? '—' : `${w.failure_pct}%`} sub={`${w.failed.toLocaleString('en-IN')} messages`} accent={w.failure_pct >= 10 ? 'var(--danger)' : undefined} />
+        <Kpi icon={Megaphone} tone="#f98f26" label="Campaigns" value={w.campaigns} sub={`last ${d.window_days} days`} />
+        <Kpi icon={IndianRupee} tone="#0e8f8c" label="Meta cost · this month" value={w.cost_this_month != null ? `₹${w.cost_this_month.toLocaleString('en-IN')}` : '—'} sub="synced billing" />
+      </div>
+
+      <div className="wa-ready" style={{ marginBottom: 14 }}>
+        <div className="card card-body">
+          <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 10 }}>Messages per day <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12.5 }}>(red = failed)</span></div>
+          <DailyBars daily={d.daily} />
+        </div>
+        <div className="card card-body">
+          <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 10 }}>Where messages ended up</div>
+          <div className="wa-funnel">
+            {[['Sent', w.sent, 100, 'blue'], ['Delivered', w.delivered, dl, ''], ['Read', w.read, rd, ''], ['Failed', w.failed, pc(w.failed, w.sent), 'bad']].map(([label, n, p, tone]) => (
+              <div className="wa-fn" key={label}><b>{label}<span>{num(n).toLocaleString('en-IN')}{p !== null && label !== 'Sent' ? ` · ${p}%` : ''}</span></b><Meter value={p || 0} tone={tone} /></div>))}
+          </div>
+        </div>
       </div>
 
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit,minmax(320px,1fr))', marginBottom: 14 }}>
         <PausePanel ws={w} onChanged={load} />
         <div className="card card-body">
-          <div style={{ fontWeight: 700, marginBottom: 6 }}>Numbers</div>
-          {w.numbers.length === 0 ? <span style={{ color: 'var(--text-3)' }}>No number connected.</span> : w.numbers.map(n => <div key={n.number} style={{ padding: '3px 0' }}><b>{n.number}</b> · <QualityDot q={n.quality} /></div>)}
+          <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 8 }}>Numbers</div>
+          {w.numbers.length === 0 ? <span style={{ color: 'var(--text-3)' }}>No number connected.</span> : w.numbers.map(n => <div key={n.number} style={{ padding: '4px 0', display: 'flex', justifyContent: 'space-between', gap: 10 }}><b>{n.number}</b><QualityDot q={n.quality} /></div>)}
           <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--text-3)' }}>Quality is synced from Meta every 6 hours. Yellow or red automatically pauses marketing until Meta restores green.</div>
         </div>
       </div>
 
-      <div className="card card-body" style={{ marginBottom: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 10 }}>Messages per day <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12.5 }}>(red = failed)</span></div>
-        <DailyBars daily={d.daily} />
-      </div>
-
       <div style={{ display: 'grid', gap: 14, gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', marginBottom: 14 }}>
         <div className="card">
-          <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Why messages failed</div>
-          <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ padding: '14px 18px 4px', fontWeight: 800, color: '#0a1f44' }}>Why messages failed</div>
+          <div style={{ overflowX: 'auto' }}><table className="cu-table plain">
             <thead><tr><th style={th}>Error from Meta</th><th style={th}>Messages</th></tr></thead>
             <tbody>
               {d.errors.length === 0 && <tr><td colSpan={2} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No failures with an error message.</td></tr>}
@@ -109,8 +128,8 @@ export default function AdminWhatsappWorkspacePage() {
           </table></div>
         </div>
         <div className="card">
-          <div style={{ padding: '14px 16px 4px', fontWeight: 700 }}>Meta billing</div>
-          <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div style={{ padding: '14px 18px 4px', fontWeight: 800, color: '#0a1f44' }}>Meta billing</div>
+          <div style={{ overflowX: 'auto' }}><table className="cu-table plain">
             <thead><tr>{['Month', 'Category', 'Messages', 'Cost'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
             <tbody>
               {d.billing.length === 0 && <tr><td colSpan={4} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No billing synced yet.</td></tr>}
@@ -120,27 +139,19 @@ export default function AdminWhatsappWorkspacePage() {
         </div>
       </div>
 
-      <h3 style={{ margin: '18px 0 8px' }}>Templates ({d.templates.length})</h3>
+      <div style={{ fontWeight: 800, color: '#0a1f44', fontSize: 16, margin: '18px 0 8px' }}>Templates ({d.templates.length})</div>
       <div className="card" style={{ overflowX: 'auto', marginBottom: 14 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="cu-table plain" style={{ minWidth: 760 }}>
           <thead><tr>{['Template', 'Category', 'Language', 'Status', 'Submitted', 'Meta’s reason'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {d.templates.length === 0 && <tr><td colSpan={6} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No templates.</td></tr>}
-            {d.templates.map(t => <tr key={t.id}><td style={td}><b>{t.display_name || t.name}</b><div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{t.name}</div></td><td style={{ ...td, textTransform: 'capitalize' }}>{t.category}</td><td style={td}>{t.language}</td><td style={td}><Pill color={TPL_COLOR[t.meta_status]}>{t.meta_status}</Pill></td><td style={td}>{fmtDate(t.submitted_at)}</td><td style={td}>{t.rejection_reason || '—'}</td></tr>)}
+            {[...d.templates].sort((a, b) => (b.meta_status === 'rejected') - (a.meta_status === 'rejected')).map(t => <tr key={t.id} style={t.meta_status === 'rejected' ? { background: '#fff4f3' } : undefined}><td style={td}><div className="cu-name">{t.display_name || t.name}</div><div className="cu-sub">{t.name}</div></td><td style={{ ...td, textTransform: 'capitalize' }}>{t.category}</td><td style={td}>{t.language}</td><td style={td}><Pill color={TPL_COLOR[t.meta_status]}>{t.meta_status}</Pill></td><td style={td}>{fmtDate(t.submitted_at)}</td><td style={td}>{t.rejection_reason || '—'}</td></tr>)}
           </tbody>
         </table>
       </div>
 
-      <h3 style={{ margin: '18px 0 8px' }}>Recent campaigns</h3>
-      <div className="card" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>{['Campaign', 'Template', 'Status', 'Audience', 'Sent', 'Delivered', 'Failed', 'Created'].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
-          <tbody>
-            {d.campaigns.length === 0 && <tr><td colSpan={8} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No campaigns.</td></tr>}
-            {d.campaigns.map(c => <tr key={c.id}><td style={td}><b>{c.name}</b></td><td style={td}>{c.template || '—'}</td><td style={td}>{c.status}</td><td style={td}>{c.total_contacts}</td><td style={td}>{c.sent}</td><td style={td}>{c.delivered}</td><td style={{ ...td, color: num(c.failed) > 0 ? 'var(--danger)' : undefined }}>{c.failed}</td><td style={td}>{fmtDateTime(c.created_at)}</td></tr>)}
-          </tbody>
-        </table>
-      </div>
+      <div style={{ fontWeight: 800, color: '#0a1f44', fontSize: 16, margin: '18px 0 8px' }}>Recent campaigns</div>
+      <div className="card"><CampaignTable rows={d.campaigns} empty="No campaigns." /></div>
     </div>
   )
 }
