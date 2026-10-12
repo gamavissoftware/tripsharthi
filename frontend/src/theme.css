@@ -294,3 +294,41 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .of-preview { background: #f7fafd; border: 1px solid #dbe6f3; border-radius: 12px; padding: 10px 14px; max-width: 340px; font-size: 13.5px; }
 .of-preview > div { display: flex; justify-content: space-between; padding: 3px 0; }
 .of-preview .tot { border-top: 1px solid #dbe6f3; margin-top: 4px; padding-top: 6px; font-weight: 800; color: #0a1f44; }
+
+/* Admin: support inbox and ticket */
+.cu-table tr.sp-late { background: #fff4f3; } .cu-table tr.sp-late:hover { background: #ffeceb; }
+.cu-table tr.sp-wait { background: #fffaf0; }
+.sp-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #0a6cc4; margin-right: 7px; }
+.sp-who { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.sp-who i { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, #0a6cc4, #12a89e); color: #fff; font-style: normal; font-size: 10.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.sp-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; color: #6b7a93; font-size: 13px; }
+.sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 14px; align-items: start; }
+@media (max-width: 960px) { .sp-grid { grid-template-columns: 1fr; } }
+.sp-thread { display: grid; gap: 14px; max-height: 62vh; overflow: auto; }
+.sp-event { text-align: center; color: #8393ad; font-size: 12.5px; }
+.sp-msg { max-width: 88%; } .sp-msg.customer { justify-self: start; } .sp-msg.team, .sp-msg.note { justify-self: end; }
+.sp-by { font-size: 12px; color: #8393ad; margin-bottom: 3px; } .sp-msg.team .sp-by, .sp-msg.note .sp-by { text-align: right; }
+.sp-bubble { white-space: pre-wrap; overflow-wrap: anywhere; padding: 10px 14px; border-radius: 14px; background: #f3f7fc; line-height: 1.5; }
+.sp-msg.team .sp-bubble { background: #e3f0fc; border-bottom-right-radius: 4px; } .sp-msg.customer .sp-bubble { border-bottom-left-radius: 4px; }
+.sp-msg.note .sp-bubble { background: #fff8e6; border: 1px dashed #f0b64d; }
+.sp-tabs { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap; }
+.sp-tabs > button { border: none; background: #eef3f9; color: #5b6b86; padding: 7px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.sp-tabs > button.on { background: #0a6cc4; color: #fff; } .sp-tabs > button.on.warn { background: #f59e0b; }
+.sp-tpl { margin-left: auto; position: relative; }
+.sp-tpl-menu { position: absolute; right: 0; top: 100%; z-index: 20; background: #fff; border: 1px solid #dbe6f3; border-radius: 12px; box-shadow: 0 10px 30px rgba(10,31,68,.18); padding: 6px; min-width: 220px; display: grid; }
+.sp-tpl-menu button { text-align: left; border: none; background: none; padding: 8px 10px; border-radius: 8px; cursor: pointer; font: inherit; }
+.sp-tpl-menu button:hover { background: #f3f8fd; }
+.sp-note-input { background: #fffdf5; border-color: #f0d48a; }
+
+/* Admin: partners */
+.pt-av { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #12a89e, #0a6cc4); color: #fff; font-weight: 800; font-size: 13px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pt-links { margin-bottom: 14px; display: grid; gap: 4px; }
+.pt-link { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-top: 1px solid #eef3f9; flex-wrap: wrap; }
+.pt-link:first-child { border-top: none; }
+.pt-link small { width: 150px; color: #6b7a93; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; font-weight: 700; flex-shrink: 0; }
+.pt-url { flex: 1; min-width: 200px; overflow-wrap: anywhere; font-size: 13.5px; color: #1f2d46; }
+.pt-timeline { display: grid; gap: 0; }
+.pt-ev { display: flex; gap: 12px; padding: 9px 0; border-top: 1px solid #eef3f9; font-size: 13.5px; }
+.pt-ev:first-child { border-top: none; }
+.pt-ev i { width: 9px; height: 9px; border-radius: 50%; background: #0a6cc4; margin-top: 6px; flex-shrink: 0; }
+.pt-ev b { text-transform: capitalize; color: #0a1f44; } .pt-ev small { display: block; color: #8393ad; font-size: 12px; margin-top: 1px; }

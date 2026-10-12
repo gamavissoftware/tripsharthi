@@ -367,8 +367,11 @@ final class PartnerService
         $refs = []; foreach ($db->query('SELECT referred_partner_id pid, COUNT(*) n FROM tenants WHERE referred_partner_id IS NOT NULL AND deleted_at IS NULL GROUP BY referred_partner_id')->getResultArray() as $r) { $refs[(int) $r['pid']] = (int) $r['n']; }
         $paying = []; foreach ($db->query("SELECT t.referred_partner_id pid, COUNT(DISTINCT t.id) n FROM tenants t JOIN subscriptions s ON s.tenant_id = t.id AND s.status = 'active' AND s.amount_paise > 0 AND s.razorpay_sub_id NOT LIKE 'admin-%' AND s.current_period_end > ?
                                             WHERE t.referred_partner_id IS NOT NULL GROUP BY t.referred_partner_id", [$now])->getResultArray() as $r) { $paying[(int) $r['pid']] = (int) $r['n']; }
-        return array_map(function (array $p) use ($refs, $paying) {
+        $rev = []; foreach ($db->query("SELECT partner_id pid, COALESCE(SUM(base_paise), 0) revenue, MAX(earned_at) last_at FROM partner_commissions WHERE status <> 'void' GROUP BY partner_id")->getResultArray() as $r) { $rev[(int) $r['pid']] = $r; }
+        $recent = []; foreach ($db->query('SELECT referred_partner_id pid, COUNT(*) n FROM tenants WHERE referred_partner_id IS NOT NULL AND deleted_at IS NULL AND referred_at >= ? GROUP BY referred_partner_id', [date('Y-m-d H:i:s', $this->ts() - 30 * 86400)])->getResultArray() as $r) { $recent[(int) $r['pid']] = (int) $r['n']; }
+        return array_map(function (array $p) use ($refs, $paying, $rev, $recent) {
             $v = $this->view($p); $v['referrals'] = $refs[(int) $p['id']] ?? 0; $v['paying'] = $paying[(int) $p['id']] ?? 0; $v['balances'] = $this->balances((int) $p['id']);
+            $v['has_payout_details'] = ! empty($p['payout_enc']); $v['revenue_paise'] = (int) ($rev[(int) $p['id']]['revenue'] ?? 0); $v['last_commission_at'] = $rev[(int) $p['id']]['last_at'] ?? null; $v['referrals_30d'] = $recent[(int) $p['id']] ?? 0;
             return $v;
         }, $rows);
     }

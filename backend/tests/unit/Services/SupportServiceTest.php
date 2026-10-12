@@ -46,6 +46,36 @@ final class SupportServiceTest extends CIUnitTestCase
         return $s->create($tenant, $user, ['subject' => $subject, 'message' => 'The connect button does nothing for me.', 'category' => 'whatsapp'])['id'];
     }
 
+    public function testInboxNumbersShowHowLongCustomersHaveWaitedAndHowFastWeAnswer(): void
+    {
+        $now = strtotime('2026-10-12 12:00:00 UTC');
+        $a = $this->open($this->svc($now - 30 * 3600), 1, 1, 'Old waiting request');
+        $b = $this->open($this->svc($now - 2 * 3600), 2, 3, 'Fresh waiting request');
+        $c = $this->open($this->svc($now - 10 * 3600), 1, 1, 'Answered request');
+        $this->svc($now - 10 * 3600 + 90 * 60)->adminReply($c, 9, 'On it, looking at it now.', 'pending');
+        $n = $this->svc($now)->counts();
+        $this->assertSame([2, 1, 1, 30, 90, 24], [$n['unanswered'], $n['past_target'], $n['pending'], $n['oldest_waiting_hours'], $n['avg_first_response_minutes'], $n['target_hours']]);
+
+        $rows = array_column($this->svc($now)->adminList('active')['rows'], null, 'id');
+        $this->assertSame([30, true], [$rows[$a]['waiting_hours'], $rows[$a]['past_target']]);
+        $this->assertSame([2, false], [$rows[$b]['waiting_hours'], $rows[$b]['past_target']]);
+        $this->assertSame([null, false], [$rows[$c]['waiting_hours'], $rows[$c]['past_target']], 'a request we answered is not waiting on us');
+    }
+
+    public function testTicketDetailCarriesTheCustomerCardPreviousRequestsAndFirstResponseTime(): void
+    {
+        db_connect()->table('subscriptions')->truncate();   // other test classes leave paid periods behind: this one needs a workspace with none
+        $now = strtotime('2026-10-12 12:00:00 UTC');
+        $a = $this->open($this->svc($now - 30 * 3600), 1, 1, 'Old waiting request');
+        $c = $this->open($this->svc($now - 10 * 3600), 1, 1, 'Answered request');
+        $this->svc($now - 10 * 3600 + 90 * 60)->adminReply($c, 9, 'On it, looking at it now.', 'pending');
+        $d = $this->svc($now)->adminDetail($c);
+        $this->assertSame(90, $d['first_response_minutes']);
+        $this->assertSame([$a], array_column($d['previous'], 'id'), 'the other requests from this workspace');
+        $this->assertSame('free', $d['customer']['billing']['state']); $this->assertArrayHasKey('flags', $d['customer']); $this->assertSame('u1@example.com', $d['customer']['owner']['email']);
+        $this->assertNull($this->svc($now)->adminDetail($a)['first_response_minutes'], 'nobody has answered yet');
+    }
+
     public function testCreateAndTeamAndCustomerThread(): void
     {
         $s = $this->svc(); $id = $this->open($s);

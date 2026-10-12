@@ -211,6 +211,18 @@ final class PartnerServiceTest extends CIUnitTestCase
 
     // ---- commissions -----------------------------------------------------------------------------------------------------------------------
 
+    public function testThePartnerListShowsRevenueRecentReferralsAndWhetherPayoutDetailsExist(): void
+    {
+        $p = $this->activePartner(['commission_pct' => 25, 'hold_days' => 10]);
+        $this->svc()->attributeSignup(1, $p['code'], 'owner1@customer1.test');
+        $this->pay(1);
+        $row = $this->svc()->partners()[0];
+        $this->assertSame([399_900, 1, 1, false], [$row['revenue_paise'], $row['referrals'], $row['referrals_30d'], $row['has_payout_details']], 'revenue is the price the referred customer paid, before GST');
+        $this->assertNotNull($row['last_commission_at']);
+        $this->svc()->savePayoutDetails($p['id'], ['method' => 'upi', 'upi' => 'priya@okbank'], self::PW);
+        $this->assertTrue($this->svc()->partners()[0]['has_payout_details']);
+    }
+
     public function testAReferredCustomersPaymentEarnsTheConfiguredCommissionAfterAHold(): void
     {
         $p = $this->activePartner(['commission_pct' => 25, 'hold_days' => 10]);

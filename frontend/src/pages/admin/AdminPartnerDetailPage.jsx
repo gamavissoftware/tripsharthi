@@ -3,7 +3,9 @@ import { Link, useParams } from 'react-router-dom'
 import { admin } from '../../api/admin'
 import { inr } from '../../api/travel'
 import { toast } from '../../components/Toast'
+import { Wallet, Users, Hourglass, Landmark, CheckCircle2, Copy } from 'lucide-react'
 import { Kpi, Pill, InviteBox } from './AdminUi'
+import AdminReasonDialog from './AdminReasonDialog'
 import { th, td, fmtDate, fmtDateTime, PLAN_COLOR, PARTNER_STATUS_COLOR } from './adminUtil'
 import { confirmAsk } from '../../components/confirmAsk'
 
@@ -88,6 +90,8 @@ export default function AdminPartnerDetailPage() {
   const [err, setErr] = useState('')
   const [edit, setEdit] = useState(false)
   const [invite, setInvite] = useState(null)
+  const [voiding, setVoiding] = useState(null)
+  const [cf, setCf] = useState('all')
   const load = useCallback(() => admin.partner(id).then(r => { setD(r); setErr('') }).catch(e => setErr(e.message || 'Not found')), [id])
   useEffect(() => { load() }, [load])
 
@@ -105,10 +109,8 @@ export default function AdminPartnerDetailPage() {
     if (!(await confirmAsk(msg))) return
     try { const r = await admin.partnerInvite(p.id, sendEmail); setInvite({ url: r.invite_url, emailed: r.emailed, emailTo: r.email_to, emailError: r.email_error }); load() } catch (e) { toast.error('Not issued', e.message) }
   }
-  async function voidIt(c) {
-    const reason = window.prompt(`Void the ${inr(c.amount_paise)} commission for ${c.tenant_name || 'this customer'}? It cannot be undone.\n\nReason (kept in the log):`)
-    if (!reason) return
-    try { await admin.voidCommission(c.id, reason); toast.success('Commission voided'); load() } catch (e) { toast.error('Not voided', e.message) }
+  async function doVoid(reason) {
+    try { await admin.voidCommission(voiding.id, reason); toast.success('Commission voided'); setVoiding(null); load() } catch (e) { toast.error('Not voided', e.message) }
   }
 
   return (
@@ -131,18 +133,20 @@ export default function AdminPartnerDetailPage() {
       {invite && <InviteBox url={invite.url} emailed={invite.emailed} emailTo={invite.emailTo} emailError={invite.emailError} onClose={() => setInvite(null)} />}
       {edit && <EditTerms p={{ ...p, notes: d.partner.notes }} onCancel={() => setEdit(false)} onSaved={() => { setEdit(false); load() }} />}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
-        <Kpi label="Available to pay" value={inr(b.available_paise)} accent={b.available_paise > 0 ? 'var(--warning)' : undefined} sub="past the hold" />
-        <Kpi label="On hold" value={inr(b.pending_paise)} sub="not yet payable" />
-        <Kpi label="Paid out" value={inr(b.paid_paise)} accent="var(--success)" sub={`${d.payouts.length} payouts`} />
-        <Kpi label="Voided" value={inr(b.void_paise)} sub="cancelled" />
+      <div className="cu-kpis">
+        <Kpi icon={Users} tone="#0a6cc4" label="Customers referred" value={d.referred.length} sub={`${d.referred.filter(t => num(t.paying) > 0).length} paying now${d.referred.length ? ` (${Math.round(d.referred.filter(t => num(t.paying) > 0).length * 100 / d.referred.length)}%)` : ''}`} />
+        <Kpi icon={Wallet} tone="#12a89e" label="Revenue brought in" value={inr(d.referred.reduce((a, t) => a + num(t.paid_paise), 0))} sub="price before GST, from referred customers" />
+        <Kpi icon={Landmark} tone={b.available_paise > 0 ? '#d93025' : '#8a99b3'} label="Ready to pay" value={inr(b.available_paise)} accent={b.available_paise > 0 ? '#d93025' : undefined} sub="past the hold period" />
+        <Kpi icon={Hourglass} tone="#f59e0b" label="On hold" value={inr(b.pending_paise)} sub="not yet payable" />
+        <Kpi icon={CheckCircle2} tone="#1a9d57" label="Paid out" value={inr(b.paid_paise)} sub={`${d.payouts.length} payout${d.payouts.length === 1 ? '' : 's'}${b.void_paise ? ` · ${inr(b.void_paise)} voided` : ''}`} />
       </div>
 
-      <div className="card card-body" style={{ marginBottom: 14, display: 'grid', gap: 10, gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', fontSize: 13 }}>
-        <div><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>Referral code</div><b style={{ fontFamily: 'ui-monospace,monospace', fontSize: 15 }}>{p.code}</b></div>
-        <div><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>App sign-up link</div><span style={{ wordBreak: 'break-all' }}>{p.links.app_link}</span> <button className="btn btn-ghost btn-sm" onClick={() => copy(p.links.app_link, 'Link')}>Copy</button></div>
-        <div><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>Website link</div><span style={{ wordBreak: 'break-all' }}>{p.links.site_link}</span> <button className="btn btn-ghost btn-sm" onClick={() => copy(p.links.site_link, 'Link')}>Copy</button></div>
-        {d.coupons.length > 0 && <div><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>Partner coupon codes</div>{d.coupons.map(c => <Pill key={c.id} color={c.active === '1' || c.active === 1 ? 'var(--success)' : 'var(--text-3)'}>{c.code}</Pill>)}</div>}
+      <div className="card card-body pt-links">
+        <div className="pt-link"><small>Referral code</small><span className="of-code"><b>{p.code}</b><button type="button" onClick={() => copy(p.code, 'Code')} aria-label="Copy code"><Copy size={12} /></button></span></div>
+        <div className="pt-link"><small>App sign-up link</small><span className="pt-url">{p.links.app_link}</span><button className="btn btn-ghost btn-sm" onClick={() => copy(p.links.app_link, 'Sign-up link')}>Copy</button></div>
+        <div className="pt-link"><small>Website link</small><span className="pt-url">{p.links.site_link}</span><button className="btn btn-ghost btn-sm" onClick={() => copy(p.links.site_link, 'Website link')}>Copy</button></div>
+        <div className="pt-link"><small>Ready-made message</small><span className="pt-url">Run your travel business from one place: enquiries, quotes, WhatsApp and GST billing. Try TripSarthi: {p.links.site_link}</span><button className="btn btn-ghost btn-sm" onClick={() => copy(`Run your travel business from one place: enquiries, quotes, WhatsApp and GST billing. Try TripSarthi: ${p.links.site_link}`, 'Message')}>Copy</button></div>
+        {d.coupons.length > 0 && <div className="pt-link"><small>Partner coupon codes</small><span>{d.coupons.map(c => <Pill key={c.id} color={c.active === '1' || c.active === 1 ? 'var(--success)' : 'var(--text-3)'}>{c.code}</Pill>)}</span></div>}
       </div>
 
       {p.status !== 'invited' && <PayoutPanel d={d} onDone={load} />}
@@ -167,17 +171,18 @@ export default function AdminPartnerDetailPage() {
       </div>
 
       <h3 style={{ margin: '18px 0 8px' }}>Commissions</h3>
+      {d.commissions.length > 0 && <div className="cu-chips">{[['all', 'All'], ['pending', 'Pending'], ['paid', 'Paid'], ['void', 'Voided']].map(([k, l]) => <button key={k} type="button" className={'cu-chip' + (cf === k ? ' on' : '')} onClick={() => setCf(k)}>{l}<b>{k === 'all' ? d.commissions.length : d.commissions.filter(c => c.status === k).length}</b></button>)}</div>}
       <div className="card" style={{ overflowX: 'auto', marginBottom: 14 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>{['Earned', 'Customer', 'Plan', 'Customer paid', 'Rate', 'Commission', 'Payable from', 'Status', ''].map(h => <th key={h} style={th}>{h}</th>)}</tr></thead>
           <tbody>
             {d.commissions.length === 0 && <tr><td colSpan={9} style={{ ...td, textAlign: 'center', color: 'var(--text-3)' }}>No commissions yet — they appear when a referred customer pays.</td></tr>}
-            {d.commissions.map(c => (
+            {d.commissions.filter(c => cf === 'all' || c.status === cf).map(c => (
               <tr key={c.id}>
                 <td style={td}>{fmtDateTime(c.earned_at)}</td><td style={td}>{c.tenant_name || `#${c.tenant_id}`}</td><td style={td}>{c.plan} · {c.cycle}</td>
                 <td style={td}>{inr(num(c.base_paise))}</td><td style={td}>{num(c.rate_pct)}%</td><td style={td}><b>{inr(num(c.amount_paise))}</b></td><td style={td}>{fmtDate(c.payable_after)}</td>
                 <td style={td}><Pill color={COMM_COLOR[c.status]}>{c.status}</Pill>{c.void_reason && <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{c.void_reason}</div>}</td>
-                <td style={td}>{c.status === 'pending' && <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => voidIt(c)}>Void</button>}</td>
+                <td style={td}>{c.status === 'pending' && <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => setVoiding(c)}>Void</button>}</td>
               </tr>))}
           </tbody>
         </table>
@@ -195,10 +200,11 @@ export default function AdminPartnerDetailPage() {
       </div>
 
       <h3 style={{ margin: '18px 0 8px' }}>Activity</h3>
-      <div className="card card-body" style={{ fontSize: 13 }}>
+      <div className="card card-body pt-timeline">
         {d.events.length === 0 && <span style={{ color: 'var(--text-3)' }}>Nothing yet.</span>}
-        {d.events.map(e => <div key={e.id} style={{ padding: '4px 0', borderBottom: '1px solid var(--border)' }}><span style={{ color: 'var(--text-3)' }}>{fmtDateTime(e.created_at)}</span> · <b>{e.action}</b>{e.detail ? ` — ${e.detail}` : ''} <span style={{ color: 'var(--text-3)' }}>({e.actor}{e.ip ? `, ${e.ip}` : ''})</span></div>)}
+        {d.events.map(e => <div key={e.id} className="pt-ev"><i /><div><b>{String(e.action).replace(/[._]/g, ' ')}</b>{e.detail ? <span> — {e.detail}</span> : null}<small>{fmtDateTime(e.created_at)} · {e.actor}{e.ip ? ` · ${e.ip}` : ''}</small></div></div>)}
       </div>
+      {voiding && <AdminReasonDialog title={`Void the ${inr(voiding.amount_paise)} commission?`} body={`For ${voiding.tenant_name || 'this customer'}. It cannot be undone, and a commission that was already paid out cannot be voided.`} label="Reason (kept in the log)" placeholder="e.g. Customer was refunded after a duplicate payment" confirmLabel="Void commission" danger minLength={5} onConfirm={doVoid} onClose={() => setVoiding(null)} />}
     </div>
   )
 }

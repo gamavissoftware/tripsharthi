@@ -22,6 +22,8 @@ final class SupportService
     public const CATEGORIES = ['billing' => 'Billing & plans', 'whatsapp' => 'WhatsApp', 'technical' => 'Something is not working', 'account' => 'Account & login', 'howto' => 'How do I…?', 'feature' => 'Feature request', 'other' => 'Other'];
     public const PRIORITIES = ['low', 'normal', 'high', 'urgent'];
     public const STATUSES   = ['open', 'pending', 'resolved', 'closed'];
+    /** The reply target: a customer waiting on us for longer than this is "past target" (shown red in the admin app). */
+    public const TARGET_HOURS = 24;
 
     private array $pending = [];
 
@@ -131,11 +133,24 @@ final class SupportService
         return ['rows' => array_map(fn ($r) => $this->teamRow($r), $rows), 'total' => $total, 'page' => $page, 'per_page' => $perPage, 'counts' => $this->counts()];
     }
 
+    /**
+     * Headline numbers for the support inbox: what waits on us (and for how long), what waits on the customer, how fast we answer.
+     * "Waiting" = open and the customer wrote last. Average first response covers requests raised in the last 30 days that have a team reply.
+     */
     public function counts(): array
     {
-        $db = db_connect();
-        $r = $db->query("SELECT SUM(status = 'open' AND last_from = 'customer') unanswered, SUM(status IN ('open','pending')) active, SUM(status = 'resolved') resolved, COUNT(*) total FROM support_tickets")->getRowArray();
-        return ['unanswered' => (int) ($r['unanswered'] ?? 0), 'active' => (int) ($r['active'] ?? 0), 'resolved' => (int) ($r['resolved'] ?? 0), 'total' => (int) ($r['total'] ?? 0)];
+        $db = db_connect(); $now = $this->stamp(); $ts = $this->now ?? time();
+        $r = $db->query("SELECT SUM(status = 'open' AND last_from = 'customer') unanswered, SUM(status IN ('open','pending')) active, SUM(status = 'pending') pending, SUM(status = 'open') open_n, SUM(status = 'resolved') resolved, SUM(status = 'closed') closed_n, COUNT(*) total,
+                                MIN(CASE WHEN status = 'open' AND last_from = 'customer' THEN last_message_at END) oldest_waiting,
+                                SUM(status = 'open' AND last_from = 'customer' AND last_message_at < ?) past_target,
+                                SUM(status IN ('resolved','closed') AND updated_at >= ?) resolved_7d
+                         FROM support_tickets", [date('Y-m-d H:i:s', $ts - self::TARGET_HOURS * 3600), date('Y-m-d H:i:s', $ts - 7 * 86400)])->getRowArray();
+        $fr = $db->query("SELECT AVG(TIMESTAMPDIFF(MINUTE, t.created_at, m.first_team)) mins, COUNT(*) n FROM support_tickets t JOIN (SELECT ticket_id, MIN(created_at) first_team FROM support_messages WHERE author_type = 'team' GROUP BY ticket_id) m ON m.ticket_id = t.id
+                          WHERE t.created_at >= ?", [date('Y-m-d H:i:s', $ts - 30 * 86400)])->getRowArray();
+        return ['unanswered' => (int) ($r['unanswered'] ?? 0), 'active' => (int) ($r['active'] ?? 0), 'resolved' => (int) ($r['resolved'] ?? 0), 'total' => (int) ($r['total'] ?? 0),
+            'pending' => (int) ($r['pending'] ?? 0), 'open' => (int) ($r['open_n'] ?? 0), 'closed' => (int) ($r['closed_n'] ?? 0), 'past_target' => (int) ($r['past_target'] ?? 0), 'resolved_7d' => (int) ($r['resolved_7d'] ?? 0),
+            'oldest_waiting_hours' => $r['oldest_waiting'] ? (int) max(0, floor(($ts - strtotime($r['oldest_waiting'] . ' UTC')) / 3600)) : null,
+            'avg_first_response_minutes' => ($fr['n'] ?? 0) > 0 ? (int) round((float) $fr['mins']) : null, 'target_hours' => self::TARGET_HOURS];
     }
 
     public function adminDetail(int $id): array
@@ -147,7 +162,13 @@ final class SupportService
         if ((int) $t['team_unread'] === 1) { $db->table('support_tickets')->where('id', $id)->update(['team_unread' => 0]); }
         $msgs = $db->query('SELECT m.id, m.author_type, m.author_id, m.body, m.created_at, u.name author_name FROM support_messages m LEFT JOIN users u ON u.id = m.author_id WHERE m.ticket_id = ? ORDER BY m.id', [$id])->getResultArray();
         $others = (int) $db->table('support_tickets')->where('tenant_id', $t['tenant_id'])->where('id !=', $id)->countAllResults();
+        $first = $db->query("SELECT MIN(created_at) f FROM support_messages WHERE ticket_id = ? AND author_type = 'team'", [$id])->getRowArray()['f'] ?? null;
+        $prev = $db->query('SELECT id, subject, status, created_at FROM support_tickets WHERE tenant_id = ? AND id <> ? ORDER BY id DESC LIMIT 5', [$t['tenant_id'], $id])->getResultArray();
+        $health = (new \App\Services\Admin\CustomerDirectoryService($this->now))->one((int) $t['tenant_id']);   // the customer card: billing state, last seen, flags
         return $this->teamRow($t) + ['tenant_status' => $t['tenant_status'], 'user_role' => $t['user_role'], 'other_tickets' => $others,
+            'first_response_minutes' => $first ? (int) max(0, round((strtotime($first . ' UTC') - strtotime($t['created_at'] . ' UTC')) / 60)) : null,
+            'previous' => array_map(static fn ($p) => ['id' => (int) $p['id'], 'number' => self::number((int) $p['id']), 'subject' => $p['subject'], 'status' => $p['status'], 'created_at' => $p['created_at']], $prev),
+            'customer' => $health === null ? null : ['billing' => $health['billing'], 'last_active' => $health['last_active'], 'flags' => $health['flags'], 'usage' => $health['usage'], 'whatsapp' => $health['whatsapp'], 'owner' => $health['owner'], 'created_at' => $health['created_at']],
             'messages' => array_map(static fn ($m) => ['id' => (int) $m['id'], 'from' => $m['author_type'], 'name' => $m['author_name'], 'body' => $m['body'], 'at' => $m['created_at']], $msgs)];
     }
 
@@ -306,7 +327,15 @@ final class SupportService
         return ['id' => (int) $r['id'], 'number' => self::number((int) $r['id']), 'subject' => $r['subject'], 'category' => $r['category'], 'category_label' => self::CATEGORIES[$r['category']] ?? 'Other',
             'priority' => $r['priority'], 'status' => $r['status'], 'last_from' => $r['last_from'], 'unread' => (int) $r['team_unread'] === 1, 'last_message_at' => $r['last_message_at'], 'created_at' => $r['created_at'],
             'tenant_id' => (int) $r['tenant_id'], 'tenant_name' => $r['tenant_name'] ?? '', 'tenant_plan' => $r['tenant_plan'] ?? '', 'user_name' => $r['user_name'] ?? '', 'user_email' => $r['user_email'] ?? '',
-            'assigned_to' => $r['assigned_to'] ? (int) $r['assigned_to'] : null, 'assignee_name' => $r['assignee_name'] ?? null];
+            'assigned_to' => $r['assigned_to'] ? (int) $r['assigned_to'] : null, 'assignee_name' => $r['assignee_name'] ?? null,
+            'waiting_hours' => $this->waitingHours($r), 'past_target' => ($w = $this->waitingHours($r)) !== null && $w >= self::TARGET_HOURS];
+    }
+
+    /** Hours the customer has been waiting on us (open + they wrote last), else null. */
+    private function waitingHours(array $r): ?int
+    {
+        if ($r['status'] !== 'open' || $r['last_from'] !== 'customer' || empty($r['last_message_at'])) { return null; }
+        return (int) max(0, floor((($this->now ?? time()) - strtotime($r['last_message_at'] . ' UTC')) / 3600));
     }
 
     private function clean(string $s, int $max): string { return mb_substr(trim(preg_replace('/\s+/u', ' ', strip_tags($s)) ?? ''), 0, $max); }
