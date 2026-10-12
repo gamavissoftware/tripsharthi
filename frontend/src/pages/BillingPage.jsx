@@ -117,11 +117,15 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-bill-css')) 
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────
-const PLAN_LIMITS = {
-  free:    { contacts:500,    agents:1,   active_flows:2,  waba:1  },
-  starter: { contacts:2000,   agents:2,   active_flows:5,  waba:1  },
-  growth:  { contacts:10000,  agents:10,  active_flows:20, waba:3  },
-  pro:     { contacts:999999, agents:999, active_flows:999,waba:999 },
+// What each plan enforces comes from the server (GET /billing/status -> plan_limits, the same table the API blocks on). Keys: contacts, agents,
+// active_flows, waba_numbers. Nothing here may carry its own numbers.
+const EMPTY_LIMITS = { contacts: 0, agents: 0, active_flows: 0, waba_numbers: 0 }
+const nf = (n) => Number(n).toLocaleString('en-IN')
+/** The plan card bullets, built from the server's numbers so the card can never promise more than is enforced. */
+function planFeatures(key, L) {
+  if (!L) return []
+  const extra = { starter: ['CSV import', 'Basic analytics'], growth: ['Meta Lead Ads', 'Advanced analytics', 'Priority support'], pro: ['All integrations', 'White-label ready', 'Dedicated support'] }[key] || []
+  return [`${nf(L.waba_numbers)} WhatsApp number${L.waba_numbers === 1 ? '' : 's'}`, `${nf(L.agents)} team agents`, `${nf(L.active_flows)} active flows`, `${nf(L.contacts)} contacts`, ...extra]
 }
 
 const PLANS = [
@@ -133,14 +137,6 @@ const PLANS = [
     annual: 1199,
     color: '#0891b2',
     colorBg: '#e0f2fe',
-    features: [
-      '1 WhatsApp Number',
-      '2 Team agents',
-      '5 Active flows',
-      '2,000 contacts',
-      'CSV import',
-      'Basic analytics',
-    ],
   },
   {
     key: 'growth',
@@ -151,15 +147,6 @@ const PLANS = [
     color: '#0a6cc4',
     colorBg: '#e8f3fc',
     popular: true,
-    features: [
-      '3 WhatsApp Numbers',
-      '10 Team agents',
-      '20 Active flows',
-      '10,000 contacts',
-      'Meta Lead Ads',
-      'Advanced analytics',
-      'Priority support',
-    ],
   },
   {
     key: 'pro',
@@ -169,15 +156,6 @@ const PLANS = [
     annual: 5599,
     color: '#0e8f8c',
     colorBg: '#e8f3fc',
-    features: [
-      'Unlimited WhatsApp Numbers',
-      'Unlimited agents',
-      'Unlimited flows',
-      'Unlimited contacts',
-      'All integrations',
-      'White-label ready',
-      'Dedicated support',
-    ],
   },
 ]
 
@@ -198,9 +176,9 @@ function isPlanLimitError(err) {
 // ── Usage Bar ─────────────────────────────────────────────────────────────
 function UsageBar({ icon, label, current, limit, color }) {
   const isUnlimited = limit >= 999999
-  const pct = isUnlimited || !current ? 0 : Math.min(100, Math.round((current / limit) * 100))
+  const pct = isUnlimited || !current || !limit ? 0 : Math.min(100, Math.round((current / limit) * 100))
   const barColor = pct > 90 ? '#dc2626' : pct >= 75 ? '#f59e0b' : color
-  const displayLimit = isUnlimited ? '∞' : limit.toLocaleString('en-IN')
+  const displayLimit = isUnlimited ? '∞' : limit ? limit.toLocaleString('en-IN') : '…'
   const displayCurrent = current != null ? current.toLocaleString('en-IN') : '—'
 
   return (
@@ -241,7 +219,7 @@ function UsageBar({ icon, label, current, limit, color }) {
 /** Rupees with paise, for amounts that include GST ("₹4,718.82"). */
 const fmtPay = (paise) => '\u20B9' + (Number(paise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer }) {
+function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer, limits }) {
   const isCurrent = currentPlan === plan.key
   const price = isAnnual ? plan.annual : plan.monthly
   const saving = plan.monthly - plan.annual
@@ -329,7 +307,7 @@ function PlanCard({ plan, isAnnual, currentPlan, onSubscribe, subscribing, offer
 
       {/* Features */}
       <div style={{ flex:1, marginBottom:'1.25rem' }}>
-        {plan.features.map(f => (
+        {planFeatures(plan.key, limits).map(f => (
           <div key={f} className="lp-bill-check-item">
             <div className="lp-bill-check-icon" style={{ background: plan.colorBg }}>
               <Check size={11} strokeWidth={3} color={plan.color} />
@@ -736,7 +714,8 @@ function BillingPanel() {
   const currentPlan = isLiveSub ? (sub.plan || 'free') : 'free'
   const subStatus   = isLiveSub ? (sub.status || 'unknown') : 'free'
   const renewsOn    = isLiveSub && sub.current_period_end ? fmtDate(sub.current_period_end) : null
-  const limits      = PLAN_LIMITS[currentPlan] || PLAN_LIMITS.free
+  const planLimits  = billingData?.plan_limits ?? null
+  const limits      = planLimits?.[currentPlan] || planLimits?.free || EMPTY_LIMITS
 
   const contacts    = analyticsLoading ? null : (analyticsData?.contacts_total ?? null)
   const activeFlows = analyticsLoading ? null : (analyticsData?.active_flows ?? null)
@@ -781,7 +760,7 @@ function BillingPanel() {
         const unl = (n) => n >= 999999
         const pctOf = (cur, lim) => (cur == null || unl(lim) || !lim ? null : Math.round(cur / lim * 100))
         const dayLeft = isLiveSub && sub.current_period_end ? Math.ceil((new Date(String(sub.current_period_end).replace(' ', 'T') + 'Z').getTime() - new Date().getTime()) / 86400000) : null
-        const use = (cur, lim) => cur == null ? '…' : `${cur.toLocaleString('en-IN')} / ${unl(lim) ? '∞' : lim.toLocaleString('en-IN')}`
+        const use = (cur, lim) => cur == null || !lim ? '…' : `${cur.toLocaleString('en-IN')} / ${unl(lim) ? '∞' : lim.toLocaleString('en-IN')}`
         const hot = (cur, lim) => (pctOf(cur, lim) ?? 0) >= 90
         const paid = history.find(h => Number(h.amount_paise) > 0)
         return (
@@ -790,7 +769,7 @@ function BillingPanel() {
             <StatTile icon={IcCal} tone={dayLeft !== null && dayLeft <= 7 ? '#e5484d' : '#0a6cc4'} label={subStatus === 'cancelled' ? 'Ends in' : 'Renews in'} value={dayLeft === null ? '—' : dayLeft <= 0 ? 'today' : `${dayLeft} day${dayLeft === 1 ? '' : 's'}`} accent={dayLeft !== null && dayLeft <= 7 ? 'var(--danger)' : undefined} sub={renewsOn ?? 'no paid plan running'} />
             <StatTile icon={IcUsers} tone="#0a6cc4" label="Contacts" value={use(contacts, limits.contacts)} accent={hot(contacts, limits.contacts) ? 'var(--danger)' : undefined} sub={pctOf(contacts, limits.contacts) !== null ? `${pctOf(contacts, limits.contacts)}% used` : undefined} />
             <StatTile icon={IcUser} tone="#0891b2" label="Team seats" value={use(agents, limits.agents)} accent={hot(agents, limits.agents) ? 'var(--danger)' : undefined} />
-            <StatTile icon={IcPhone} tone="#059669" label="WhatsApp numbers" value={use(waba, limits.waba)} />
+            <StatTile icon={IcPhone} tone="#059669" label="WhatsApp numbers" value={use(waba, limits.waba_numbers)} />
             <StatTile icon={IcReceipt} tone="#f98f26" label="GST invoices" value={invoices.length} sub={paid ? `last payment ₹${Math.round(Number(paid.amount_paise) / 100).toLocaleString('en-IN')}` : 'none yet'} />
           </StatRow>)
       })()}
@@ -825,7 +804,7 @@ function BillingPanel() {
         <UsageBar icon={<Users size={15} strokeWidth={2} />} label="Contacts"    current={contacts}    limit={limits.contacts}    color="#0a6cc4" />
         <UsageBar icon={<Zap size={15} strokeWidth={2} />} label="Active Flows" current={activeFlows} limit={limits.active_flows} color="#f59e0b" />
         <UsageBar icon={<User size={15} strokeWidth={2} />} label="Agents"       current={agents}      limit={limits.agents}       color="#0891b2" />
-        <UsageBar icon={<Smartphone size={15} strokeWidth={2} />} label="WABA Numbers" current={waba}        limit={limits.waba}         color="#059669" />
+        <UsageBar icon={<Smartphone size={15} strokeWidth={2} />} label="WABA Numbers" current={waba}        limit={limits.waba_numbers}         color="#059669" />
         <CrmUsageBars />
       </div>
 
@@ -892,6 +871,7 @@ function BillingPanel() {
               onSubscribe={handleSubscribe}
               subscribing={subscribing}
               offer={offers?.plans?.[plan.key]}
+              limits={planLimits?.[plan.key]}
             />
           ))}
         </div>
@@ -928,8 +908,10 @@ function LicensePanel() {
   const [successMsg, setSuccessMsg]             = useState('')
   const [analyticsData, setAnalyticsData]       = useState(null)
   const [analyticsLoading, setAnalyticsLoading] = useState(true)
+  const [serverLimits, setServerLimits] = useState(null)   // self-hosted installs get the top tier's limits; the server says what they are
 
   useEffect(() => {
+    crm.planUsage().then(r => setServerLimits(r.data?.limits ?? null)).catch(() => {})
     billingApi.licenseStatus().then(setLicenseData).catch(e => setError(e.message ?? 'Failed.')).finally(() => setLoading(false))
     analyticsApi.summary()
       .then(res => setAnalyticsData(res?.data ?? res ?? null))
@@ -952,7 +934,7 @@ function LicensePanel() {
     } finally { setActivating(false) }
   }
 
-  const limits      = PLAN_LIMITS['pro']    // self-hosted is always pro-tier
+  const limits      = serverLimits ?? EMPTY_LIMITS
   const contacts    = analyticsLoading ? null : (analyticsData?.contacts_total ?? null)
   const activeFlows = analyticsLoading ? null : (analyticsData?.active_flows ?? null)
   const agents      = analyticsLoading ? null : (analyticsData?.agents_total ?? null)
@@ -1014,7 +996,7 @@ function LicensePanel() {
         <UsageBar icon={<Users size={15} strokeWidth={2} />} label="Contacts"    current={contacts}    limit={limits.contacts}    color="#0a6cc4" />
         <UsageBar icon={<Zap size={15} strokeWidth={2} />} label="Active Flows" current={activeFlows} limit={limits.active_flows} color="#f59e0b" />
         <UsageBar icon={<User size={15} strokeWidth={2} />} label="Agents"       current={agents}      limit={limits.agents}       color="#0891b2" />
-        <UsageBar icon={<Smartphone size={15} strokeWidth={2} />} label="WABA Numbers" current={waba}        limit={limits.waba}         color="#059669" />
+        <UsageBar icon={<Smartphone size={15} strokeWidth={2} />} label="WABA Numbers" current={waba}        limit={limits.waba_numbers}         color="#059669" />
         <CrmUsageBars />
       </div>
 

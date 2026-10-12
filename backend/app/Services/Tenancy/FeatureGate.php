@@ -99,6 +99,12 @@ class FeatureGate
      *
      * @return array{contacts:int, agents:int, active_flows:int, waba_numbers:int}
      */
+    /** Every plan's limits, for the pricing/billing UI (so the page never carries its own copy of the numbers). */
+    public static function allPlanLimits(): array
+    {
+        return self::$planLimits;
+    }
+
     public static function getPlanLimits(string $plan): array
     {
         if (self::isSelfHosted()) {

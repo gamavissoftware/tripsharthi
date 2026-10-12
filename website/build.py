@@ -180,11 +180,11 @@ def pricing_page():
         btn = 'btn-primary' if pop else 'btn-outline'
         return f'''<article class="plan{' pop' if pop else ''}">{'<span class="badge">Most popular</span>' if pop else ''}<h3>{name}</h3><p class="pdesc">{desc}</p><p class="price"><span>₹</span><b data-m="{m}" data-a="{a}">{m}</b><small>/ month + GST</small></p>
         <a class="btn {btn} btn-block" data-app="signup" href="https://app.tripsarthi.com/#/register">Start free</a><ul>{li}</ul></article>'''
-    plans = (plan('Starter', 'For solo agents getting organised', '1,499', '1,199', ['1 WhatsApp number', '2 team agents', '5 active flows', '2,000 contacts', 'CSV import', 'Basic analytics'])
-             + plan('Growth', 'For growing agencies with a sales team', '3,999', '3,199', ['3 WhatsApp numbers', '10 team agents', '20 active flows', '10,000 contacts', 'Meta Lead Ads', 'Advanced analytics', 'Priority support'], True)
-             + plan('Pro', 'For large teams and multi-brand operators', '6,999', '5,599', ['Unlimited WhatsApp numbers', 'Unlimited agents', 'Unlimited flows &amp; contacts', 'All integrations', 'White-label ready', 'Dedicated support']))
+    plans = (plan('Starter', 'For solo agents getting organised', '1,499', '1,199', ['1 WhatsApp number', '3 team agents', '5 active flows', '1,000 contacts', 'CSV import', 'Basic analytics'])
+             + plan('Growth', 'For growing agencies with a sales team', '3,999', '3,199', ['2 WhatsApp numbers', '10 team agents', '20 active flows', '5,000 contacts', 'Meta Lead Ads', 'Advanced analytics', 'Priority support'], True)
+             + plan('Pro', 'For large teams and multi-brand operators', '6,999', '5,599', ['5 WhatsApp numbers', '50 team agents', '100 active flows', '25,000 contacts', 'All integrations', 'White-label ready', 'Dedicated support']))
     yes, no = f'<span class="y">{ico("check")}</span>', '<span class="n">—</span>'
-    rows = [('WhatsApp numbers', '1', '3', 'Unlimited'), ('Team agents', '2', '10', 'Unlimited'), ('Active automation flows', '5', '20', 'Unlimited'), ('Contacts', '2,000', '10,000', 'Unlimited'),
+    rows = [('WhatsApp numbers', '1', '2', '5'), ('Team agents', '3', '10', '50'), ('Active automation flows', '5', '20', '100'), ('Contacts', '1,000', '5,000', '25,000'),
             ('CSV import', yes, yes, yes), ('Meta Lead Ads', no, yes, yes), ('Analytics', 'Basic', 'Advanced', 'Advanced'), ('All integrations', no, no, yes), ('White-label', no, no, yes), ('Support', 'Standard', 'Priority', 'Dedicated')]
     tr = ''.join(f'<tr><th scope="row">{r[0]}</th><td>{r[1]}</td><td class="hl">{r[2]}</td><td>{r[3]}</td></tr>' for r in rows)
     faq = [('Is there a free plan?', 'You can create a free account and explore with your own data. Choose a paid plan when you are ready to connect your WhatsApp number and invite your team.'),

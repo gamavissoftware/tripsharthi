@@ -204,6 +204,8 @@ class BillingController extends ResourceController
                 'status'              => $sub['status'],
                 'current_period_end'  => $sub['current_period_end'],
             ] : null,
+            // every plan's enforced limits: the Billing page shows these (it must never keep its own copy)
+            'plan_limits' => FeatureGate::allPlanLimits(),
         ]);
     }
 
