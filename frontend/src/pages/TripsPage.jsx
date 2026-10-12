@@ -157,7 +157,7 @@ export default function TripsPage({ user }) {
   }
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       <div className="page-header">
         <h1 className="page-title">Trips &amp; Enquiries</h1>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>

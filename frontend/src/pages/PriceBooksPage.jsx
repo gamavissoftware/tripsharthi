@@ -61,7 +61,7 @@ export default function PriceBooksPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 760 }}>
+    <div className="page page-wide">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="ps-h1"><span className="ps-ico"><BadgeIndianRupee size={18} /></span>Price Books</h1>

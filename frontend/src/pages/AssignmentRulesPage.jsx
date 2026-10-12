@@ -107,7 +107,7 @@ export default function AssignmentRulesPage() {
   const userName = (id) => members.find(m => m.id === id)?.name ?? `#${id}`
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-form">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="ps-h1"><span className="ps-ico"><UserCheck size={18} /></span>Assignment Rules</h1>

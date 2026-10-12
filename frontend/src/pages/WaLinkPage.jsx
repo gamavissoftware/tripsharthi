@@ -37,7 +37,7 @@ export default function WaLinkPage() {
     : ''
 
   return (
-    <div className="page" style={{ maxWidth: 860 }}>
+    <div className="page page-form">
       <div className="page-header">
         <div>
           <h1 className="page-title">WhatsApp Link & QR</h1>

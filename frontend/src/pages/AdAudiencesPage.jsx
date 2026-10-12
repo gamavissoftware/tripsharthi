@@ -32,7 +32,7 @@ export default function AdAudiencesPage() {
 
   const ready = (d?.audiences || []).filter(a => a.kind === 'custom' && a.status === 'ready' && a.member_count >= d.min_seed)
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header">
         <div><Link to="/ads/campaigns" style={{ fontSize: 13 }}>← Ad campaigns</Link><h1 className="page-title" style={{ margin: '4px 0' }}>Audiences</h1></div>
         <div style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary" onClick={() => setForm('custom')}>+ Customer audience</button><button className="btn btn-ghost" disabled={ready.length === 0} title={ready.length ? '' : `Needs a customer audience with at least ${d?.min_seed} people`} onClick={() => setForm('lookalike')}>+ Lookalike</button></div>

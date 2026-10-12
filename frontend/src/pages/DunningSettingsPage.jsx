@@ -26,7 +26,7 @@ export default function DunningSettingsPage() {
   const tplName = (id) => cfg.templates.find(t => t.id === id || String(t.id) === String(id))
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-form">
       <div className="page-header"><h1 className="page-title">Payment reminders</h1>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', fontWeight: 700 }}><input type="checkbox" checked={cfg.enabled} onChange={e => setCfg({ ...cfg, enabled: e.target.checked })} /> {cfg.enabled ? 'On' : 'Off'}</label></div>
 

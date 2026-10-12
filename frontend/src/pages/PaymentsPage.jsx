@@ -55,7 +55,7 @@ export default function PaymentsPage() {
   const webhookUrl = config?.webhook_url ?? ''
 
   return (
-    <div className="page" style={{ maxWidth: 920 }}>
+    <div className="page page-wide">
       <div className="page-header">
         <div>
           <h1 className="page-title">Payments</h1>

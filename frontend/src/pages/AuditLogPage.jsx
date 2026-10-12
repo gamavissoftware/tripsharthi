@@ -47,7 +47,7 @@ export default function AuditLogPage() {
   if (forbidden) return <div className="page"><div style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af' }}>🔒 Only owners and admins can view the audit log.</div></div>
 
   return (
-    <div className="page" style={{ maxWidth: 980 }}>
+    <div className="page page-wide">
       <div style={{ marginBottom: '1.25rem' }}>
         <h1 className="ps-h1"><span className="ps-ico"><ScrollText size={18} /></span>Audit Log</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Who changed what, and when.</p>

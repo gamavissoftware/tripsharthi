@@ -76,7 +76,7 @@ export default function ForecastPage() {
   const maxW = Math.max(1, ...(forecast?.by_owner ?? []).map(o => o.weighted))
 
   return (
-    <div className="page" style={{ maxWidth: 960 }}>
+    <div className="page page-wide">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="ps-h1"><span className="ps-ico"><TrendingUp size={18} /></span>Forecast</h1>

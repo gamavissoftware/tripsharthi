@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import { Crown, Shield, Headphones, Eye, EyeOff, Dices, Send, AlertTriangle, Users } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Users as IcUsers, Crown as IcCrown, ShieldCheck as IcShield, User as IcUser } from 'lucide-react'
 
 // ── Inject styles once ──────────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('lp-team-css')) {
@@ -213,7 +215,7 @@ export default function TeamPage() {
   const agentCount = members.filter(m => m.role === 'agent').length
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.75rem', marginBottom: '1.5rem' }}>
         <div>
@@ -227,14 +229,11 @@ export default function TeamPage() {
 
       {/* Stat chips */}
       {!loading && members.length > 0 && (
-        <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-          {[['Total', members.length, '#0a6cc4'], ['Owner', ownerCount, '#0b7a73'], ['Admins', adminCount, '#1d4ed8'], ['Agents', agentCount, '#4b5563']].map(([label, n, c]) => (
-            <div key={label} style={{ padding: '.45rem .9rem', borderRadius: 12, background: '#fff', border: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-              <span style={{ fontSize: 18, fontWeight: 800, color: c }}>{n}</span>
-              <span style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 600 }}>{label}</span>
-            </div>
+        <StatRow>
+          {[['Team members', members.length, '#0a6cc4', IcUsers], ['Owner', ownerCount, '#0b7a73', IcCrown], ['Admins', adminCount, '#1d4ed8', IcShield], ['Agents', agentCount, '#6366f1', IcUser]].map(([label, n, c, Ic]) => (
+            <StatTile key={label} icon={Ic} tone={c} label={label} value={n} />
           ))}
-        </div>
+        </StatRow>
       )}
 
       {error && (

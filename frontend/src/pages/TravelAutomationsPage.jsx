@@ -34,7 +34,7 @@ export default function TravelAutomationsPage() {
   const missing = rows.filter(r => !r.installed).length
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Travel automations</h1>
         {missing > 0 && <button className="btn btn-primary" disabled={!!busy} onClick={() => install(null)}>{busy === 'all' ? 'Installing…' : `Install all (${missing})`}</button>}</div>
 

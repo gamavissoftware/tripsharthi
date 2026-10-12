@@ -32,7 +32,7 @@ export default function EinvoiceSettingsPage() {
   async function runTest() { setBusy('test'); try { setTest(await travel.testEinvoice()) } catch (er) { setTest({ ok: false, message: er.message }) } finally { setBusy('') } }
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-form">
       <div className="page-header"><h1 className="page-title">E-invoicing</h1></div>
       <div className="card card-body" style={{ marginBottom: 14, fontSize: 13.5, color: 'var(--text-2)' }}>
         <b style={{ color: 'var(--text)' }}>Who needs it:</b> businesses whose aggregate turnover is above <b>₹5 crore</b> must register every <b>B2B</b> tax invoice and credit note with the government's Invoice Registration Portal (IRP) <i>before</i> giving it to the customer. The portal returns an <b>IRN</b> and a signed <b>QR code</b>, which TripSarthi prints on the invoice. B2C sales, bills of supply and receipts are not e-invoiced.

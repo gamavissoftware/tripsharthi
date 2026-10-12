@@ -71,7 +71,7 @@ export default function LeadSourcesPage() {
   const remove = async (s) => { if (!window.confirm(`Delete ${s.name}? Leads already received stay in your CRM.`)) return; try { await travel.deleteLeadSource(s.id); load() } catch (e) { toast.error('Failed', e.message) } }
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Lead sources</h1><button className="btn btn-primary" onClick={() => setEdit({})}>+ Add source</button></div>
       <p style={{ color: 'var(--text-2)' }}>Bring enquiries from travel portals, aggregators and partner sites straight into your CRM. Each lead becomes a contact and a trip enquiry, tagged with the portal's name, and the assigned agent gets a phone alert. The same person is never duplicated, and a lead sent twice is ignored.</p>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}

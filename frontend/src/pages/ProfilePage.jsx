@@ -188,7 +188,7 @@ export default function ProfilePage() {
   const role = ROLE_STYLE[user?.role] ?? ROLE_STYLE.agent
 
   return (
-    <div className="page" style={{ maxWidth: 760 }}>
+    <div className="page page-form">
       {/* Header */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>

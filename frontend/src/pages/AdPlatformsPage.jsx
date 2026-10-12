@@ -228,7 +228,7 @@ export default function AdPlatformsPage() {
   if (err) return <div className="page"><div className="card card-body">{err.includes('403') || /permission|forbidden/i.test(err) ? 'Only owners and admins can manage ad platforms.' : err}</div></div>
   if (!st) return <div className="page">Loading…</div>
   return (
-    <div className="page" style={{ maxWidth: 860 }}>
+    <div className="page page-form">
       <div className="page-header"><h1 className="page-title">Ad platforms</h1></div>
       <div className="card card-body" style={{ marginBottom: 16 }}>
         <p style={{ margin: 0 }}>Connect your own Meta and Google accounts so TripSarthi can report <b>enquiries, quotes and confirmed bookings</b> back to the ad platforms. Your credentials are encrypted and never shown again after saving. Lead capture from Meta and Google lead forms is set up under <a href="#/settings/integrations">Integrations</a>.</p>

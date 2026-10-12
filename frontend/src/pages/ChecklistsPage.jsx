@@ -12,7 +12,7 @@ export default function ChecklistsPage() {
     return () => { live = false }
   }, [days])
   return (
-    <div className="page" style={{ maxWidth: 920 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Documents & visas</h1></div>
       <p style={{ color: 'var(--text-2)' }}>Upcoming departures that are not document-ready yet — soonest first. Open a booking to tick items off as customers send them.</p>
       <label style={{ fontSize: 12.5, fontWeight: 700 }}>Departing within <select className="form-select" style={{ width: 'auto', display: 'inline-block' }} value={days} onChange={e => setDays(Number(e.target.value))}>{[30, 60, 90, 180].map(n => <option key={n} value={n}>{n} days</option>)}</select></label>

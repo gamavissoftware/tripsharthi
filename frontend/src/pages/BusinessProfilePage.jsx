@@ -41,7 +41,7 @@ export default function BusinessProfilePage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-form">
       <div className="page-header"><h1 className="page-title">Business &amp; invoicing</h1></div>
       <div className="card card-body" style={{ marginBottom: 14 }}>
         <p style={{ margin: 0 }}>These details appear on every quote, <b>GST invoice</b>, credit note and receipt. They are copied onto each document when it is issued, so changing them later never alters an invoice you already sent.</p>

@@ -96,7 +96,7 @@ export default function AccountsPage() {
   const [reloadKey, setReloadKey] = useState(0)   // bump to remount the list after a create
 
   return (
-    <div className="page" style={{ maxWidth: 1000 }}>
+    <div className="page page-wide">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="ps-h1"><span className="ps-ico"><Building2 size={18} /></span>Accounts</h1>

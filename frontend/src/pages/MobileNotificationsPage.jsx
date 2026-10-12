@@ -27,7 +27,7 @@ export default function MobileNotificationsPage() {
   const saveQuiet = () => (quiet.start && quiet.end) || (!quiet.start && !quiet.end) ? save({ quiet_start: quiet.start || null, quiet_end: quiet.end || null }) : toast.error('Use both times', 'Set a start and an end, or clear both.')
 
   return (
-    <div className="page" style={{ maxWidth: 760 }}>
+    <div className="page page-form">
       <div className="page-header"><h1 className="page-title">Mobile notifications</h1></div>
       <div className="card card-body" style={{ marginBottom: 14 }}>
         <p style={{ margin: 0 }}>Get alerts on your phone from the TripSarthi app: new leads, customer replies, quote views, payments and more. These settings apply to <b>your</b> account only.</p>

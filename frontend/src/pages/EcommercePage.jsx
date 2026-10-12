@@ -82,7 +82,7 @@ function PlatformCard({ p }) {
 
 export default function EcommercePage() {
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-form">
       <div className="page-header">
         <div>
           <h1 className="page-title">Store Integrations</h1>

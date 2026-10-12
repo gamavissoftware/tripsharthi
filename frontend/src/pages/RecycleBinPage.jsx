@@ -64,7 +64,7 @@ export default function RecycleBinPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 980 }}>
+    <div className="page page-wide">
       <div style={{ marginBottom: '1.25rem' }}>
         <h1 className="ps-h1"><span className="ps-ico"><Trash2 size={18} /></span>Recycle Bin</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Restore deleted records, or remove them permanently.</p>

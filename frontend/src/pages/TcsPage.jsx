@@ -57,7 +57,7 @@ export default function TcsPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 960 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">TCS on overseas packages</h1></div>
       <p style={{ color: 'var(--text-2)' }}>Tax you collect from customers on overseas tour packages (section 206C(1G)) must be deposited by the 7th of the next month and reported quarterly in Form 27EQ. This page works out what you collected from the payments you received, tracks your challans, and exports the data for your CA.</p>
       <div className="card card-body" style={{ marginBottom: 14, display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>

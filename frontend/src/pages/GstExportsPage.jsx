@@ -36,7 +36,7 @@ export default function GstExportsPage() {
   const rows = s ? [['Tax invoices', s.invoices, 1], ['Credit notes', s.credit_notes, -1], ['Net for the month', s.net, 0]] : []
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">GST & accounting exports</h1></div>
       <p style={{ color: 'var(--text-2)' }}>Everything issued in a month, ready for your CA, the GST portal and Tally: GSTR-1, GSTR-3B, the HSN/SAC summary and a filing tracker. Only <b>issued</b> tax invoices and credit notes count — receipts and bills of supply carry no GST.</p>
       <div className="card card-body" style={{ marginBottom: 14 }}>

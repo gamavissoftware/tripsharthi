@@ -32,7 +32,7 @@ export default function SupportPage() {
   const pick = (cat) => { setForm(f => ({ ...f, category: cat })); setShowForm(true); setTimeout(() => document.getElementById('support-title')?.focus(), 50) }
 
   return (
-    <div className="page" style={{ maxWidth: 980 }}>
+    <div className="page page-wide">
       <section style={{ position: 'relative', overflow: 'hidden', borderRadius: 20, padding: '26px 28px', color: '#fff', background: 'linear-gradient(125deg,#0a1f44 0%,#0a4aa0 55%,#0b8f94 100%)', boxShadow: '0 16px 40px rgba(10,31,68,.18)', marginBottom: 18 }}>
         <div style={{ position: 'absolute', width: 300, height: 300, right: -90, top: -130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(47,208,194,.35), transparent 68%)' }} />
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>

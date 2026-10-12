@@ -20,7 +20,7 @@ export default function SuppliersPage() {
   const tabBtn = (k, label) => <button key={k} className={'btn btn-sm ' + (tab === k ? 'btn-primary' : 'btn-ghost')} onClick={() => setTab(k)}>{label}</button>
   const th = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }; const td = { padding: '10px 14px', borderTop: '1px solid var(--border)' }
   return (
-    <div className="page">
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Suppliers &amp; Rates</h1></div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>{tabBtn('suppliers', `Suppliers (${sup.length})`)}{tabBtn('rates', `Rate cards (${rates.length})`)}{tabBtn('import', 'Import rates (AI)')}{tabBtn('destinations', `Destinations (${dest.length})`)}</div>
 

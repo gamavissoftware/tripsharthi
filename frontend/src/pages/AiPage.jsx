@@ -47,7 +47,7 @@ export default function AiPage() {
   const aiEnabled = u.limit > 0 || cfg?.has_tenant_key
 
   return (
-    <div className="page" style={{ maxWidth: 760 }}>
+    <div className="page page-form">
       <div className="page-header">
         <div>
           <h1 className="page-title">AI Assistant</h1>

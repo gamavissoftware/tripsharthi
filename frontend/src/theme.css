@@ -409,3 +409,17 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .st-n { grid-column: 1 / -1; font-size: 11.5px; color: #6b7a93; margin-top: 5px; line-height: 1.3; }
 .st.click { cursor: pointer; } .st.click:hover { border-color: #0a6cc4; } .st.on { outline: 2px solid #0a6cc4; outline-offset: -1px; }
 @media (max-width: 640px) { .st-row { grid-template-columns: 1fr 1fr; } .st-v { font-size: 1.15rem; } }
+
+/* ---- list / settings pages: use the width, tighter chrome (customer app) ---- */
+.cx .page { padding: 20px 24px 40px; }
+.cx .page.page-wide { max-width: 1480px; }
+.cx .page.page-form { max-width: 1040px; }
+.cx .page-header { margin-bottom: 14px; }
+.cx .page-title { font-size: 1.5rem; }
+.cx .card-body { padding: 15px 18px; }
+.cx .data-table th { padding: 10px 14px; }
+.cx .data-table td { padding-top: 10px; padding-bottom: 10px; }
+.cx .ps-h1 { margin-bottom: 0; }
+.dep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 12px; align-items: start; }
+.dep-grid > .card { margin: 0 !important; }
+@media (max-width: 560px) { .dep-grid { grid-template-columns: minmax(0, 1fr); } }

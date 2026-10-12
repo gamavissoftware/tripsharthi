@@ -55,7 +55,7 @@ export default function FxRatesPage() {
     try { const r = await travel.refreshFx(); toast.success(r.updated.length ? `Updated ${r.updated.join(', ')}` : 'Nothing to update', r.error || Object.values(r.skipped)[0]); load() } catch (e) { toast.error('Could not refresh', e.message) } finally { setBusy('') }
   }
   return (
-    <div className="page" style={{ maxWidth: 940 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Exchange rates</h1></div>
       <p style={{ color: 'var(--text-2)' }}>Your books stay in <b>Indian rupees</b> — GST, TCS, invoices and reports are always INR. Foreign currencies are for what <b>suppliers charge you</b> (a USD hotel, an AED transfer) and for showing the customer an <b>indicative equivalent</b>. Rates are rupees per 1 unit of the currency.</p>
       <div className="card card-body" style={{ marginBottom: 14, fontSize: 13.5, color: 'var(--text-2)' }}>

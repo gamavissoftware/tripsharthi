@@ -98,7 +98,7 @@ export default function CustomObjectsPage() {
   async function del(id) { try { await crm.deleteObject(id); setObjects(os => os.filter(o => o.id !== id)) } catch (e) { toast.error('Delete failed', e.message) } }
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-wide">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="ps-h1"><span className="ps-ico"><Boxes size={18} /></span>Custom Objects</h1>

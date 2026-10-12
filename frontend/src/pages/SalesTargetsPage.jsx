@@ -51,7 +51,7 @@ export default function SalesTargetsPage({ user }) {
   const totalBk = (rows || []).reduce((s, r) => s + Math.round(Number(r.bk || 0)), 0)
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header">
         <div>
           <h1 className="page-title">Sales targets</h1>

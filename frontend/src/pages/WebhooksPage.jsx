@@ -64,7 +64,7 @@ export default function WebhooksPage() {
   const allChecked = form.events.includes('*')
 
   return (
-    <div className="page" style={{ maxWidth: 900 }}>
+    <div className="page page-wide">
       <div className="page-header">
         <div>
           <h1 className="page-title">Webhooks</h1>

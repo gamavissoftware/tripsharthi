@@ -51,7 +51,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 980 }}>
+    <div className="page page-wide">
       <div className="page-header">
         <div>
           <h1 className="page-title">Products</h1>

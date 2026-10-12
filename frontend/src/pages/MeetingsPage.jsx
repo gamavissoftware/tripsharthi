@@ -3,6 +3,8 @@ import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import ContactPicker from '../components/crm/ContactPicker'
 import { CalendarDays } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { CalendarDays as IcCal, Clock as IcClock } from 'lucide-react'
 
 const STATUS = {
   scheduled: { label: 'Scheduled', bg: '#e8f3fc', color: '#074a8c' },
@@ -104,11 +106,25 @@ export default function MeetingsPage() {
   }
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
-      <div style={{ marginBottom: '1.25rem' }}>
+    <div className="page page-wide">
+      <div style={{ marginBottom: '.9rem' }}>
         <h1 className="ps-h1"><span className="ps-ico"><CalendarDays size={18} /></span>Meetings</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your agenda for the next 30 days. Booking a meeting can fire a flow.</p>
       </div>
+      {!loading && meetings.length > 0 && (() => {
+        const t0 = new Date(); t0.setHours(0, 0, 0, 0)
+        const dd = (m) => { const d = utcToDate(m.start_at); return d ? Math.floor((new Date(d).setHours(0, 0, 0, 0) - t0) / 86400000) : null }
+        const nToday = meetings.filter(m => dd(m) === 0).length
+        const nWeek = meetings.filter(m => { const d = dd(m); return d !== null && d >= 0 && d < 7 }).length
+        const next = meetings.map(m => utcToDate(m.start_at)).filter(d => d && d > new Date()).sort((a, b) => a - b)[0]
+        return (
+          <StatRow>
+            <StatTile icon={IcCal} tone="#0a6cc4" label="Today" value={nToday} />
+            <StatTile icon={IcCal} tone="#12a89e" label="Next 7 days" value={nWeek} />
+            <StatTile icon={IcClock} tone="#f98f26" label="Next meeting" value={next ? next.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' }) : '—'} sub={next ? next.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : 'nothing booked'} />
+            <StatTile icon={IcCal} tone="#6366f1" label="Next 30 days" value={meetings.length} />
+          </StatRow>)
+      })()}
 
       {/* Quick add */}
       <form onSubmit={add} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.85rem', marginBottom: '1rem', display: 'grid', gap: 8 }}>

@@ -117,7 +117,7 @@ export default function ContactsPage() {
   const total = pager?.total ?? rows.length
 
   return (
-    <div className="page">
+    <div className="page page-wide">
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '.75rem', marginBottom: '1.4rem' }}>
         <div>

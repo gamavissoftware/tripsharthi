@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { travel, inr } from '../api/travel'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { CalendarDays as IcCal, Users as IcUsers, Ticket as IcTicket, AlertTriangle as IcAlert } from 'lucide-react'
 
 const STATE = { open: ['#dcfce7', '#15803d', 'Open'], full: ['#fef3c7', '#b45309', 'Full'], closed: ['#e0f2fe', '#0369a1', 'Sales closed'], completed: ['#f1f5f9', '#475569', 'Completed'], cancelled: ['#fee2e2', '#b91c1c', 'Cancelled'] }
 const rs = (p) => (p ?? 0) / 100
@@ -95,12 +97,23 @@ export default function DeparturesPage() {
   const setStatus = async (d, st) => { if (st === 'cancelled' && !window.confirm(`Cancel ${d.code}? Held seats are released.`)) return; try { await travel.departureStatus(d.id, st); load() } catch (e) { toast.error('Not changed', e.message) } }
 
   return (
-    <div className="page" style={{ maxWidth: 1040 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Group departures</h1><button className="btn btn-primary" onClick={() => setEdit({})}>+ New departure</button></div>
+      {list && list.length > 0 && (() => {
+        const seats = list.reduce((a, d) => a + d.total_seats, 0), sold = list.reduce((a, d) => a + d.confirmed, 0), held = list.reduce((a, d) => a + d.held, 0)
+        return (
+          <StatRow>
+            <StatTile icon={IcCal} tone="#0a6cc4" label="Departures" value={list.length} sub={scope === 'all' ? 'all' : scope} />
+            <StatTile icon={IcUsers} tone="#1a9d57" label="Seats confirmed" value={sold} sub={`of ${seats} · ${held} held`} />
+            <StatTile icon={IcTicket} tone="#12a89e" label="Seats available" value={list.reduce((a, d) => a + d.available, 0)} />
+            <StatTile icon={IcAlert} tone="#e5484d" label="Below minimum" value={list.filter(d => d.at_risk).length} accent={list.some(d => d.at_risk) ? 'var(--danger)' : undefined} sub="within 30 days" />
+          </StatRow>)
+      })()}
       <p style={{ color: 'var(--text-2)' }}>Fixed-date group tours with limited seats. Agents hold seats from an enquiry (Trip → Group departure); the quote, booking, payments and GST invoice then work as usual, and a seat can never be sold twice.</p>
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>{[['upcoming', 'Upcoming'], ['past', 'Past'], ['all', 'All']].map(([k, l]) => <button key={k} className={'btn btn-sm ' + (scope === k ? 'btn-primary' : 'btn-ghost')} onClick={() => setScope(k)}>{l}</button>)}</div>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}
       {list && list.length === 0 && <div className="card card-body" style={{ color: 'var(--text-3)' }}>No departures here yet.</div>}
+      <div className="dep-grid">
       {list && list.map(d => { const [bg, fg, label] = STATE[d.state] || STATE.open; const pct = d.total_seats ? Math.round(((d.confirmed + d.held) / d.total_seats) * 100) : 0; return (
         <div key={d.id} className="card card-body dep-card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -122,6 +135,7 @@ export default function DeparturesPage() {
             </span>
           </div>
         </div>) })}
+      </div>
       {edit && <EditModal dep={edit.id ? edit : null} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load() }} />}
       {manifest > 0 && <ManifestModal id={manifest} onClose={() => setManifest(0)} onChanged={load} />}
     </div>

@@ -40,7 +40,7 @@ export default function BusinessReportPage() {
   const maxTrend = d ? Math.max(1, ...d.trend.map(t => t.revenue)) : 1
 
   return (
-    <div className="page" style={{ maxWidth: 1040 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Business report</h1></div>
       <div className="card card-body" style={{ marginBottom: 14, display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <label style={{ fontSize: 12.5, fontWeight: 700 }}>From<input className="form-input" type="date" value={range.from} max={range.to} onChange={e => e.target.value && setRange(r => ({ ...r, from: e.target.value }))} /></label>

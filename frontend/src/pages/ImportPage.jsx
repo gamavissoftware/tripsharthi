@@ -168,7 +168,7 @@ export default function ImportPage() {
   function reset() { setStep('upload'); setImport(null); setProgress(null); setError(null); setFileName('') }
 
   return (
-    <div className="page" style={{ maxWidth: 780 }}>
+    <div className="page page-form">
       {/* Header */}
       <div style={{ marginBottom: '1.4rem' }}>
         <h1 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#111827', letterSpacing: '-.02em' }}>Import Contacts</h1>

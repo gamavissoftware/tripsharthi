@@ -31,7 +31,7 @@ export default function BusinessHoursPage() {
 
   const fld = { border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }
   return (
-    <div className="page" style={{ maxWidth: 680 }}>
+    <div className="page page-form">
       <div style={{ marginBottom: '1.25rem' }}>
         <h1 className="ps-h1"><span className="ps-ico"><Clock size={18} /></span>Working Hours</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Ticket SLA timers only count down during these hours.</p>

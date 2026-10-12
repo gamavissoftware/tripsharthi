@@ -60,7 +60,7 @@ export default function PayablesPage() {
   useEffect(() => { load() }, [load])
 
   return (
-    <div className="page" style={{ maxWidth: 980 }}>
+    <div className="page page-wide">
       <div className="page-header"><h1 className="page-title">Supplier payables</h1></div>
       <p style={{ color: 'var(--text-2)' }}>What you still owe hotels, transporters and other suppliers for confirmed bookings. Where no pay-by date is set, we assume a week before travel.</p>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8, marginBottom: 14 }}>{err}</div>}

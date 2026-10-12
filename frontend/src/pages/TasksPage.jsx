@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { CheckSquare } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { AlertTriangle as IcAlert, Clock as IcClock, CalendarDays as IcCal, Flag as IcFlag } from 'lucide-react'
 
 const TYPE_ICON = { call: '📞', whatsapp: '💬', email: '✉️', meeting: '🗓️', todo: '✓' }
 const PRIORITY = {
@@ -65,12 +67,26 @@ export default function TasksPage() {
     catch (e) { toast.error('Could not delete', e.message) }
   }
 
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const dayOf = (t) => { if (!t.due_at) return null; const d = new Date(t.due_at.replace(' ', 'T')); d.setHours(0, 0, 0, 0); return Math.round((d - today) / 86400000) }
+  const nOver = tasks.filter(t => { const d = dayOf(t); return d !== null && (d < 0 || (d === 0 && new Date(t.due_at.replace(' ', 'T')) < new Date())) }).length
+  const nToday = tasks.filter(t => dayOf(t) === 0).length
+  const nWeek = tasks.filter(t => { const d = dayOf(t); return d !== null && d > 0 && d <= 7 }).length
+  const nHigh = tasks.filter(t => t.priority === 'high').length
+
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
-      <div style={{ marginBottom: '1.25rem' }}>
+    <div className="page page-wide">
+      <div style={{ marginBottom: '.9rem' }}>
         <h1 className="ps-h1"><span className="ps-ico"><CheckSquare size={18} /></span>My Tasks</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Your open follow-ups across every contact and deal.</p>
       </div>
+      {!loading && tasks.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcAlert} tone="#e5484d" label="Overdue" value={nOver} accent={nOver ? 'var(--danger)' : undefined} />
+          <StatTile icon={IcClock} tone="#f59e0b" label="Due today" value={nToday} />
+          <StatTile icon={IcCal} tone="#0a6cc4" label="Next 7 days" value={nWeek} />
+          <StatTile icon={IcFlag} tone="#6366f1" label="High priority" value={nHigh} sub={`${tasks.length} open in all`} />
+        </StatRow>)}
 
       {/* Quick add */}
       <form onSubmit={add} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.75rem', marginBottom: '1rem' }}>

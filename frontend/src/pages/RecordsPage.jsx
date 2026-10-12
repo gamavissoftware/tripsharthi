@@ -68,12 +68,12 @@ export default function RecordsPage() {
   useEffect(() => { load() }, [id])
 
   if (!object && loadErr) return <LoadFailed what="object" message={loadErr} backTo="/objects" backLabel="Back to objects" />
-  if (!object) return <div className="page" style={{ maxWidth: 820 }}><div style={{ height: 120, borderRadius: 12, background: '#f3f4f6' }} /></div>
+  if (!object) return <div className="page page-wide"><div style={{ height: 120, borderRadius: 12, background: '#f3f4f6' }} /></div>
   const fields = object.fields ?? []
   const preview = fields.slice(0, 2)
 
   return (
-    <div className="page" style={{ maxWidth: 820 }}>
+    <div className="page page-wide">
       <div style={{ fontSize: 13, marginBottom: '1rem' }}>
         <Link to="/objects" style={{ color: 'var(--primary,#0a6cc4)', textDecoration: 'none', fontWeight: 600 }}>← Objects</Link>
       </div>
