@@ -16,13 +16,12 @@ export const contacts = {
   // CSV export — returns a Blob honouring the current list filters.
   // Bypasses the JSON client because the response is a file download.
   exportCsv: async (params = {}) => {
-    const token = localStorage.getItem('tp_token')
     const clean = Object.fromEntries(
       Object.entries(params).filter(([, v]) => v !== '' && v != null)
     )
     const qs  = new URLSearchParams(clean).toString()
     const res = await fetch(`/api/v1/contacts/export${qs ? '?' + qs : ''}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: api.authHeaders(),
     })
     if (!res.ok) throw new Error(`Export failed (HTTP ${res.status})`)
     return res.blob()

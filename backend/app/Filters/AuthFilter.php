@@ -6,6 +6,7 @@ namespace App\Filters;
 
 use App\Models\UserModel;
 use App\Services\Admin\ImpersonationService;
+use App\Services\Admin\MarketingWorkspaceAccess;
 use App\Services\Auth\CurrentUser;
 use CodeIgniter\Filters\FilterInterface;
 use CodeIgniter\HTTP\RequestInterface;
@@ -41,6 +42,19 @@ class AuthFilter implements FilterInterface
         // Not a customer token? It may be a "log in as customer" support session opened by a platform admin (separate token, acts as the workspace owner).
         if ($user === null) {
             $imp = (new ImpersonationService())->resolve($rawToken);
+            if ($imp === null && $request->getHeaderLine(MarketingWorkspaceAccess::HEADER) === '1') {
+                // A platform admin working inside TripSarthi's OWN marketing workspace (WhatsApp module): admin session, allow-listed API areas only.
+                if (! MarketingWorkspaceAccess::allowed($request->getUri()->getPath())) {
+                    return $this->forbidden('marketing_area', 'This area is not part of the WhatsApp module.');
+                }
+                $m = MarketingWorkspaceAccess::resolve($rawToken);
+                if ($m === 'none') { return $this->forbidden('no_marketing_workspace', 'Choose the marketing workspace first (Admin -> WhatsApp -> Our marketing).'); }
+                if (is_array($m)) {
+                    CurrentUser::set($m['user']);
+                    CurrentUser::setImpersonation(MarketingWorkspaceAccess::marker($m['admin']));
+                    return null;
+                }
+            }
             if ($imp === null) {
                 return $this->unauthorized('Invalid or expired token.');
             }
@@ -76,6 +90,11 @@ class AuthFilter implements FilterInterface
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null): ResponseInterface|null
     {
         return null;
+    }
+
+    private function forbidden(string $code, string $message): ResponseInterface
+    {
+        return service('response')->setStatusCode(403)->setContentType('application/json')->setBody(json_encode(['success' => false, 'code' => $code, 'message' => $message]));
     }
 
     private function unauthorized(string $message): ResponseInterface

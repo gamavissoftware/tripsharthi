@@ -464,6 +464,11 @@ class InboxController extends ResourceController
         // must be rejected, not fall through to tenant 0.
         $rawToken = $this->request->getGet('token') ?? '';
         $user     = $rawToken !== '' ? (new \App\Models\UserModel())->findByToken($rawToken) : null;
+        if ($user === null && $rawToken !== '' && $this->request->getGet('ws') === 'marketing') {
+            // the admin app's WhatsApp inbox: an admin session viewing TripSarthi's own marketing workspace
+            $m = \App\Services\Admin\MarketingWorkspaceAccess::resolve($rawToken);
+            $user = is_array($m) ? $m['user'] : null;
+        }
         if ($user === null) {
             http_response_code(401);
             echo 'Unauthorized.';

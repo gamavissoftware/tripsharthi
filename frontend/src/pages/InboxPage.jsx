@@ -8,7 +8,7 @@ import { contacts as contactsApi } from '../api/contacts'
 import { payments as paymentsApi } from '../api/payments'
 import { ai as aiApi } from '../api/ai'
 import { toast } from '../components/Toast'
-import { api } from '../api/client'
+import { api, mediaAuthQuery } from '../api/client'
 
 // DB stores timestamps in UTC (PHP timezone = UTC).
 // Append 'Z' so JavaScript's Date() correctly treats them as UTC
@@ -408,12 +408,11 @@ export default function InboxPage() {
     setSendError(null)
 
     try {
-      const token = localStorage.getItem('tp_token')
       const form = new FormData()
       form.append('file', file)
       const res = await fetch(`/api/v1/inbox/${activeId}/upload-media`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: api.authHeaders(),
         body: form,
       }).then(r => r.json())
 
@@ -877,8 +876,7 @@ export default function InboxPage() {
                             {/* ── Media rendering ── */}
                             {/* Helper: build authenticated media URL */}
                             {(() => {
-                              const tok = localStorage.getItem('tp_token') ?? ''
-                              const mediaUrl = (id) => `/api/v1/inbox/media/${id}?token=${encodeURIComponent(tok)}`
+                              const mediaUrl = (id) => `/api/v1/inbox/media/${id}?${mediaAuthQuery()}`
                               if (msg.type === 'image' && msg.media_url) return (
                                 <div>
                                   <img

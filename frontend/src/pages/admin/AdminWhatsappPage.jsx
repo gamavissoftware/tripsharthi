@@ -180,7 +180,7 @@ function MarketingTab() {
             ? <><b>Ready to send.</b> {st.workspace.name} can run WhatsApp campaigns for TripSarthi.</>
             : st.workspace ? <><b>Not ready yet:</b> {firstFail?.text}.</> : <><b>No marketing workspace chosen.</b> Pick the workspace whose WhatsApp number TripSarthi will use.</>}
         </div>
-        {st.workspace && <a className="btn btn-primary btn-sm" href={st.campaign_url} target="_blank" rel="noreferrer">Open Campaigns in the app ↗</a>}
+        {st.workspace && <><Link className="btn btn-ghost btn-sm" to="/admin/whatsapp/inbox">Inbox</Link><Link className="btn btn-primary btn-sm" to="/admin/whatsapp/campaigns">Campaigns</Link></>}
       </div>
 
       <div className="cu-kpis" style={{ margin: 0 }}>
@@ -229,7 +229,7 @@ function MarketingTab() {
             </tbody>
           </table>
         </div>
-        <p style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '8px 2px 0' }}>In the marketing workspace, filter a campaign by the tag <code>ts-owners</code>, <code>ts-owners-free</code>, <code>ts-owners-lapsed</code>, <code>ts-owners-trial-ending</code>, <code>ts-partners</code> or <code>ts-website-leads</code>. Re-run “Add to marketing” before each campaign — it also switches off anyone who has since withdrawn consent.</p>
+        <p style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '8px 2px 0' }}>In the Campaigns page, filter a campaign by the tag <code>ts-owners</code>, <code>ts-owners-free</code>, <code>ts-owners-lapsed</code>, <code>ts-owners-trial-ending</code>, <code>ts-partners</code> or <code>ts-website-leads</code>. Re-run “Add to marketing” before each campaign — it also switches off anyone who has since withdrawn consent.</p>
       </div>
 
       <div>

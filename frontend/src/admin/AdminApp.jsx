@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, PanelLeftClose, PanelLeftOpen, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
+import { LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, Inbox, Megaphone, LayoutTemplate, PanelLeftClose, PanelLeftOpen, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -22,6 +22,7 @@ import AdminMailPage from '../pages/admin/AdminMailPage'
 import AdminPaymentsPage from '../pages/admin/AdminPaymentsPage'
 import AdminWhatsappPage from '../pages/admin/AdminWhatsappPage'
 import AdminWhatsappWorkspacePage from '../pages/admin/AdminWhatsappWorkspacePage'
+import AdminWaModulePage from '../pages/admin/AdminWaModulePage'
 
 // One place to add sections as the admin grows (offers, partners, WhatsApp, ...).
 const NAV = [
@@ -36,9 +37,14 @@ const NAV = [
     { to: '/admin/payments',       label: 'Payments',      icon: Wallet },
     { to: '/admin/offers',        label: 'Offers',        icon: Tag },
     { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
-    { to: '/admin/whatsapp',      label: 'WhatsApp',      icon: MessageCircle },
     { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
     { to: '/admin/access-log',    label: 'Access log',    icon: ScrollText },
+  ] },
+  { section: 'WhatsApp', items: [
+    { to: '/admin/whatsapp',           label: 'Overview',       icon: MessageCircle, end: true },
+    { to: '/admin/whatsapp/inbox',     label: 'WhatsApp inbox', icon: Inbox },
+    { to: '/admin/whatsapp/campaigns', label: 'Campaigns',      icon: Megaphone },
+    { to: '/admin/whatsapp/templates', label: 'Templates',      icon: LayoutTemplate },
   ] },
 ]
 
@@ -105,6 +111,9 @@ function Shell({ user, onLogout }) {
           <Route path="/admin/partners" element={<AdminPartnersPage />} />
           <Route path="/admin/partners/:id" element={<AdminPartnerDetailPage />} />
           <Route path="/admin/whatsapp" element={<AdminWhatsappPage />} />
+          <Route path="/admin/whatsapp/inbox" element={<AdminWaModulePage kind="inbox" />} />
+          <Route path="/admin/whatsapp/campaigns" element={<AdminWaModulePage kind="campaigns" />} />
+          <Route path="/admin/whatsapp/templates" element={<AdminWaModulePage kind="templates" />} />
           <Route path="/admin/whatsapp/:id" element={<AdminWhatsappWorkspacePage />} />
           <Route path="/admin/inbox" element={<AdminInboxPage />} />
           <Route path="/admin/access-log" element={<AdminAccessLogPage />} />

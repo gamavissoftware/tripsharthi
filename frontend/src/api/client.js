@@ -19,6 +19,16 @@ function getToken() {
   return localStorage.getItem(TOKEN_KEY)
 }
 
+// In the admin app the WhatsApp module reuses the customer pages for TripSarthi's OWN marketing workspace. Those pages call the ordinary customer API
+// (/inbox, /templates, /campaigns ...), so the admin session is sent with an opt-in header; the server only honours it for an allow-listed set of areas.
+const IS_ADMIN = typeof __ADMIN_APP__ !== 'undefined' && __ADMIN_APP__
+const viaMarketing = (path) => IS_ADMIN && !path.startsWith('/admin')
+
+/** Token (+ workspace marker in the admin app) for URLs that cannot carry headers, such as <img src>. Already URL-encoded. */
+export function mediaAuthQuery() {
+  return `token=${encodeURIComponent(getToken() ?? '')}${IS_ADMIN ? '&ws=marketing' : ''}`
+}
+
 async function request(method, path, body = null) {
   // A FormData body must NOT carry an explicit Content-Type: the browser has
   // to set it so it can append the multipart boundary. Setting it by hand
@@ -27,6 +37,7 @@ async function request(method, path, body = null) {
   const headers = isForm ? {} : { 'Content-Type': 'application/json' }
   const token = getToken()
   if (token) headers['Authorization'] = `Bearer ${token}`
+  if (viaMarketing(path)) headers['X-TS-Marketing-Workspace'] = '1'
 
   const options = { method, headers }
   if (body !== null) options.body = isForm ? body : JSON.stringify(body)
@@ -72,7 +83,7 @@ async function request(method, path, body = null) {
 /** Fetch a binary (PDF) with the auth header and open it in a new tab. A plain <a href> cannot send the Bearer token. */
 export async function openPdf(path) {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  const res = await fetch(`${BASE}${path}`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(viaMarketing(path) ? { 'X-TS-Marketing-Workspace': '1' } : {}) } })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.message || `Could not open the document (HTTP ${res.status})`)
@@ -86,7 +97,7 @@ export async function openPdf(path) {
 /** Authenticated file download (CSV/JSON/XML). A plain <a href> cannot send the Bearer token. */
 export async function downloadFile(path, fallbackName = 'download') {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  const res = await fetch(`${BASE}${path}`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(viaMarketing(path) ? { 'X-TS-Marketing-Workspace': '1' } : {}) } })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
     throw new Error(data.message || `Download failed (HTTP ${res.status})`)
@@ -98,6 +109,8 @@ export async function downloadFile(path, fallbackName = 'download') {
 }
 
 export const api = {
+  /** Auth headers for a hand-made fetch (e.g. multipart upload). */
+  authHeaders: () => { const t = getToken(); return { ...(t ? { Authorization: `Bearer ${t}` } : {}), ...(IS_ADMIN ? { 'X-TS-Marketing-Workspace': '1' } : {}) } },
   get:    (path)        => request('GET',    path),
   post:   (path, body)  => request('POST',   path, body),
   postForm: (path, fd)  => request('POST',   path, fd),
@@ -125,7 +138,7 @@ export function isLoggedIn() {
 /** Fetch a protected image and return an object URL (an <img src> cannot send the Bearer token). Caller revokes it. */
 export async function fetchImageUrl(path) {
   const token = getToken()
-  const res = await fetch(`${BASE}${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+  const res = await fetch(`${BASE}${path}`, { headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(viaMarketing(path) ? { 'X-TS-Marketing-Workspace': '1' } : {}) } })
   if (!res.ok) throw new Error('Could not load the image')
   return URL.createObjectURL(await res.blob())
 }
