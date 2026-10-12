@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
-import { Pill } from './AdminUi'
+import { KeyRound, ShieldCheck, Webhook, Radio } from 'lucide-react'
+import { Kpi } from './AdminUi'
 import { fmtDate } from './adminUtil'
 import { confirmAsk } from '../../components/confirmAsk'
 
@@ -48,48 +49,58 @@ export default function AdminPaymentsPage() {
   async function copy(v) { try { await navigator.clipboard.writeText(v); toast.success('Copied') } catch { toast.error('Could not copy') } }
 
   if (!st) return <div className="page"><div className="page-header"><h1 className="page-title">Payments</h1></div><div className="card card-body" style={{ color: 'var(--text-3)' }}>Loading…</div></div>
-  const [modeLabel, modeColor] = MODE[st.mode] || MODE.none
-
+  const [modeLabel] = MODE[st.mode] || MODE.none
+  const steps = [[!!st.key_id && st.secret_set, 'Key ID and secret are saved'], [st.mode === 'live', st.mode === 'test' ? 'Using TEST keys — switch to live keys to take real money' : 'Using LIVE keys'], [st.webhook_set, 'Webhook secret is saved (the safety net for closed browser tabs)']]
   return (
     <div className="page">
-      <div className="page-header"><h1 className="page-title">Payments · Razorpay</h1></div>
+      <div className="page-header"><div><h1 className="page-title">Payments · Razorpay</h1><div style={{ color: 'var(--text-3)', fontSize: 13.5 }}>The Razorpay account customers' subscription payments go through. Secrets are write-only.</div></div></div>
 
-      <div className="card card-body" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Pill color={modeColor}>{modeLabel}</Pill>
-          <b>{st.configured ? 'Customers can pay their subscription' : 'Not ready: customers cannot pay yet'}</b>
-        </div>
-        <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>
-          Key ID: <code>{st.key_id || '—'}</code> · Secret: {st.secret_set ? 'set' : 'not set'} · Webhook secret: {st.webhook_set ? 'set' : 'not set'} · {SOURCE[st.source]}
-          {st.changed_at && <> · changed {fmtDate(st.changed_at)}</>}
-        </div>
-        {st.warnings.map(w => <div key={w} style={{ marginTop: 8, fontSize: 13, color: 'var(--warning)' }}>⚠ {w}</div>)}
+      <div className={'wa-banner ' + (st.configured ? 'ok' : 'bad')}>
+        <div className="grow"><b>{st.configured ? 'Customers can pay their subscription.' : 'Not ready: customers cannot pay yet.'}</b> {SOURCE[st.source]}{st.changed_at && <> · changed {fmtDate(st.changed_at)}</>}</div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={test} disabled={busy !== '' || !st.configured}>{busy === 'test' ? 'Checking…' : 'Test saved keys'}</button>
+      </div>
+      {st.warnings.map(w => <div key={w} className="wa-banner">⚠ <div className="grow">{w}</div></div>)}
+
+      <div className="cu-kpis">
+        <Kpi icon={Radio} tone={st.mode === 'live' ? '#1a9d57' : '#f59e0b'} label="Mode" value={modeLabel} sub="from the key prefix" />
+        <Kpi icon={KeyRound} tone="#0a6cc4" label="Key ID" value={st.key_id ? `${st.key_id.slice(0, 9)}…` : '—'} sub={st.secret_set ? 'secret saved' : 'secret not set'} />
+        <Kpi icon={Webhook} tone={st.webhook_set ? '#1a9d57' : '#f59e0b'} label="Webhook" value={st.webhook_set ? 'Set' : 'Not set'} sub={st.webhook_set ? 'confirms closed-tab payments' : 'recommended'} />
+        <Kpi icon={ShieldCheck} tone="#12a89e" label="Stored" value={st.source === 'admin' ? 'Encrypted' : st.source === 'server' ? 'Server file' : '—'} sub="secrets are never shown" />
       </div>
 
-      <form className="card card-body" onSubmit={save} autoComplete="off" style={{ marginBottom: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 2 }}>Razorpay keys</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>From the Razorpay dashboard → Account &amp; Settings → API keys. Razorpay is asked to confirm the pair before anything is saved. Secrets are never shown again; leave a secret box empty to keep the one already saved.</div>
-        <div style={{ display: 'grid', gap: 12, maxWidth: 520 }}>
-          <label>Key ID<input className="form-input" value={f.key_id} onChange={e => setF({ ...f, key_id: e.target.value })} placeholder="rzp_live_…" spellCheck={false} autoComplete="off" required /></label>
-          <label>Key Secret<input className="form-input" type="password" value={f.key_secret} onChange={e => setF({ ...f, key_secret: e.target.value })} placeholder={st.secret_set ? '•••••••• saved — leave empty to keep' : 'Paste the Key Secret'} autoComplete="new-password" spellCheck={false} /></label>
-          <label>Webhook secret <span style={{ color: 'var(--text-3)' }}>(recommended: lets Razorpay confirm a payment even if the customer closes the page)</span>
-            <input className="form-input" type="password" value={f.webhook_secret} onChange={e => setF({ ...f, webhook_secret: e.target.value })} placeholder={st.webhook_set ? '•••••••• saved — leave empty to keep' : 'The secret you typed in Razorpay → Webhooks'} autoComplete="new-password" spellCheck={false} /></label>
+      <div className="em-grid">
+        <div style={{ display: 'grid', gap: 14 }}>
+          <form className="card card-body" onSubmit={save} autoComplete="off">
+            <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 2 }}>Razorpay keys</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>From the Razorpay dashboard → Account &amp; Settings → API keys. Razorpay is asked to confirm the pair before anything is saved. Leave a secret box empty to keep the one already saved.</div>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <label>Key ID<input className="form-input" value={f.key_id} onChange={e => setF({ ...f, key_id: e.target.value })} placeholder="rzp_live_…" spellCheck={false} autoComplete="off" required /></label>
+              <label>Key Secret<input className="form-input" type="password" value={f.key_secret} onChange={e => setF({ ...f, key_secret: e.target.value })} placeholder={st.secret_set ? '•••••••• saved — leave empty to keep' : 'Paste the Key Secret'} autoComplete="new-password" spellCheck={false} /></label>
+              <label>Webhook secret <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
+                <input className="form-input" type="password" value={f.webhook_secret} onChange={e => setF({ ...f, webhook_secret: e.target.value })} placeholder={st.webhook_set ? '•••••••• saved — leave empty to keep' : 'The secret you typed in Razorpay → Webhooks'} autoComplete="new-password" spellCheck={false} /></label>
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+              <button className="btn btn-primary" disabled={busy !== ''}>{busy === 'save' ? 'Checking with Razorpay…' : 'Check & save'}</button>
+              {st.source === 'admin' && <button type="button" className="btn btn-ghost" onClick={clear} disabled={busy !== ''} style={{ color: 'var(--danger)', marginLeft: 'auto' }}>Remove saved keys</button>}
+            </div>
+          </form>
         </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          <button className="btn btn-primary" disabled={busy !== ''}>{busy === 'save' ? 'Checking with Razorpay…' : 'Check & save'}</button>
-          <button type="button" className="btn btn-ghost" onClick={test} disabled={busy !== '' || !st.configured}>{busy === 'test' ? 'Checking…' : 'Test saved keys'}</button>
-          {st.source === 'admin' && <button type="button" className="btn btn-ghost" onClick={clear} disabled={busy !== ''} style={{ color: 'var(--danger)' }}>Remove saved keys</button>}
-        </div>
-      </form>
 
-      <div className="card card-body">
-        <div style={{ fontWeight: 700, marginBottom: 4 }}>Webhook (in the Razorpay dashboard)</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>Settings → Webhooks → Add. Use this URL, choose your own secret (paste the same one above), and tick Order → order.paid and Payment → payment.captured.</div>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 620 }}>
-          <input className="form-input" readOnly value={st.webhook_url} onFocus={e => e.target.select()} style={{ fontFamily: 'ui-monospace,monospace', fontSize: 12 }} />
-          <button type="button" className="btn btn-ghost" onClick={() => copy(st.webhook_url)}>Copy</button>
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div className="card card-body">
+            <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 4 }}>Ready to take payments?</div>
+            {steps.map(([ok, text]) => <div key={text} className={'wa-check' + (ok ? '' : ' no')} style={ok ? undefined : { color: '#7a5a12' }}><span style={ok ? undefined : { background: '#f59e0b' }}>{ok ? '✓' : '·'}</span>{text}</div>)}
+          </div>
+          <div className="card card-body">
+            <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 4 }}>Webhook (in the Razorpay dashboard)</div>
+            <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 8 }}>Settings → Webhooks → Add. Use this URL, choose your own secret (paste the same one on the left), and tick Order → order.paid and Payment → payment.captured.</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="form-input" readOnly value={st.webhook_url} onFocus={e => e.target.select()} style={{ fontFamily: 'ui-monospace,monospace', fontSize: 12 }} />
+              <button type="button" className="btn btn-ghost" onClick={() => copy(st.webhook_url)}>Copy</button>
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Normally a payment is confirmed by a signed callback straight after checkout. The webhook is the safety net: if the customer pays and closes the page, Razorpay tells us and the plan still opens.</div>
+          </div>
         </div>
-        <div style={{ fontSize: 12.5, color: 'var(--text-3)', marginTop: 10 }}>Normally a payment is confirmed by a signed callback straight after checkout. The webhook is the safety net: if the customer pays and closes the page, Razorpay tells us and the plan still opens.</div>
       </div>
     </div>
   )

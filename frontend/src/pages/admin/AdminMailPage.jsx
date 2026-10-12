@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { admin } from '../../api/admin'
 import { toast } from '../../components/Toast'
 import { confirmAsk } from '../../components/confirmAsk'
-import { Pill } from './AdminUi'
+import { Mail, Server, KeyRound, AtSign, ShieldCheck } from 'lucide-react'
+import { Kpi, Pill } from './AdminUi'
 import { fmtDate } from './adminUtil'
 
 const SOURCE = { admin: 'Saved here (password encrypted)', server: 'From the server settings', none: 'Nothing set' }
@@ -36,51 +37,62 @@ export default function AdminMailPage() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
 
   if (!st) return <div className="page"><div className="page-header"><h1 className="page-title">Mail server</h1></div><div className="card card-body" style={{ color: 'var(--text-3)' }}>Loading…</div></div>
+  const brevo = st.host.includes('brevo')
   return (
     <div className="page">
-      <div className="page-header"><h1 className="page-title">Mail server</h1></div>
+      <div className="page-header"><div><h1 className="page-title">Mail server</h1><div style={{ color: 'var(--text-3)', fontSize: 13.5 }}>The server TripSarthi's own e-mails go through: invoices, support replies, reminders, password resets and marketing.</div></div></div>
 
-      <div className="card card-body" style={{ marginBottom: 14 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-          <Pill color={st.configured ? 'var(--success)' : 'var(--danger)'}>{st.configured ? 'Ready' : 'Not set up'}</Pill>
-          <b>{st.configured ? 'TripSarthi can send e-mail' : 'E-mail cannot be delivered yet'}</b>
-        </div>
-        <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 6 }}>
-          Server: <code>{st.host}:{st.port}</code> ({st.crypto || 'no encryption'}) · User: {st.user || '—'} · Password: {st.pass_set ? 'set' : 'not set'} · From: {st.from_name} &lt;{st.from_email}&gt; · {SOURCE[st.source]}
-          {st.changed_at && <> · changed {fmtDate(st.changed_at)}</>}
-        </div>
-        {st.warnings.map(w => <div key={w} style={{ marginTop: 8, fontSize: 13, color: 'var(--warning)' }}>⚠ {w}</div>)}
+      <div className={'wa-banner ' + (st.configured ? 'ok' : 'bad')}>
+        <Mail size={18} />
+        <div className="grow"><b>{st.configured ? 'TripSarthi can send e-mail.' : 'E-mail cannot be delivered yet.'}</b> {SOURCE[st.source]}{st.changed_at && <> · changed {fmtDate(st.changed_at)}</>}</div>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={test} disabled={busy !== '' || !st.configured}>{busy === 'test' ? 'Sending…' : 'Send me a test e-mail'}</button>
+      </div>
+      {st.warnings.map(w => <div key={w} className="wa-banner">⚠ <div className="grow">{w}</div></div>)}
+
+      <div className="cu-kpis">
+        <Kpi icon={Server} tone="#0a6cc4" label="Server" value={st.host === 'localhost' ? 'none' : brevo ? 'Brevo' : st.host.replace(/^smtp\./, '')} sub={`${st.host}:${st.port}`} />
+        <Kpi icon={ShieldCheck} tone="#12a89e" label="Encryption" value={(st.crypto || 'none').toUpperCase()} sub="between us and the server" />
+        <Kpi icon={KeyRound} tone={st.pass_set ? '#1a9d57' : '#e5484d'} label="Password" value={st.pass_set ? 'Saved' : 'Not set'} sub={st.user || 'no username'} />
+        <Kpi icon={AtSign} tone="#f98f26" label="Sends as" value={st.from_name || '—'} sub={st.from_email} />
       </div>
 
-      <form className="card card-body" onSubmit={save} autoComplete="off" style={{ marginBottom: 14 }}>
-        <div style={{ fontWeight: 700, marginBottom: 2 }}>SMTP settings</div>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>
-          Support replies, plan reminders, password resets and marketing e-mails go out through this. Saving first sends a real test e-mail to <b>you</b>; if the mail server refuses, nothing is saved. The password is never shown again; leave it empty to keep the saved one.
-          <br />Using Gmail: server <code>smtp.gmail.com</code>, port <code>465</code> with SSL (this server blocks port 587; on other hosts 587 with TLS also works), username = the Gmail address, password = a Google <b>App Password</b> (Google Account → Security → 2-Step Verification → App passwords), and the same address as “from”.
-          <br />Using Brevo (recommended for customer e-mails): server <code>smtp-relay.brevo.com</code>, port <code>465</code> with SSL, username = the <b>SMTP login</b> shown in Brevo (SMTP &amp; API → SMTP), password = an <b>SMTP key</b> you create there (not your Brevo account password), and a “from” address on <code>tripsarthi.com</code> that you have added as a sender in Brevo after verifying the domain (the DKIM and DMARC records Brevo shows you). Until the domain is verified, Brevo refuses or rewrites the sender.
+      <div className="em-grid">
+        <form className="card card-body" onSubmit={save} autoComplete="off">
+          <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 2 }}>SMTP settings</div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>Saving first sends a real test e-mail to <b>you</b>; if the mail server refuses, nothing is saved. The password is never shown again — leave it empty to keep the saved one.</div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', fontSize: 13 }}>
+            <span style={{ color: 'var(--text-3)' }}>Quick fill:</span>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp-relay.brevo.com', port: 465, crypto: 'ssl', from_email: f.from_email || 'noreply@tripsarthi.com' })}>Brevo</button>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp.gmail.com', port: 465, crypto: 'ssl' })}>Gmail</button>
+            <span style={{ color: 'var(--text-3)' }}>fills server, port and encryption only — you type the login and key yourself.</span>
+          </div>
+          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+            <label>Mail server<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp-relay.brevo.com" spellCheck={false} required /></label>
+            <label>Port<input className="form-input" type="number" value={f.port} onChange={e => setF({ ...f, port: Number(e.target.value) })} required /></label>
+            <label>Encryption
+              <select className="form-select" value={f.crypto} onChange={set('crypto')}><option value="tls">TLS (port 587)</option><option value="ssl">SSL (port 465)</option><option value="none">None</option></select></label>
+            <label>Username<input className="form-input" value={f.user} onChange={set('user')} placeholder="SMTP login" autoComplete="off" spellCheck={false} /></label>
+            <label>Password<input className="form-input" type="password" value={f.pass} onChange={set('pass')} placeholder={st.pass_set ? '•••••••• saved — leave empty to keep' : 'SMTP key / app password'} autoComplete="new-password" spellCheck={false} /></label>
+            <label>“From” address<input className="form-input" type="email" value={f.from_email} onChange={set('from_email')} placeholder="noreply@tripsarthi.com" required /></label>
+            <label>“From” name<input className="form-input" value={f.from_name} onChange={set('from_name')} maxLength={60} /></label>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
+            <button className="btn btn-primary" disabled={busy !== ''}>{busy === 'save' ? 'Sending a test e-mail…' : 'Check & save'}</button>
+            {st.source === 'admin' && <button type="button" className="btn btn-ghost" onClick={clear} disabled={busy !== ''} style={{ color: 'var(--danger)', marginLeft: 'auto' }}>Remove saved settings</button>}
+          </div>
+        </form>
+
+        <div style={{ display: 'grid', gap: 14 }}>
+          <div className="card card-body">
+            <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 6 }}>Brevo <Pill color="var(--success)">recommended</Pill></div>
+            <div className="em-help">Server <code>smtp-relay.brevo.com</code>, port <code>465</code> with SSL.<br />Username = the <b>SMTP login</b> in Brevo (SMTP &amp; API → SMTP).<br />Password = an <b>SMTP key</b> you create there — not your Brevo account password.<br />“From” = an address on <code>tripsarthi.com</code> added as a sender after you verify the domain (the DKIM and DMARC records Brevo shows). Until then Brevo refuses or rewrites the sender.</div>
+          </div>
+          <div className="card card-body">
+            <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 6 }}>Gmail <span style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12.5 }}>— small volumes only</span></div>
+            <div className="em-help">Server <code>smtp.gmail.com</code>, port <code>465</code> with SSL (this server blocks 587).<br />Username = the Gmail address, password = a Google <b>App Password</b> (Account → Security → 2-Step Verification → App passwords), “from” = the same address.<br />Gmail allows about 500 e-mails a day and rewrites the “from”.</div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', fontSize: 13 }}>
-          <span style={{ color: 'var(--text-3)' }}>Quick fill:</span>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp-relay.brevo.com', port: 465, crypto: 'ssl', from_email: f.from_email || 'noreply@tripsarthi.com' })}>Brevo</button>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setF({ ...f, host: 'smtp.gmail.com', port: 465, crypto: 'ssl' })}>Gmail</button>
-          <span style={{ color: 'var(--text-3)' }}>fills the server, port and encryption only; you type the login and key yourself.</span>
-        </div>
-        <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', maxWidth: 760 }}>
-          <label>Mail server<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp.gmail.com" spellCheck={false} required /></label>
-          <label>Port<input className="form-input" type="number" value={f.port} onChange={e => setF({ ...f, port: Number(e.target.value) })} required /></label>
-          <label>Encryption
-            <select className="form-select" value={f.crypto} onChange={set('crypto')}><option value="tls">TLS (port 587)</option><option value="ssl">SSL (port 465)</option><option value="none">None</option></select></label>
-          <label>Username<input className="form-input" value={f.user} onChange={set('user')} placeholder="you@gmail.com" autoComplete="off" spellCheck={false} /></label>
-          <label>Password<input className="form-input" type="password" value={f.pass} onChange={set('pass')} placeholder={st.pass_set ? '•••••••• saved — leave empty to keep' : 'App password'} autoComplete="new-password" spellCheck={false} /></label>
-          <label>“From” address<input className="form-input" type="email" value={f.from_email} onChange={set('from_email')} placeholder="support@tripsarthi.com" required /></label>
-          <label>“From” name<input className="form-input" value={f.from_name} onChange={set('from_name')} maxLength={60} /></label>
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-          <button className="btn btn-primary" disabled={busy !== ''}>{busy === 'save' ? 'Sending a test e-mail…' : 'Check & save'}</button>
-          <button type="button" className="btn btn-ghost" onClick={test} disabled={busy !== '' || !st.configured}>{busy === 'test' ? 'Sending…' : 'Send me a test e-mail'}</button>
-          {st.source === 'admin' && <button type="button" className="btn btn-ghost" onClick={clear} disabled={busy !== ''} style={{ color: 'var(--danger)' }}>Remove saved settings</button>}
-        </div>
-      </form>
+      </div>
     </div>
   )
 }

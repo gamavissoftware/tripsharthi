@@ -385,3 +385,15 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .ad .sidebar.collapsed .sidebar-nav .sidebar-link-text, .ad .sidebar.collapsed .sidebar-nav .sidebar-section-label { display: none; }
 .ad .sidebar.collapsed .sidebar-nav .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
 .ad .sidebar.collapsed .sidebar-nav .sidebar-link-icon { margin: 0; }
+/* website inbox */
+.inbox-grid { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr); gap: 14px; min-height: 540px; }
+.inbox-list { overflow-y: auto; max-height: 660px; padding-bottom: 6px; }
+.inbox-row { display: flex; gap: 10px; padding: 11px 14px; border-top: 1px solid #eef3f9; cursor: pointer; align-items: flex-start; }
+.inbox-row:hover { background: #f3f8fd; } .inbox-row.on { background: #e3f0fc; }
+.inbox-snip { color: #4a5a76; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.inbox-badge { background: #e5484d; color: #fff; border-radius: 999px; font-size: 11px; padding: 1px 7px; font-weight: 800; flex-shrink: 0; }
+.wa-tabs .inbox-badge { background: #e5484d; }
+.inbox-thread { display: flex; flex-direction: column; max-height: 660px; }
+.inbox-head { padding: 12px 16px; border-bottom: 1px solid #eef3f9; display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.inbox-reply { display: flex; gap: 8px; padding: 12px; border-top: 1px solid #eef3f9; }
+@media (max-width: 800px) { .inbox-grid { grid-template-columns: minmax(0, 1fr); } }
