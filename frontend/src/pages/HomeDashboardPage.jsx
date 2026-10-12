@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Check, RefreshCw } from 'lucide-react'
+import { Check, RefreshCw, Inbox, FileText, Plane, IndianRupee, Wallet, TrendingUp } from 'lucide-react'
 import { travel, inr, TRIP_STATUS } from '../api/travel'
 import { crm } from '../api/crm'
 import { api } from '../api/client'
@@ -22,10 +22,11 @@ const timeOf = (s) => { const d = parseLocal(s); return d ? d.toLocaleTimeString
 const monthName = (m) => (m ? new Date(m + '-01T00:00').toLocaleDateString('en-IN', { month: 'long' }) : '')
 const greeting = () => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' }
 
-function Kpi({ label, value, prev, money = true, sub, to }) {
+function Kpi({ label, value, prev, money = true, sub, to, icon: Icon, tone = '#0a6cc4' }) {
   const ch = pctChange(Number(value), Number(prev))
   const body = (
-    <div className="hd-kpi">
+    <div className="hd-kpi" style={{ '--tone': tone }}>
+      {Icon && <span className="hd-kpi-ico"><Icon size={16} /></span>}
       <div className="hd-kpi-label">{label}</div>
       <div className="hd-kpi-val">{money ? inr(value, true) : value}</div>
       <div className="hd-kpi-foot">
@@ -176,12 +177,12 @@ export default function HomeDashboardPage({ user }) {
 
       {tab === 'overview' && d && (<>
         <div className="hd-kpis">
-          <Kpi label="New enquiries" value={d.kpis.enquiries.value} prev={d.kpis.enquiries.prev} money={false} to="/trips" />
-          <Kpi label="Quotes sent" value={d.kpis.quotes_sent.value} prev={d.kpis.quotes_sent.prev} money={false} to="/trips" />
-          <Kpi label="Bookings" value={d.kpis.bookings.value} prev={d.kpis.bookings.prev} money={false} to="/bookings" />
-          <Kpi label="Revenue (ex-tax)" value={d.kpis.revenue.value} prev={d.kpis.revenue.prev} to="/business-report" />
-          <Kpi label="Cash collected" value={d.kpis.collected.value} prev={d.kpis.collected.prev} to="/bookings" />
-          {d.kpis.margin && <Kpi label="Gross margin" value={d.kpis.margin.value} prev={d.kpis.margin.prev} sub={`${d.kpis.margin.pct}%`} to="/business-report" />}
+          <Kpi icon={Inbox} tone="#0a6cc4" label="New enquiries" value={d.kpis.enquiries.value} prev={d.kpis.enquiries.prev} money={false} to="/trips" />
+          <Kpi icon={FileText} tone="#f98f26" label="Quotes sent" value={d.kpis.quotes_sent.value} prev={d.kpis.quotes_sent.prev} money={false} to="/trips" />
+          <Kpi icon={Plane} tone="#1a9d57" label="Bookings" value={d.kpis.bookings.value} prev={d.kpis.bookings.prev} money={false} to="/bookings" />
+          <Kpi icon={IndianRupee} tone="#0e8f8c" label="Revenue (ex-tax)" value={d.kpis.revenue.value} prev={d.kpis.revenue.prev} to="/business-report" />
+          <Kpi icon={Wallet} tone="#6366f1" label="Cash collected" value={d.kpis.collected.value} prev={d.kpis.collected.prev} to="/bookings" />
+          {d.kpis.margin && <Kpi icon={TrendingUp} tone="#12a89e" label="Gross margin" value={d.kpis.margin.value} prev={d.kpis.margin.prev} sub={`${d.kpis.margin.pct}%`} to="/business-report" />}
         </div>
         {d.kpis.bookings_without_cost?.value > 0 && manager && <p className="hd-muted" style={{ margin: '-.35rem 0 .8rem' }}>⚠ {d.kpis.bookings_without_cost.value} booking{d.kpis.bookings_without_cost.value === 1 ? '' : 's'} this month {d.kpis.bookings_without_cost.value === 1 ? 'has' : 'have'} no supplier cost entered, so margin is overstated.</p>}
 
@@ -190,7 +191,6 @@ export default function HomeDashboardPage({ user }) {
         <div className="hd-grid">
           <div className="hd-col">
             <Card title="Pipeline" link="Open board →" to="/trips"><Pipeline rows={d.pipeline} /></Card>
-            <Card title="Revenue and cash — last 6 months" link="Business report →" to="/business-report"><TrendChart data={d.trend} /></Card>
 
             <Card title="Collections — overdue and due this week" link="Bookings →" to="/bookings">
               {d.collections.length === 0 ? <div className="hd-empty">No customer payments are overdue or due this week.</div> : (<>
@@ -206,22 +206,6 @@ export default function HomeDashboardPage({ user }) {
                   </Link>
                 ))}
               </>)}
-            </Card>
-
-            <Card title="Departures — next 14 days" link="All departures →" to="/departures">
-              {d.departures.length === 0 ? <div className="hd-empty">No departures in the next two weeks.</div> : d.departures.map(b => {
-                const bal = Number(b.total_amount) - Number(b.paid_amount)
-                return (
-                  <Link key={b.id} to={`/bookings/${b.id}`} className="hd-row">
-                    <div className="hd-row-main">
-                      <div className="hd-row-title">{b.customer || b.title}</div>
-                      <div className="hd-row-sub">{b.booking_ref} · {b.title} · leaves {shortDate(b.travel_start)} ({dueText(b.travel_start)})</div>
-                    </div>
-                    {Number(b.docs_pending) > 0 && <span className="hd-tag warn">{b.docs_pending} docs pending</span>}
-                    {bal > 0 ? <span className="hd-tag bad">{inr(bal, true)} unpaid</span> : <span className="hd-tag ok">Paid</span>}
-                  </Link>
-                )
-              })}
             </Card>
           </div>
 
@@ -251,6 +235,26 @@ export default function HomeDashboardPage({ user }) {
                   {t.budget_max ? <span className="hd-amt">{inr(t.budget_max, true)}</span> : null}
                 </Link>
               ))}
+            </Card>
+
+          </div>
+          <div className="hd-col">
+            <Card title="Revenue and cash — last 6 months" link="Business report →" to="/business-report"><TrendChart data={d.trend} /></Card>
+
+            <Card title="Departures — next 14 days" link="All departures →" to="/departures">
+              {d.departures.length === 0 ? <div className="hd-empty">No departures in the next two weeks.</div> : d.departures.map(b => {
+                const bal = Number(b.total_amount) - Number(b.paid_amount)
+                return (
+                  <Link key={b.id} to={`/bookings/${b.id}`} className="hd-row">
+                    <div className="hd-row-main">
+                      <div className="hd-row-title">{b.customer || b.title}</div>
+                      <div className="hd-row-sub">{b.booking_ref} · {b.title} · leaves {shortDate(b.travel_start)} ({dueText(b.travel_start)})</div>
+                    </div>
+                    {Number(b.docs_pending) > 0 && <span className="hd-tag warn">{b.docs_pending} docs pending</span>}
+                    {bal > 0 ? <span className="hd-tag bad">{inr(bal, true)} unpaid</span> : <span className="hd-tag ok">Paid</span>}
+                  </Link>
+                )
+              })}
             </Card>
 
             <Card title="Quotes to chase" link="Trips →" to="/trips">

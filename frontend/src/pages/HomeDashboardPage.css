@@ -113,3 +113,31 @@
 .hd-row { border-bottom: 1px solid #edf1f7; }
 .hd-tag { border-radius: 999px; padding: 2px 9px; font-weight: 700; }
 @media (max-width: 760px) { .hd-head { padding: 18px 16px; border-radius: 16px; } .hd-title { font-size: 1.4rem; } }
+
+/* ── compact layout: six KPI cards in one row, tighter header, three columns on wide screens ─────────────── */
+.hd { padding: 1rem 1.25rem 1.5rem; }
+.hd-head { padding: 14px 20px; margin-bottom: 12px; border-radius: 16px; }
+.hd-title { font-size: 1.45rem; }
+.hd-sub { margin-top: .15rem; font-size: .86rem; }
+.hd-kpis { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.hd-kpi { padding: 11px 12px 10px 15px; border-radius: 13px; display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; }
+.hd-kpi::before { background: var(--tone, #0a6cc4); }
+.hd-kpi-ico { grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: var(--tone, #0a6cc4); }
+.hd-kpi-label { font-size: .66rem; letter-spacing: .5px; line-height: 1.25; }
+.hd-kpi-val { font-size: 1.35rem; letter-spacing: -.4px; margin: 0; line-height: 1.15; }
+.hd-kpi-foot { grid-column: 1 / -1; font-size: .72rem; margin-top: 5px; gap: .3rem; }
+.hd-attn { margin-bottom: 12px; }
+.hd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.hd-col { gap: 12px; }
+.hd-col:nth-child(3) { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.hd-col:nth-child(3) > * { min-width: 0; }
+.hd-card-h { padding: 10px 14px; }
+.hd-card-h h3 { font-size: .95rem; }
+.hd-card-b { padding: 10px 14px 12px; }
+.hd-card { border-radius: 14px; }
+@media (min-width: 1500px) {
+  .hd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .hd-col:nth-child(3) { grid-column: auto; display: flex; flex-direction: column; }
+}
+@media (max-width: 1050px) { .hd-grid { grid-template-columns: minmax(0, 1fr); } .hd-col:nth-child(3) { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .hd-kpis { grid-template-columns: 1fr 1fr; } .hd-kpi-val { font-size: 1.15rem; } }
