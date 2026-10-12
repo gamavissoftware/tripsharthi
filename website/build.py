@@ -82,6 +82,9 @@ def faq_ld(items):
 def head(fname, title, desc, p='', robots='index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1', og_type='website', ld='', extra='', inline_css=False):
     url = f'{SITE}/{fname}' if fname != 'index.html' else SITE + '/'
     css_tag = ('<style>' + open(os.path.join(ROOT, 'assets/css/all.min.css'), encoding='utf-8').read().replace('url(../fonts/', 'url(assets/fonts/') + '</style>') if inline_css else f'<link rel="stylesheet" href="{p}assets/css/all.min.css{ver("assets/css/all.min.css")}">'
+    v2_href = f'{p}assets/css/v2.min.css{ver("assets/css/v2.min.css")}'
+    v2_tag = (f'<link rel="preload" href="{v2_href}" as="style" onload="this.onload=null;this.rel=\'stylesheet\'"><noscript><link rel="stylesheet" href="{v2_href}"></noscript>' if inline_css
+              else f'<link rel="stylesheet" href="{v2_href}">')
     verify = (f'<meta name="google-site-verification" content="{GSC_TOKEN}">' if GSC_TOKEN else '') + (f'<meta name="msvalidate.01" content="{BING_TOKEN}">' if BING_TOKEN else '')
     return f"""<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -97,6 +100,7 @@ def head(fname, title, desc, p='', robots='index,follow,max-image-preview:large,
 <link rel="icon" type="image/png" sizes="32x32" href="{p}assets/brand/favicon-32.png"><link rel="apple-touch-icon" href="{p}assets/brand/apple-touch-icon.png"><link rel="manifest" href="{p}assets/manifest.webmanifest">
 <link rel="preload" href="{p}assets/fonts/inter-400-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="{p}assets/fonts/plusjakartasans-800-latin.woff2" as="font" type="font/woff2" crossorigin>
 {css_tag}
+{v2_tag}
 {extra}
 {ld}"""
 
@@ -173,7 +177,7 @@ def features_page():
         bl = ''.join(f'<li>{b}</li>' for b in bullets)
         rows.append(f'''<div class="row{' rev' if i % 2 else ''} reveal" id="{k}"><div class="copy"><span class="tag {color}">{tag}</span><h3>{h}</h3><p>{lead}</p><ul class="bul">{bl}</ul></div><div class="shot">{frame(img, label, label, w, hh)}</div></div>''')
     body = hero('Features', 'Everything a travel business needs, <span class="grad">in one place</span>', 'From the first enquiry to the final payment and the GST return — here is what TripSarthi does.',
-                f'<nav class="chips" aria-label="Jump to a feature">{chips}</nav>') + f'<section class="section"><div class="wrap">{"".join(rows)}</div></section>' + '''<section class="section soft"><div class="wrap"><div class="head"><p class="kicker">Security &amp; privacy</p><h2>Built to be trusted with your customers’ data</h2></div>
+                f'<nav class="chips" aria-label="Jump to a feature">{chips}</nav>') + f'<section class="section"><div class="wrap"><h2 class="sr">All features</h2>{"".join(rows)}</div></section>' + '''<section class="section soft"><div class="wrap"><div class="head"><p class="kicker">Security &amp; privacy</p><h2>Built to be trusted with your customers’ data</h2></div>
 <div class="grid reveal"><article class="mini"><span class="ico-bubble green">''' + ico('lock') + '''</span><h3>Encrypted where it matters</h3><p>Passport numbers and customer document uploads are encrypted at rest.</p></article>
 <article class="mini"><span class="ico-bubble blue">''' + ico('shield') + '''</span><h3>Your data stays separate</h3><p>Every agency’s data is isolated from every other agency’s.</p></article>
 <article class="mini"><span class="ico-bubble teal">''' + ico('users') + '''</span><h3>Consent first</h3><p>Ad audiences use only opted-in contacts, hashed before upload; opt-outs are respected.</p></article></div></div></section>''' + cta()
@@ -412,6 +416,11 @@ def minify_css():
     css = css.replace(';}', '}')
     open(os.path.join(ROOT, 'assets/css/all.min.css'), 'w', encoding='utf-8').write(css.strip())
     print('wrote assets/css/all.min.css', len(css) // 1024, 'KB')
+    v2 = open(os.path.join(ROOT, 'assets/css/v2.css'), encoding='utf-8').read()
+    v2 = _re.sub(r'/\*.*?\*/', '', v2, flags=_re.S)
+    v2 = _re.sub(r'\s+', ' ', v2)
+    v2 = _re.sub(r'\s*([{};,>])\s*', r'\1', v2).replace(';}', '}')
+    open(os.path.join(ROOT, 'assets/css/v2.min.css'), 'w', encoding='utf-8').write(v2.strip())
 
 def ensure_variants():
     """900px-wide copies of the screenshots (and a 390px phone) for srcset, made with cwebp/dwebp when installed."""
