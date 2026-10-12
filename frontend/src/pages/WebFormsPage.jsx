@@ -3,6 +3,8 @@ import { User, Smartphone, Mail, FileText, Link2, X, Pencil, Trash2, Clipboard, 
 import { webforms as webformsApi } from '../api/webforms'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { FileInput as IcForm, CheckCircle2 as IcCheck, PauseCircle as IcPause } from 'lucide-react'
 
 // ── Field config ──────────────────────────────────────────────────────────
 const FIELD_META = {
@@ -528,6 +530,13 @@ export default function WebFormsPage() {
         </div>
         <button onClick={openCreate} style={{ padding: '.6rem 1.2rem', borderRadius: 10, border: 'none', background: 'var(--primary,#0a6cc4)', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', boxShadow: '0 2px 10px var(--primary-ring,rgba(10,108,196,.35))' }}>+ New form</button>
       </div>
+
+      {!loading && forms.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcForm} tone="#0a6cc4" label="Forms" value={forms.length} />
+          <StatTile icon={IcCheck} tone="#1a9d57" label="Accepting leads" value={forms.filter(f => f.active).length} />
+          <StatTile icon={IcPause} tone="#8393ad" label="Switched off" value={forms.filter(f => !f.active).length} />
+        </StatRow>)}
 
       {/* ── Loading skeleton ───────────────────────────────────────── */}
       {loading && (

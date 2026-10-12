@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { travel } from '../api/travel'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Coins as IcCoins, RefreshCw as IcRefresh, Pencil as IcPen, AlertTriangle as IcAlert } from 'lucide-react'
 
 const th = { padding: '7px 8px', textAlign: 'left', color: 'var(--text-3)', fontSize: 11.5, textTransform: 'uppercase' }
 const num = (v) => Number(v).toLocaleString('en-IN', { maximumFractionDigits: 6 })
@@ -62,6 +64,13 @@ export default function FxRatesPage() {
         <b style={{ color: 'var(--text)' }}>How a foreign cost is priced:</b> amount × rate × (1 + buffer). The <b>buffer</b> covers the rupee moving between today's quote and the day you pay the supplier. The rate is <b>locked on each quote line</b>, so a quote never changes by itself — use "Re-price" on a quote to refresh it. When you pay the supplier you enter the rupees your bank actually debited, and the difference to the quote shows as forex gain or loss.
       </div>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8, marginBottom: 12 }}>{err}</div>}
+      {d && d.rates.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcCoins} tone="#0a6cc4" label="Currencies" value={d.rates.length} sub={d.rates.map(r => r.currency).slice(0, 6).join(' · ')} />
+          <StatTile icon={IcRefresh} tone="#1a9d57" label="Updated automatically" value={d.rates.filter(r => r.source === 'auto').length} />
+          <StatTile icon={IcPen} tone="#6366f1" label="Set by hand" value={d.rates.filter(r => r.source !== 'auto').length} sub="never overwritten" />
+          <StatTile icon={IcAlert} tone={d.rates.some(r => r.stale) ? '#e5484d' : '#12a89e'} label="Out of date" value={d.rates.filter(r => r.stale).length} accent={d.rates.some(r => r.stale) ? 'var(--danger)' : undefined} sub="older than 3 days" />
+        </StatRow>)}
       {d && <>
         <div className="card card-body" style={{ overflowX: 'auto', marginBottom: 14 }}>
           {d.rates.length === 0 ? <p style={{ margin: 0, color: 'var(--text-3)' }}>No foreign currencies yet. Add the ones your suppliers charge in.</p> :

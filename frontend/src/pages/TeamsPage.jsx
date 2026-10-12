@@ -4,6 +4,8 @@ import { api } from '../api/client'
 import { settings } from '../api/settings'
 import { toast } from '../components/Toast'
 import { Users } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Users as IcUsers, User as IcUser, UserX as IcUserX, Lock as IcLock } from 'lucide-react'
 
 const VIS_MODES = [
   ['open', 'Open', 'Everyone sees all records (default).'],
@@ -69,6 +71,17 @@ export default function TeamsPage() {
         </div>
         <button onClick={addTeam} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer' }}>+ New team</button>
       </div>
+
+      {!loading && (() => {
+        const inTeams = new Set(teams.flatMap(t => t.member_ids ?? []))
+        return (
+          <StatRow>
+            <StatTile icon={IcUsers} tone="#0a6cc4" label="Teams" value={teams.length} />
+            <StatTile icon={IcUser} tone="#1a9d57" label="People in a team" value={inTeams.size} sub={`of ${members.length} in your workspace`} />
+            <StatTile icon={IcUserX} tone="#f59e0b" label="Not in any team" value={Math.max(0, members.length - inTeams.size)} />
+            <StatTile icon={IcLock} tone="#6366f1" label="Record visibility" value={(VIS_MODES.find(v => v[0] === visMode)?.[1]) ?? visMode} sub="what reps can see" />
+          </StatRow>)
+      })()}
 
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '1rem 1.1rem', marginBottom: '1.25rem' }}>
         <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 4 }}>🔒 Record visibility</div>

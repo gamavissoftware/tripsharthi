@@ -4,6 +4,8 @@ import { tags as tagsApi } from '../api/tags'
 import { api as client } from '../api/client'
 import { useToast } from '../components/Toast'
 import { Plus, Inbox, CheckCircle2 } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Inbox as IcInbox, CheckCircle2 as IcCheck, PauseCircle as IcPause, Users as IcUsers } from 'lucide-react'
 
 const MATCH_LABELS = { any: 'Any conversation', tag: 'Has tag', keyword: 'Message contains' }
 
@@ -85,6 +87,13 @@ export default function RoutingRulesPage() {
         </div>
         <button className="btn btn-primary" onClick={() => setEditing(blankRule())}><Plus size={15} strokeWidth={2} /> New rule</button>
       </div>
+
+      <StatRow>
+        <StatTile icon={IcInbox} tone="#0a6cc4" label="Routing rules" value={rules.length} sub="checked top to bottom" />
+        <StatTile icon={IcCheck} tone="#1a9d57" label="Active" value={rules.filter(r => Number(r.is_active)).length} />
+        <StatTile icon={IcPause} tone="#8393ad" label="Paused" value={rules.filter(r => !Number(r.is_active)).length} />
+        <StatTile icon={IcUsers} tone="#12a89e" label="Agents available" value={users.length} />
+      </StatRow>
 
       <div className="card" style={{ overflow: 'hidden' }}>
         {loading ? (

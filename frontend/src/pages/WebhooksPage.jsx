@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react'
 import { webhooks as api } from '../api/webhooks'
 import { useToast } from '../components/Toast'
 import { Plus, Copy, AlertTriangle } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Webhook as IcHook, CheckCircle2 as IcCheck, AlertTriangle as IcAlert, Send as IcSend } from 'lucide-react'
+
+const agoShort = (s) => { if (!s) return '—'; const m = Math.max(0, Math.round((Date.now() - new Date(String(s).replace(' ', 'T') + 'Z').getTime()) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago` }
 
 export default function WebhooksPage() {
   const { toast } = useToast()
@@ -73,6 +77,13 @@ export default function WebhooksPage() {
           </p>
         </div>
       </div>
+
+      <StatRow>
+        <StatTile icon={IcHook} tone="#0a6cc4" label="Endpoints" value={rows.length} />
+        <StatTile icon={IcCheck} tone="#1a9d57" label="Active" value={rows.filter(s => Number(s.is_active)).length} sub={`${rows.filter(s => !Number(s.is_active)).length} switched off`} />
+        <StatTile icon={IcAlert} tone="#e5484d" label="Failing" value={rows.filter(s => Number(s.failure_count) > 0).length} accent={rows.some(s => Number(s.failure_count) > 0) ? 'var(--danger)' : undefined} sub="with recent failures" />
+        <StatTile icon={IcSend} tone="#12a89e" label="Last delivery" value={agoShort(rows.map(s => s.last_delivered_at).filter(Boolean).sort().pop())} />
+      </StatRow>
 
       {/* Create */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>

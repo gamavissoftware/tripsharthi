@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, Fragment } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { ScrollText } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { ScrollText as IcLog, PlusCircle as IcPlus, Pencil as IcPen, Trash2 as IcTrash } from 'lucide-react'
 
 // ── Audit log (Phase K1) ─────────────────────────────────────────────────────
 
@@ -52,6 +54,14 @@ export default function AuditLogPage() {
         <h1 className="ps-h1"><span className="ps-ico"><ScrollText size={18} /></span>Audit Log</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#6b7280' }}>Who changed what, and when.</p>
       </div>
+
+      {!loading && (
+        <StatRow>
+          <StatTile icon={IcLog} tone="#0a6cc4" label="Events" value={(pager?.total ?? rows.length).toLocaleString('en-IN')} sub={filters.entity_type || filters.action ? 'matching the filters' : 'all time'} />
+          <StatTile icon={IcPlus} tone="#1a9d57" label="Created · this page" value={rows.filter(r => /create|add|insert/i.test(r.action)).length} />
+          <StatTile icon={IcPen} tone="#f59e0b" label="Changed · this page" value={rows.filter(r => /update|edit|change|move/i.test(r.action)).length} />
+          <StatTile icon={IcTrash} tone="#e5484d" label="Deleted · this page" value={rows.filter(r => /delete|remove|restore/i.test(r.action)).length} />
+        </StatRow>)}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
         <select value={filters.entity_type} onChange={e => { setFilters(f => ({ ...f, entity_type: e.target.value })); setPage(1) }} style={sel}>

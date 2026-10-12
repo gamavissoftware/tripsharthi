@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
 import { Boxes } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Boxes as IcBoxes, ListChecks as IcList, Database as IcDb, Star as IcStar } from 'lucide-react'
 
 const FIELD_TYPES = ['text', 'textarea', 'number', 'date', 'select', 'boolean', 'email', 'phone']
 
@@ -106,6 +108,14 @@ export default function CustomObjectsPage() {
         </div>
         <button onClick={() => setShowCreate(true)} style={btnPrimary}>+ New Object</button>
       </div>
+
+      {objects.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcBoxes} tone="#0a6cc4" label="Objects" value={objects.length} />
+          <StatTile icon={IcList} tone="#12a89e" label="Fields" value={objects.reduce((a, o) => a + Number(o.field_count || 0), 0)} />
+          <StatTile icon={IcDb} tone="#1a9d57" label="Records" value={objects.reduce((a, o) => a + Number(o.record_count || 0), 0).toLocaleString('en-IN')} />
+          <StatTile icon={IcStar} tone="#f98f26" label="Biggest" value={[...objects].sort((a, b) => Number(b.record_count || 0) - Number(a.record_count || 0))[0]?.label_plural ?? '—'} sub="most records" />
+        </StatRow>)}
 
       {/* Industry template quick-start */}
       <div style={{ marginBottom: '1.5rem' }}>

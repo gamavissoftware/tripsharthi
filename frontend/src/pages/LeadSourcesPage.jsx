@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { travel } from '../api/travel'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Plug as IcPlug, CheckCircle2 as IcCheck, Inbox as IcInbox, Clock as IcClock } from 'lucide-react'
 
 const ST = { created: ['#dcfce7', '#15803d', 'New lead'], existing: ['#e0f2fe', '#0369a1', 'Added to open enquiry'], duplicate: ['#f1f5f9', '#475569', 'Duplicate ignored'], rejected: ['#fee2e2', '#b91c1c', 'Rejected'], error: ['#fee2e2', '#b91c1c', 'Error'] }
 const lbl = { fontSize: 12.5, fontWeight: 700, display: 'block' }
@@ -59,6 +61,8 @@ function Events({ id }) {
       {e.trip_id && <Link to={`/trips/${e.trip_id}`}>open enquiry</Link>}{e.reason && <span style={{ color: 'var(--text-2)' }}>{e.reason}</span>}</div>) })}</div>
 }
 
+const agoShort = (s) => { if (!s) return '—'; const m = Math.max(0, Math.round((Date.now() - new Date(String(s).replace(' ', 'T') + 'Z').getTime()) / 60000)); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago` }
+
 export default function LeadSourcesPage() {
   const [d, setD] = useState(null)
   const [err, setErr] = useState('')
@@ -75,6 +79,13 @@ export default function LeadSourcesPage() {
       <div className="page-header"><h1 className="page-title">Lead sources</h1><button className="btn btn-primary" onClick={() => setEdit({})}>+ Add source</button></div>
       <p style={{ color: 'var(--text-2)' }}>Bring enquiries from travel portals, aggregators and partner sites straight into your CRM. Each lead becomes a contact and a trip enquiry, tagged with the portal's name, and the assigned agent gets a phone alert. The same person is never duplicated, and a lead sent twice is ignored.</p>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}
+      {d && d.sources.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcPlug} tone="#0a6cc4" label="Sources" value={d.sources.length} sub={`${d.sources.filter(s => s.kind === 'email').length} e-mail · ${d.sources.filter(s => s.kind !== 'email').length} webhook`} />
+          <StatTile icon={IcCheck} tone="#1a9d57" label="Switched on" value={d.sources.filter(s => Number(s.enabled)).length} />
+          <StatTile icon={IcInbox} tone="#12a89e" label="Leads received" value={d.sources.reduce((a, s) => a + Number(s.received_count || 0), 0).toLocaleString('en-IN')} sub="all time" />
+          <StatTile icon={IcClock} tone="#f98f26" label="Last lead" value={agoShort(d.sources.map(s => s.last_received_at).filter(Boolean).sort().pop())} />
+        </StatRow>)}
       {d && d.sources.length === 0 && <div className="card card-body" style={{ color: 'var(--text-3)' }}>No sources yet. Add one, then paste its URL into the portal's "lead webhook" setting — or choose email and we'll read the portal's notification emails.</div>}
       {d && d.sources.map(s => (
         <div key={s.id} className="card card-body" style={{ marginBottom: 12, opacity: s.enabled ? 1 : 0.6 }}>

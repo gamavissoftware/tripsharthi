@@ -3,6 +3,8 @@ import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import { UserCheck } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Shuffle as IcShuffle, CheckCircle2 as IcCheck, PauseCircle as IcPause, Users as IcUsers } from 'lucide-react'
 
 // ── Auto-assignment rules (Phase H2) ─────────────────────────────────────────
 // Per-entity (deal/ticket) rules that route new records to reps by round-robin /
@@ -116,6 +118,12 @@ export default function AssignmentRulesPage() {
         <button onClick={() => setEditing(null)} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.55rem 1rem', fontWeight: 700, cursor: 'pointer' }}>+ New rule</button>
       </div>
 
+      <StatRow>
+        <StatTile icon={IcShuffle} tone="#0a6cc4" label="Rules" value={rules.length} sub={ENTITIES.find(e => e.key === entity)?.label} />
+        <StatTile icon={IcCheck} tone="#1a9d57" label="Active" value={rules.filter(r => Number(r.is_active)).length} />
+        <StatTile icon={IcPause} tone="#8393ad" label="Paused" value={rules.filter(r => !Number(r.is_active)).length} />
+        <StatTile icon={IcUsers} tone="#12a89e" label="Team members" value={members.length} sub="who can receive work" />
+      </StatRow>
       <div style={{ display: 'flex', gap: 6, marginBottom: '1rem' }}>
         {ENTITIES.map(e => (
           <button key={e.key} onClick={() => setEntity(e.key)}

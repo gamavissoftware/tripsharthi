@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { Pencil, Trash2, Tag, Search, X } from 'lucide-react'
 import { tags as tagsApi } from '../api/tags'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Tag as IcTag, Users as IcUsers, Star as IcStar, CircleOff as IcOff } from 'lucide-react'
 
 // ── Palette ───────────────────────────────────────────────────────────────
 const PALETTE = [
@@ -374,6 +376,14 @@ export default function TagsPage() {
           + New tag
         </button>
       </div>
+
+      {!loading && tagList.length > 0 && (
+        <StatRow>
+          <StatTile icon={IcTag} tone="#0a6cc4" label="Tags" value={tagList.length} />
+          <StatTile icon={IcUsers} tone="#1a9d57" label="Tagged contacts" value={totalTagged.toLocaleString('en-IN')} sub="counting a person once per tag" />
+          <StatTile icon={IcStar} tone="#f98f26" label="Most used" value={[...tagList].sort((a, b) => (b.contact_count ?? 0) - (a.contact_count ?? 0))[0]?.name ?? '—'} sub={`${([...tagList].sort((a, b) => (b.contact_count ?? 0) - (a.contact_count ?? 0))[0]?.contact_count ?? 0).toLocaleString('en-IN')} contacts`} />
+          <StatTile icon={IcOff} tone="#8393ad" label="Unused" value={tagList.filter(t => !(t.contact_count > 0)).length} sub="no contacts yet" />
+        </StatRow>)}
 
       {/* ── Search ─────────────────────────────────────────────────── */}
       {tagList.length > 0 && (

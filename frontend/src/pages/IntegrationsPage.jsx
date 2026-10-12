@@ -7,6 +7,8 @@ import GoogleLeadFormsSection from './GoogleLeadFormsSection'
 import MetaAdsSection from './MetaAdsSection'
 import { Copy, CheckCircle2, XCircle, AlertTriangle, Bell, FlaskConical, X, Building2, Cloud, Target, Mail, Zap, Link2, RefreshCw, Search } from 'lucide-react'
 import ImapInboundSection from './ImapInboundSection'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Plug as IcPlug, Share2 as IcShare, KeyRound as IcKey } from 'lucide-react'
 
 // ── Clipboard helper ───────────────────────────────────────────────────────
 async function copyText(text, label) {
@@ -542,6 +544,13 @@ export default function IntegrationsPage() {
           Connect third-party platforms to automatically import leads.
         </p>
       </div>
+
+      {!loading && (
+        <StatRow>
+          <StatTile icon={IcPlug} tone="#0a6cc4" label="Lead-ad pages" value={integrations.length} sub={`${integrations.filter(i => (i.status ?? 'active') === 'active').length} active`} />
+          <StatTile icon={IcShare} tone="#1877f2" label="Social pages" value={connectedPages.length} sub={`${connectedPages.filter(a => a.status !== 'active').length} need reconnecting`} accent={connectedPages.some(a => a.status !== 'active') ? '#c2410c' : undefined} />
+          <StatTile icon={IcKey} tone={fbLogin.configured ? '#1a9d57' : '#8393ad'} label="Facebook Login" value={fbLogin.configured ? 'On' : 'Not set up'} sub="one-click page connect" />
+        </StatRow>)}
 
       {/* ── Meta Lead Ads section ─────────────────────────────────── */}
       <div style={{ marginBottom:'2rem' }}>
