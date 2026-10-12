@@ -7,6 +7,7 @@ import {
 import { emailMarketing } from '../api/emailMarketing'
 import { toast } from '../components/Toast'
 import { audienceLabel, EMAIL_STATUS_BADGE, EMAIL_STATUS_LABEL, fmtUtc } from '../components/email/emailShared'
+import { StatRow, StatTile } from '../components/StatTile'
 
 /**
  * Email marketing hub: campaigns, templates, the suppression list and the
@@ -61,15 +62,15 @@ export default function EmailMarketingPage() {
       )}
 
       {overview && (
-        <div className="mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-          <Stat icon={Mail} label="Contacts with email" value={overview.contacts_with_email.toLocaleString()} />
-          <Stat icon={Send} label="Sent (30 days)" value={overview.last_30_days.sent.toLocaleString()} />
-          <Stat icon={Send} label={overview.daily_limit ? `Used in last 24h / daily limit${overview.copy_to ? ' (incl. copies)' : ''}` : 'Sent in last 24h'}
+        <StatRow>
+          <Stat icon={Mail} tone="#0a6cc4" label="Contacts with email" value={overview.contacts_with_email.toLocaleString()} />
+          <Stat icon={Send} tone="#1a9d57" label="Sent (30 days)" value={overview.last_30_days.sent.toLocaleString()} />
+          <Stat icon={Send} tone="#6366f1" label={overview.daily_limit ? `Used in last 24h / daily limit${overview.copy_to ? ' (incl. copies)' : ''}` : 'Sent in last 24h'}
                 value={overview.daily_limit ? `${overview.sent_last_24h} / ${overview.daily_limit}` : String(overview.sent_last_24h)} />
-          <Stat icon={MailOpen} label="Open rate (30 days)" value={`${overview.last_30_days.open_rate}%`} />
-          <Stat icon={MousePointerClick} label="Click rate (30 days)" value={`${overview.last_30_days.click_rate}%`} />
-          <Stat icon={ShieldOff} label="Unsubscribed / suppressed" value={overview.suppressed.toLocaleString()} />
-        </div>
+          <Stat icon={MailOpen} tone="#12a89e" label="Open rate (30 days)" value={`${overview.last_30_days.open_rate}%`} />
+          <Stat icon={MousePointerClick} tone="#f98f26" label="Click rate (30 days)" value={`${overview.last_30_days.click_rate}%`} />
+          <Stat icon={ShieldOff} tone="#8393ad" label="Unsubscribed / suppressed" value={overview.suppressed.toLocaleString()} />
+        </StatRow>
       )}
 
       <div className="flex gap-2 mb-4" style={{ borderBottom: '1px solid var(--border, #e5e7eb)', flexWrap: 'wrap' }}>
@@ -90,15 +91,8 @@ export default function EmailMarketingPage() {
   )
 }
 
-function Stat({ icon: Icon, label, value }) {
-  return (
-    <div className="card">
-      <div className="card-body">
-        <div className="text-muted flex items-center gap-2" style={{ fontSize: 12 }}><Icon size={13} /> {label}</div>
-        <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4 }}>{value}</div>
-      </div>
-    </div>
-  )
+function Stat({ icon, label, value, tone }) {
+  return <StatTile icon={icon} tone={tone} label={label} value={value} />
 }
 
 // ── Campaigns ──────────────────────────────────────────────────────────

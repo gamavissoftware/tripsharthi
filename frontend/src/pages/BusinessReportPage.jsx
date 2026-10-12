@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { travel, inr } from '../api/travel'
 import { fmt } from '../lib/currency'
+import { StatRow, StatTile } from '../components/StatTile'
+import { IndianRupee as IcRupee, Plane as IcPlane, TrendingUp as IcTrend, Filter as IcFunnel } from 'lucide-react'
 
 const iso = (d) => d.toISOString().slice(0, 10)
 const th = { padding: '6px 8px', textAlign: 'left', color: 'var(--text-3)', fontSize: 11.5, textTransform: 'uppercase' }
@@ -9,8 +11,8 @@ const R = { padding: '6px 8px', textAlign: 'right' }
 function Bar({ value, max, color = 'var(--primary, #08569f)' }) {
   return <div style={{ height: 8, background: 'var(--border)', borderRadius: 999 }}><div style={{ width: `${max > 0 ? Math.max(2, (value / max) * 100) : 0}%`, height: '100%', background: color, borderRadius: 999 }} /></div>
 }
-function Stat({ label, value, sub, bad }) {
-  return <div className="card card-body"><div style={{ fontSize: 12, color: 'var(--text-3)' }}>{label}</div><div style={{ fontSize: 22, fontWeight: 800, color: bad ? 'var(--danger)' : 'inherit' }}>{value}</div>{sub && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{sub}</div>}</div>
+function Stat({ label, value, sub, bad, icon, tone }) {
+  return <StatTile icon={icon} tone={tone} label={label} value={value} sub={sub} accent={bad ? 'var(--danger)' : undefined} />
 }
 function Table({ title, cols, rows, empty = 'No data in this period.' }) {
   return (
@@ -47,12 +49,12 @@ export default function BusinessReportPage() {
       </div>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8, marginBottom: 14 }}>{err}</div>}
       {d && <div style={{ display: 'grid', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12 }}>
-          <Stat label="Bookings" value={m.bookings} sub={d.cancelled ? `${d.cancelled} cancelled (excluded)` : null} />
-          <Stat label="Revenue (ex-tax)" value={inr(m.revenue)} sub={`avg ${inr(m.avg_booking)} / booking`} />
-          <Stat label="Gross margin" value={inr(m.margin)} sub={`${m.margin_pct}% of revenue`} />
-          <Stat label="Enquiry → booking" value={`${f.win_rate}%`} sub={`${f.booked} of ${f.enquiries} enquiries`} />
-        </div>
+        <StatRow style={{ margin: 0 }}>
+          <Stat icon={IcPlane} tone="#1a9d57" label="Bookings" value={m.bookings} sub={d.cancelled ? `${d.cancelled} cancelled (excluded)` : null} />
+          <Stat icon={IcRupee} tone="#0e8f8c" label="Revenue (ex-tax)" value={inr(m.revenue)} sub={`avg ${inr(m.avg_booking)} / booking`} />
+          <Stat icon={IcTrend} tone="#12a89e" label="Gross margin" value={inr(m.margin)} sub={`${m.margin_pct}% of revenue`} />
+          <Stat icon={IcFunnel} tone="#f98f26" label="Enquiry → booking" value={`${f.win_rate}%`} sub={`${f.booked} of ${f.enquiries} enquiries`} />
+        </StatRow>
         {m.bookings_without_cost > 0 && <div style={{ background: '#fef3c7', border: '1px solid #f59e0b', padding: 10, borderRadius: 8 }}>{m.bookings_without_cost} booking(s) have no supplier cost entered yet, so their margin is overstated.</div>}
 
         <div className="card card-body">

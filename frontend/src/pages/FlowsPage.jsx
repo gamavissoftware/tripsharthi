@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { flows as flowsApi } from '../api/flows'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
 
 // ── Inject styles once ────────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('lp-flows-css')) {
@@ -272,31 +273,6 @@ function fmtDate(d) {
   if (!d) return '—'
   const dt = new Date(d)
   return dt.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, accent, sub }) {
-  return (
-    <div className="lp-fl-stat-card" style={{ borderTop: `3px solid ${accent}` }}>
-      <div style={{
-        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-        background: accent + '18',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20,
-      }}>
-        {icon}
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 3 }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 800, color: '#111827', lineHeight: 1 }}>
-          {value}
-        </div>
-        {sub && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{sub}</div>}
-      </div>
-    </div>
-  )
 }
 
 // ── Flow Card ─────────────────────────────────────────────────────────────
@@ -692,12 +668,12 @@ export default function FlowsPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <StatCard icon={<Zap size={20} strokeWidth={1.8} color="#0a6cc4" />}          label="Total Flows" value={total}     accent="#0a6cc4" />
-        <StatCard icon={<CheckCircle2 size={20} strokeWidth={1.8} color="#22c55e" />} label="Active"      value={active}    accent="#22c55e" sub={`${draft} draft`} />
-        <StatCard icon={<Pause size={20} strokeWidth={1.8} color="#f59e0b" />}        label="Paused"      value={paused}    accent="#f59e0b" />
-        <StatCard icon={<RefreshCw size={20} strokeWidth={1.8} color="#0ea5e9" />}    label="Total Runs"  value={totalRuns} accent="#0ea5e9" sub="all time" />
-      </div>
+      <StatRow>
+        <StatTile icon={Zap} tone="#0a6cc4" label="Total flows" value={total} />
+        <StatTile icon={CheckCircle2} tone="#22c55e" label="Active" value={active} sub={`${draft} draft`} />
+        <StatTile icon={Pause} tone="#f59e0b" label="Paused" value={paused} />
+        <StatTile icon={RefreshCw} tone="#0ea5e9" label="Total runs" value={totalRuns} sub="all time" />
+      </StatRow>
 
       {/* ── Filter bar ── */}
       {total > 0 && (

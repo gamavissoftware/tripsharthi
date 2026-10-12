@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { travel, inr } from '../api/travel'
 import { toast } from '../components/Toast'
 import { fmt, toMajor } from '../lib/currency'
+import { StatRow, StatTile } from '../components/StatTile'
+import { Wallet as IcWallet, AlertTriangle as IcAlert, CalendarClock as IcClock } from 'lucide-react'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const th = { padding: '7px 8px', textAlign: 'left', color: 'var(--text-3)', fontSize: 11.5, textTransform: 'uppercase' }
@@ -63,11 +65,10 @@ export default function PayablesPage() {
       <p style={{ color: 'var(--text-2)' }}>What you still owe hotels, transporters and other suppliers for confirmed bookings. Where no pay-by date is set, we assume a week before travel.</p>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8, marginBottom: 14 }}>{err}</div>}
       {d && <>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 12, marginBottom: 14 }}>
-          {[['Total outstanding', d.totals.outstanding, 'all'], ['Overdue', d.totals.overdue, 'overdue'], ['Due in 7 days', d.totals.due_7d, 'week']].map(([l, v, f]) => (
-            <button key={f} onClick={() => setFilter(f)} className="card card-body" style={{ textAlign: 'left', cursor: 'pointer', outline: filter === f ? '2px solid var(--primary, #08569f)' : 'none' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{l}</div><div style={{ fontSize: 22, fontWeight: 800, color: f === 'overdue' && v > 0 ? 'var(--danger)' : 'inherit' }}>{inr(v)}</div></button>))}
-        </div>
+        <StatRow>
+          {[['Total outstanding', d.totals.outstanding, 'all', IcWallet, '#0a6cc4'], ['Overdue', d.totals.overdue, 'overdue', IcAlert, '#e5484d'], ['Due in 7 days', d.totals.due_7d, 'week', IcClock, '#f59e0b']].map(([l, v, f, Ic, tone]) => (
+            <StatTile key={f} icon={Ic} tone={tone} label={l} value={inr(v)} onClick={() => setFilter(f)} active={filter === f} accent={f === 'overdue' && v > 0 ? 'var(--danger)' : undefined} />))}
+        </StatRow>
         {d.fx_exposure?.length > 0 && <div className="card card-body" style={{ marginBottom: 14 }}>
           <b>Owed in foreign currency</b> <small style={{ color: 'var(--text-3)' }}>— the rupee amount moves with the exchange rate until you pay</small>
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 6 }}>{d.fx_exposure.map(e => <div key={e.currency}><div style={{ fontSize: 18, fontWeight: 800 }}>{fmt(e.outstanding_fx, e.currency)}</div><small style={{ color: 'var(--text-3)' }}>≈ {inr(e.inr_estimate)} today · {e.services} service{e.services > 1 ? 's' : ''}</small></div>)}</div></div>}

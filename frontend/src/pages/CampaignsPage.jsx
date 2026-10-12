@@ -8,6 +8,7 @@ import { campaigns as campaignsApi } from '../api/campaigns'
 import { segments as segmentsApi } from '../api/segments'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { StatRow, StatTile } from '../components/StatTile'
 
 // ── Inject keyframes once ─────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('lp-camp-css')) {
@@ -69,36 +70,6 @@ function fmtDateTime(d) {
   return new Date(iso).toLocaleString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
-}
-
-// ── Stat Card ─────────────────────────────────────────────────────────────
-function StatCard({ icon, label, value, accent, loading }) {
-  return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #e5e7eb',
-      borderRadius: 12,
-      padding: '1.1rem 1.25rem',
-      borderTop: `3px solid ${accent}`,
-      flex: '1 1 180px',
-      minWidth: 0,
-    }}>
-      {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ height: 14, width: '60%', borderRadius: 6, background: '#e5e7eb', animation: 'pulse 1.2s infinite' }} />
-          <div style={{ height: 28, width: '40%', borderRadius: 6, background: '#e5e7eb', animation: 'pulse 1.2s infinite' }} />
-        </div>
-      ) : (
-        <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</span>
-            <span style={{ display: 'flex', color: '#9ca3af' }}>{icon}</span>
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 800, color: '#111827', lineHeight: 1.1 }}>{value}</div>
-        </>
-      )}
-    </div>
-  )
 }
 
 // ── Progress Bar ──────────────────────────────────────────────────────────
@@ -1336,12 +1307,12 @@ export default function CampaignsPage() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        <StatCard loading={loading} icon={<Megaphone size={18} strokeWidth={1.8} />}  label="Total Campaigns"   value={totalCampaigns.toLocaleString('en-IN')} accent="#08569f" />
-        <StatCard loading={loading} icon={<Send size={18} strokeWidth={1.8} />}       label="Messages Sent"     value={totalSent.toLocaleString('en-IN')}      accent="#2563eb" />
-        <StatCard loading={loading} icon={<CheckCheck size={18} strokeWidth={1.8} />} label="Avg Delivery Rate" value={loading ? '—' : `${deliveryRate}%`}     accent="#16a34a" />
-        <StatCard loading={loading} icon={<Zap size={18} strokeWidth={1.8} />}        label="Active Now"        value={activeNow.toLocaleString('en-IN')}      accent="#f59e0b" />
-      </div>
+      <StatRow>
+        <StatTile icon={Megaphone} tone="#08569f" label="Total campaigns" value={loading ? '…' : totalCampaigns.toLocaleString('en-IN')} />
+        <StatTile icon={Send} tone="#2563eb" label="Messages sent" value={loading ? '…' : totalSent.toLocaleString('en-IN')} />
+        <StatTile icon={CheckCheck} tone="#16a34a" label="Avg delivery rate" value={loading ? '…' : `${deliveryRate}%`} />
+        <StatTile icon={Zap} tone="#f59e0b" label="Active now" value={loading ? '…' : activeNow.toLocaleString('en-IN')} />
+      </StatRow>
 
       {/* ── Campaign Grid ── */}
       {loading ? (

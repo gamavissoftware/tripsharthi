@@ -5,6 +5,8 @@ import { toast } from '../components/Toast'
 import AdCampaignWizard from '../components/ads/AdCampaignWizard'
 import AdSafeguards from '../components/ads/AdSafeguards'
 import { explain } from '../components/ads/explain'
+import { StatRow, StatTile } from '../components/StatTile'
+import { IndianRupee as IcRupee, Users as IcUsers, Plane as IcPlane, Wallet as IcWallet, TrendingUp as IcTrend } from 'lucide-react'
 
 const PLAT = { meta: <span className="ps-plat"><i className="ps-dot meta" />Meta</span>, google: <span className="ps-plat"><i className="ps-dot google" />Google</span> }
 const ST = { ACTIVE: ['#dcfce7', '#15803d', 'Live'], PAUSED: ['#fef9c3', '#a16207', 'Paused'], DELETED: ['#f1f5f9', '#94a3b8', 'Removed'], ARCHIVED: ['#f1f5f9', '#94a3b8', 'Archived'] }
@@ -59,7 +61,6 @@ export default function AdCampaignsPage() {
   const T = data.totals
   const capPct = data.settings.daily_spend_cap > 0 ? Math.min(100, Math.round(T.active_daily_budget / data.settings.daily_spend_cap * 100)) : 0
   const noCap = data.settings.daily_spend_cap <= 0
-  const kpi = (l, v, s) => <div className="card card-body" style={{ flex: '1 1 150px' }}><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>{l}</div><div style={{ fontSize: 22, fontWeight: 800 }}>{v}</div>{s && <small style={{ color: 'var(--text-3)' }}>{s}</small>}</div>
   const th = { padding: '9px 10px', textAlign: 'left', color: 'var(--text-3)', fontSize: 11.5, textTransform: 'uppercase', whiteSpace: 'nowrap' }
   const td = { padding: '10px', borderTop: '1px solid var(--border)', verticalAlign: 'top' }
 
@@ -90,18 +91,18 @@ export default function AdCampaignsPage() {
           <small style={{ color: 'var(--text-2)', marginTop: 6 }}>Open the ad in {data.issues[0].platform === 'meta' ? 'Meta Ads Manager' : 'Google Ads'}, fix what the reason says (or replace the ad) and request a new review. This list clears itself after the next sync once the platform approves it.</small>
         </div>)}
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
-        {kpi('Spend', money(T.spend), `last ${days} days`)}
-        {kpi('Leads (CRM)', T.crm_leads)}
-        {kpi('Bookings', T.bookings)}
-        {kpi('Revenue (ex-tax)', inr(T.revenue))}
-        {kpi('ROAS', T.roas ? T.roas + '×' : '—', T.spend ? 'revenue ÷ spend' : 'no spend yet')}
-        <div className="card card-body" style={{ flex: '1 1 220px' }}>
-          <div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>Live daily budget vs cap</div>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>{inr(T.active_daily_budget)} <small style={{ fontWeight: 400, color: 'var(--text-3)' }}>/ {noCap ? 'no cap' : inr(data.settings.daily_spend_cap)}</small></div>
-          <div style={{ height: 6, background: 'var(--border)', borderRadius: 4, marginTop: 6 }}><div style={{ height: 6, width: capPct + '%', background: capPct > 90 ? 'var(--danger)' : 'var(--primary)', borderRadius: 4 }} /></div>
+      <StatRow style={{ marginBottom: 12 }}>
+        <StatTile icon={IcRupee} tone="#e5484d" label="Spend" value={money(T.spend)} sub={`last ${days} days`} />
+        <StatTile icon={IcUsers} tone="#0a6cc4" label="Leads (CRM)" value={T.crm_leads} />
+        <StatTile icon={IcPlane} tone="#1a9d57" label="Bookings" value={T.bookings} />
+        <StatTile icon={IcWallet} tone="#0e8f8c" label="Revenue (ex-tax)" value={inr(T.revenue)} />
+        <StatTile icon={IcTrend} tone="#f98f26" label="ROAS" value={T.roas ? T.roas + '×' : '—'} sub={T.spend ? 'revenue ÷ spend' : 'no spend yet'} />
+        <div className="st" style={{ '--tone': capPct > 90 ? '#e5484d' : '#12a89e', display: 'block' }}>
+          <span className="st-l">Live daily budget vs cap</span>
+          <span className="st-v">{inr(T.active_daily_budget)} <small style={{ fontWeight: 400, color: 'var(--text-3)', fontSize: 12 }}>/ {noCap ? 'no cap' : inr(data.settings.daily_spend_cap)}</small></span>
+          <span className="wa-meter"><i className={capPct > 90 ? 'bad' : ''} style={{ width: capPct + '%' }} /></span>
         </div>
-      </div>
+      </StatRow>
 
       <div className="card" style={{ overflowX: 'auto', marginBottom: 16 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>

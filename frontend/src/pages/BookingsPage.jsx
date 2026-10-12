@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { travel, inr } from '../api/travel'
 import { toast } from '../components/Toast'
 import Pill from '../components/Pill'
+import { StatRow, StatTile } from '../components/StatTile'
+import { IndianRupee, Wallet, AlertTriangle, CalendarClock, Plane } from 'lucide-react'
 
 export const BOOKING_STATUS = {
   confirmed: { label: 'Confirmed', bg: '#dcfce7', color: '#15803d' }, documents_pending: { label: 'Docs pending', bg: '#fef9c3', color: '#a16207' },
@@ -19,17 +21,16 @@ export default function BookingsPage() {
     travel.bookings().then(setRows).catch(e => toast.error('Could not load bookings', e.message))
     travel.bookingsDashboard().then(setDash).catch(() => {})
   }, [])
-  const kpi = (label, value, sub) => <div className="card card-body" style={{ flex: '1 1 170px' }}><div style={{ color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>{label}</div><div style={{ fontSize: 24, fontWeight: 800 }}>{value}</div>{sub && <small style={{ color: 'var(--text-3)' }}>{sub}</small>}</div>
   return (
     <div className="page">
       <div className="page-header"><h1 className="page-title">Bookings</h1></div>
-      {dash && <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-        {kpi('Revenue booked', inr(dash.totals.revenue, true), `${dash.totals.n} bookings`)}
-        {kpi('Collected', inr(dash.totals.collected, true))}
-        {kpi('Overdue', inr(dash.receivables?.overdue, true), 'needs follow-up')}
-        {kpi('Upcoming dues', inr(dash.receivables?.upcoming, true))}
-        {kpi('Departing in 30 days', dash.departures_30d.length)}
-      </div>}
+      {dash && <StatRow>
+        <StatTile icon={IndianRupee} tone="#0e8f8c" label="Revenue booked" value={inr(dash.totals.revenue, true)} sub={`${dash.totals.n} bookings`} />
+        <StatTile icon={Wallet} tone="#1a9d57" label="Collected" value={inr(dash.totals.collected, true)} />
+        <StatTile icon={AlertTriangle} tone="#e5484d" label="Overdue" value={inr(dash.receivables?.overdue, true)} sub="needs follow-up" accent={dash.receivables?.overdue > 0 ? 'var(--danger)' : undefined} />
+        <StatTile icon={CalendarClock} tone="#f59e0b" label="Upcoming dues" value={inr(dash.receivables?.upcoming, true)} />
+        <StatTile icon={Plane} tone="#0a6cc4" label="Departing in 30 days" value={dash.departures_30d.length} />
+      </StatRow>}
       <div className="card" style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead><tr style={{ textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }}>{['Ref', 'Trip', 'Travel', 'Total', 'Paid', 'Status'].map(h => <th key={h} style={{ padding: '10px 14px' }}>{h}</th>)}</tr></thead>

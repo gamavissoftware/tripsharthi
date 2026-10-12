@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { crm, rupees } from '../api/crm'
 import { toast } from '../components/Toast'
 import { BarChart3 } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
 
 const LIFECYCLE_LABEL = { subscriber: 'Subscriber', lead: 'Lead', mql: 'MQL', sql: 'SQL', opportunity: 'Opportunity', customer: 'Customer', evangelist: 'Evangelist', other: 'Other' }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -24,14 +25,7 @@ const compact = (paise) => {
 }
 
 function Metric({ label, value, sub, accent, to }) {
-  const inner = (
-    <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '1rem 1.1rem', height: '100%' }}>
-      <div style={{ fontSize: '.72rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em' }}>{label}</div>
-      <div style={{ fontSize: '1.5rem', fontWeight: 800, color: accent ?? '#111827', marginTop: 4 }}>{value}</div>
-      {sub && <div style={{ fontSize: '.74rem', color: '#94a3b8', marginTop: 2 }}>{sub}</div>}
-    </div>
-  )
-  return to ? <Link to={to} style={{ textDecoration: 'none' }}>{inner}</Link> : inner
+  return <StatTile tone={accent ?? '#0a6cc4'} label={label} value={value} sub={sub} accent={accent} to={to} />
 }
 
 function Card({ title, action, children }) {
@@ -154,7 +148,7 @@ export default function CrmDashboardPage() {
       </div>
 
       {/* Metric cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(158px,1fr))', gap: '.75rem', marginBottom: '1.5rem' }}>
+      <StatRow>
         <Metric label="Open windows" value={wa.open_windows} sub={wa.expiring_soon ? `⏳ ${wa.expiring_soon} expiring soon` : '24h free-message'} accent={wa.open_windows ? '#16a34a' : undefined} to="/inbox" />
         <Metric label="Replies today" value={wa.inbound_today} sub="inbound on WhatsApp" accent={wa.inbound_today ? '#16a34a' : undefined} to="/inbox" />
         <Metric label="Total leads" value={leads.total} sub={`+${leads.new_30d} in 30 days`} to="/contacts" />
@@ -168,7 +162,7 @@ export default function CrmDashboardPage() {
         <Metric label="Win rate" value={`${d.deals.win_rate}%`} sub={`${d.deals.won_count}W · ${d.deals.lost_count}L`} accent="#08569f" />
         <Metric label="Open tickets" value={d.tickets.open + d.tickets.pending} sub={d.tickets.sla_breached ? `⚠ ${d.tickets.sla_breached} SLA breached` : 'all within SLA'} accent={d.tickets.sla_breached ? '#dc2626' : undefined} to="/tickets" />
         <Metric label="Tasks due" value={d.tasks.overdue + d.tasks.due_today} sub={`${d.tasks.overdue} overdue · ${d.tasks.due_today} today`} accent={d.tasks.overdue ? '#c2410c' : undefined} to="/tasks" />
-      </div>
+      </StatRow>
 
       {/* Message volume + revenue trend — full width */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(340px,1fr))', gap: '1rem', marginBottom: '1rem' }}>

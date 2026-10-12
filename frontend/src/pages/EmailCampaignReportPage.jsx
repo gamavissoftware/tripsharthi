@@ -5,6 +5,7 @@ import { emailMarketing } from '../api/emailMarketing'
 import { toast } from '../components/Toast'
 import SequenceDialog from '../components/email/SequenceDialog'
 import { audienceLabel, EMAIL_STATUS_BADGE, EMAIL_STATUS_LABEL, fmtUtc } from '../components/email/emailShared'
+import { StatRow, StatTile } from '../components/StatTile'
 
 const FILTERS = [
   ['all', 'All'], ['sent', 'Sent'], ['opened', 'Opened'], ['clicked', 'Clicked'], ['replied', 'Replied'],
@@ -91,7 +92,7 @@ export default function EmailCampaignReportPage() {
         </div></div>
       )}
 
-      <div className="mb-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
+      <StatRow>
         <Metric label="Sent" value={f.sent} />
         <Metric label="Opened" value={f.opened} rate={f.open_rate} />
         <Metric label="Clicked" value={f.clicked} rate={f.click_rate} />
@@ -99,7 +100,7 @@ export default function EmailCampaignReportPage() {
         <Metric label="Unsubscribed" value={f.unsubscribed} rate={f.unsubscribe_rate} />
         <Metric label="Failed" value={f.failed} danger={f.failed > 0} />
         <Metric label="Skipped" value={skipped} hint={`${c.stats?.skipped_no_email ?? 0} invalid email · ${c.stats?.skipped_suppressed ?? 0} unsubscribed · ${c.stats?.skipped_duplicate ?? 0} shared address`} />
-      </div>
+      </StatRow>
       <p className="text-muted text-sm mb-4" style={{ marginTop: -4 }}>
         Opens are approximate: Apple Mail pre-loads images (inflating opens) and some clients block them. Clicks are reliable.
       </p>
@@ -188,16 +189,8 @@ export default function EmailCampaignReportPage() {
   )
 }
 
+const METRIC_TONE = { Sent: '#0a6cc4', Opened: '#1a9d57', Clicked: '#f98f26', Replied: '#12a89e', Unsubscribed: '#8393ad', Failed: '#e5484d', Skipped: '#8393ad' }
 function Metric({ label, value, rate, danger, hint }) {
-  return (
-    <div className="card" title={hint}>
-      <div className="card-body">
-        <div className="text-muted" style={{ fontSize: 12 }}>{label}</div>
-        <div style={{ fontSize: 22, fontWeight: 700, marginTop: 4, color: danger ? '#dc2626' : undefined }}>
-          {Number(value ?? 0).toLocaleString()}
-          {rate !== undefined && <span className="text-muted" style={{ fontSize: 13, fontWeight: 500 }}> {rate}%</span>}
-        </div>
-      </div>
-    </div>
-  )
+  return <StatTile tone={METRIC_TONE[label]} label={label} title={hint} accent={danger ? '#dc2626' : undefined}
+    value={<>{Number(value ?? 0).toLocaleString()}{rate !== undefined && <span style={{ fontSize: 13, fontWeight: 500, color: '#6b7a93' }}> {rate}%</span>}</>} />
 }

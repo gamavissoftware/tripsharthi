@@ -4,6 +4,8 @@ import { api } from '../api/client'
 import { toast } from '../components/Toast'
 import { fmt } from '../components/Charts'
 import { TrendingUp } from 'lucide-react'
+import { StatRow, StatTile } from '../components/StatTile'
+import { TrendingUp as IcTrend, Target as IcTarget } from 'lucide-react'
 
 // ── Forecasting + targets (Phase I3) ─────────────────────────────────────────
 
@@ -84,14 +86,11 @@ export default function ForecastPage() {
       </div>
 
       {/* Forecast KPIs */}
-      <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-        {[['Open pipeline', forecast?.total_open], ['Weighted forecast', forecast?.total_weighted]].map(([label, v]) => (
-          <div key={label} style={{ flex: '1 1 220px', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 14, padding: '1.1rem 1.25rem' }}>
-            <div style={{ fontSize: 12.5, color: '#6b7280', fontWeight: 600 }}>{label}</div>
-            <div style={{ fontSize: 28, fontWeight: 800, color: '#111827' }}>{inr(v ?? 0)}</div>
-          </div>
+      <StatRow>
+        {[['Open pipeline', forecast?.total_open, IcTrend, '#0a6cc4'], ['Weighted forecast', forecast?.total_weighted, IcTarget, '#12a89e']].map(([label, v, Ic, tone]) => (
+          <StatTile key={label} icon={Ic} tone={tone} label={label} value={inr(v ?? 0)} />
         ))}
-      </div>
+      </StatRow>
 
       {/* By owner */}
       {forecast?.by_owner?.length > 0 && (
