@@ -1,0 +1,157 @@
+[
+ {
+  "name": "dashboard",
+  "route": "/dashboard",
+  "wait": 5000
+ },
+ {
+  "name": "trips",
+  "route": "/trips"
+ },
+ {
+  "name": "deals",
+  "route": "/deals"
+ },
+ {
+  "name": "inbox",
+  "route": "/inbox",
+  "wait": 5000,
+  "js": "[...document.querySelectorAll('div')].filter(d=>d.textContent.startsWith('Vikram Malhotra')&&d.textContent.length<80).pop()?.click()"
+ },
+ {
+  "name": "itinerary",
+  "route": "/itineraries/16"
+ },
+ {
+  "name": "booking",
+  "route": "/bookings/6"
+ },
+ {
+  "name": "gst",
+  "route": "/settings/gst-exports"
+ },
+ {
+  "name": "flows",
+  "route": "/flows/9"
+ },
+ {
+  "name": "automations",
+  "route": "/automations"
+ },
+ {
+  "name": "departures",
+  "route": "/departures"
+ },
+ {
+  "name": "payables",
+  "route": "/payables"
+ },
+ {
+  "name": "report",
+  "route": "/business-report",
+  "wait": 5000
+ },
+ {
+  "name": "adcamp",
+  "route": "/ads/campaigns"
+ },
+ {
+  "name": "adreport",
+  "route": "/ads"
+ },
+ {
+  "name": "leadsrc",
+  "route": "/settings/lead-sources"
+ },
+ {
+  "name": "c-booking",
+  "route": "/bookings/6",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "c-deals",
+  "route": "/deals",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "c-itinerary",
+  "route": "/itineraries/16",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "c-gst",
+  "route": "/settings/gst-exports",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "c-adreport",
+  "route": "/ads",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "c-inbox",
+  "route": "/inbox",
+  "wait": 5000,
+  "js": "[...document.querySelectorAll('div')].filter(d=>d.textContent.startsWith('Vikram Malhotra')&&d.textContent.length<80).pop()?.click()",
+  "vp": [
+   1280,
+   853
+  ],
+  "scale": 1.25
+ },
+ {
+  "name": "targets",
+  "route": "/settings/targets"
+ },
+ {
+  "name": "checklists",
+  "route": "/checklists"
+ },
+ {
+  "name": "suppliers",
+  "route": "/suppliers"
+ },
+ {
+  "name": "partner-top",
+  "app": "partner",
+  "route": "/",
+  "wait": 4000,
+  "vp": [
+   1120,
+   700
+  ],
+  "scale": 1.6071
+ },
+ {
+  "name": "partner-full",
+  "app": "partner",
+  "route": "/",
+  "wait": 4000,
+  "full": true,
+  "vp": [
+   1120,
+   700
+  ],
+  "scale": 2
+ }
+]

@@ -1,4 +1,4 @@
-export const inr = (paise) => '₹' + (Number(paise || 0) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })
+export const inr = (paise) => '₹' + (Number(paise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: Number(paise || 0) % 100 ? 2 : 0, maximumFractionDigits: 2 })
 // The API sends UTC "YYYY-MM-DD HH:MM:SS".
 const parse = (s) => new Date(String(s).replace(' ', 'T') + 'Z')
 export const fmtDate = (s) => (s ? parse(s).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—')

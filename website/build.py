@@ -29,10 +29,10 @@ def ver(path):
     except OSError: return ''
 
 
-NAV = [('features.html', 'Features'), ('solutions.html', 'Solutions'), ('pricing.html', 'Pricing'), ('blog/index.html', 'Blog'), ('about.html', 'About'), ('contact.html', 'Contact')]
+NAV = [('features.html', 'Features'), ('solutions.html', 'Solutions'), ('pricing.html', 'Pricing'), ('partners.html', 'Partners'), ('blog/index.html', 'Blog'), ('about.html', 'About'), ('contact.html', 'Contact')]
 
 def header(cur='', p=''):
-    links = ''.join(f'<a href="{p}{h}"{" class=\"cur\" aria-current=\"page\"" if h == cur else ""}>{t}</a>' for h, t in NAV)
+    links = ''.join(f'<a href="{p}{h}"{" class=\"cur\" aria-current=\"page\"" if h == cur else (" class=\"hot\"" if h == "partners.html" else "")}>{t}</a>' for h, t in NAV)
     return f"""<header class="nav" id="top">
   <div class="wrap nav-in">
     <a class="brand" href="{p}index.html" aria-label="TripSarthi home"><img src="{p}assets/brand/mark-96.png" alt="" width="40" height="40"><span>Trip<b>Sarthi</b></span></a>
@@ -54,7 +54,7 @@ def footer(p=''):
       <address class="faddr">{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}</address></div>
     <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a></div>
     <div><p class="fh">Solutions</p>{sol}</div>
-    <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
+    <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}partners.html">Partner programme</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
     <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><p class="fh" style="margin-top:22px">Legal</p><a href="{p}privacy.html">Privacy policy</a><a href="{p}terms.html">Terms of service</a></div>
   </div>
   <div class="wrap foot-bot"><span>© <span id="yr">2026</span> {COMPANY}. TripSarthi is a product of {COMPANY}.</span><span>WhatsApp, Meta, Google and Razorpay are trademarks of their respective owners.</span></div>
@@ -137,6 +137,8 @@ def frame(img, label, alt, w=1800, h=1125, p=''):
 
 # ------------------------------------------------------------------------------------------------------------------------------------
 FEATURES = [
+ ('dashboard', 'blue', 'Dashboard & targets', 'Your whole business on one morning screen', 'Revenue, cash, pipeline, collections and departures, live — for the whole business or one agent at a time.',
+  ['Month-to-date enquiries, quotes, bookings, revenue ex-tax, cash collected and margin, compared with last month', '“Needs attention” chips: overdue tasks, late payments, trips with no next step, quotes viewed but not accepted', 'Monthly sales targets per agent with an even-pace marker, so you see who is ahead or behind', 'Agents see only their own work; cost and margin are shown to owners and admins only'], 'dashboard.webp', 'Home dashboard', 1800, 1125),
  ('leads', 'teal', 'Leads & CRM', 'Never lose an enquiry again', 'Every lead becomes a trip in a visual pipeline, with its source, budget and travel dates attached.',
   ['Pipeline board with stages, deal value and “rotting” alerts for deals gone cold', 'Capture from Meta and Google lead ads, website forms, WhatsApp and email', 'Travel-portal leads parsed straight from a private webhook or notification email', 'Duplicate contacts merged automatically; auto-assignment and lead scoring', 'Contacts, accounts, tasks and meetings in the same workspace'], 'c-deals.webp', 'Sales pipeline board', 1600, 1068),
  ('whatsapp', 'green', 'WhatsApp inbox', 'One WhatsApp number, your whole team', 'Reply from a shared inbox that knows WhatsApp’s rules, so nobody sends a message that would be blocked.',
@@ -159,6 +161,8 @@ FEATURES = [
   ['Online quote page with one-tap accept', 'Customer trip portal: payments, invoices, vouchers and document uploads on any phone', 'Branded PDFs — quotes, GST invoices with a UPI QR code, receipts and service vouchers', 'Your costs and margin never appear in anything a customer can open'], 'quote.webp', 'Customer quote page', 1400, 1145),
  ('reports', 'teal', 'Reports & team', 'Know what makes you money', 'See the funnel, margin and cash position without exporting a spreadsheet.',
   ['Business report: funnel, revenue excluding tax, margin, top destinations, lead sources and agent performance', 'Receivables, payables and a rough cash forecast', 'Owners, admins and agents with role-based access; an audit log of changes', 'Push alerts for new leads, replies, viewed quotes and payments (mobile app rolling out)'], 'report.webp', 'Business report', 1800, 1125),
+ ('partners', 'orange', 'Partner programme', 'Grow through referrals', 'Refer other agencies to TripSarthi and earn a recurring commission, tracked in your own partner dashboard.',
+  ['20% commission for 12 months on what each referred customer pays', 'A personal referral link and code, shareable on WhatsApp or e-mail in one tap', 'See referred agencies, every commission and its status, and your payout history', 'Paid by UPI or bank transfer once earnings pass the minimum payout'], 'partner-list.webp', 'Partner dashboard', 1800, 1125),
 ]
 
 def features_page():
@@ -197,10 +201,67 @@ def pricing_page():
     body = hero('Pricing', 'Simple plans that <span class="grad">grow with you</span>', 'Start free and pick a plan when you’re ready. Save 20% with annual billing.',
                 '<div class="toggle" role="group" aria-label="Billing period"><button class="on" data-bill="monthly">Monthly</button><button data-bill="annual">Annual <em>−20%</em></button></div>') + f'''
 <section class="section" style="padding-top:24px"><div class="wrap"><h2 class="sr">Choose a plan</h2><div class="plans">{plans}</div><p class="fine center">Prices in Indian rupees, per month, exclusive of GST (18% GST is added at checkout and a GST tax invoice is e-mailed with every payment); annual plans are billed yearly. Fees are non-refundable. WhatsApp conversation charges are billed by Meta directly to your own account.</p></div></section>
-<section class="section soft"><div class="wrap narrow"><div class="head"><h2>Compare plans</h2></div><div class="tablewrap"><table class="cmp"><thead><tr><th></th><th>Starter</th><th class="hl">Growth</th><th>Pro</th></tr></thead><tbody>{tr}</tbody></table></div></div></section>
+<section class="section soft" id="finder"><div class="wrap"><div class="head"><p class="kicker">Plan finder</p><h2>Which plan fits your team?</h2><p class="sub">Tell us roughly how big you are and we will point to the smallest plan that covers you.</p></div>
+<div class="calc reveal" id="pf"><div class="calc-in"><h3>Your agency today</h3><p>Move the sliders — nothing is sent anywhere.</p>
+<label for="pf-a">Team members who will use TripSarthi <output id="pf-a-o">3</output></label><input type="range" id="pf-a" min="1" max="60" value="3">
+<label for="pf-c">Contacts you work with <output id="pf-c-o">800</output></label><input type="range" id="pf-c" min="100" max="30000" step="100" value="800">
+<label for="pf-w">WhatsApp numbers <output id="pf-w-o">1</output></label><input type="range" id="pf-w" min="1" max="6" value="1"></div>
+<div class="calc-out" id="pf-out"></div></div></div></section>
+<section class="section"><div class="wrap narrow"><div class="head"><h2>Compare plans</h2></div><div class="tablewrap"><table class="cmp"><thead><tr><th></th><th>Starter</th><th class="hl">Growth</th><th>Pro</th></tr></thead><tbody>{tr}</tbody></table></div></div></section>
 <section class="section"><div class="wrap narrow"><div class="head"><p class="kicker">FAQ</p><h2>Pricing questions</h2></div><div class="faq">{fq}</div><p class="center fine">Need something different — more users, multiple brands or help migrating? <a href="contact.html">Talk to us</a>.</p></div></section>''' + cta()
     ld = '<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"TripSarthi","applicationCategory":"BusinessApplication","operatingSystem":"Web","offers":[{"@type":"Offer","name":"Starter","price":"1499","priceCurrency":"INR"},{"@type":"Offer","name":"Growth","price":"3999","priceCurrency":"INR"},{"@type":"Offer","name":"Pro","price":"6999","priceCurrency":"INR"}]}</script>'
     return page('pricing.html', 'Pricing — TripSarthi', 'TripSarthi plans start at ₹1,499 a month. Starter, Growth and Pro for travel agencies of every size. Save 20% with annual billing.', body, 'pricing.html', ld=ld, crumbs=[('Pricing', SITE + '/pricing.html')], faq=faq)
+
+def partners_page():
+    t = lambda d: f'<img loading="lazy" src="assets/img/{d[0]}" width="{d[1]}" height="{d[2]}" alt="{d[3]}">'
+    def fr(img, label, alt, w, h): return f'<div class="frame"><div class="frame-bar"><i></i><i></i><i></i><span>{label}</span></div><img loading="lazy" src="assets/img/{img}" width="{w}" height="{h}" alt="{alt}"></div>'
+    apply = 'contact.html?topic=partner#demo'
+    hero_html = f"""<section class="phero left"><div class="hero-bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i></div>
+  <div class="wrap hero-grid split"><div><p class="eyebrow">{ico('sparkles')} TripSarthi Partner Programme</p><h1>Earn <span class="grad">20% every month</span> for 12 months on every agency you refer</h1>
+  <p class="lead">Know travel agents, tour operators or DMCs who still run on spreadsheets and WhatsApp groups? Share your personal link. When they subscribe to TripSarthi, you earn a recurring commission — tracked and paid transparently.</p>
+  <div class="cta-row"><a class="btn btn-primary btn-lg" href="{apply}">Apply to become a partner {ico('arrow')}</a><a class="btn btn-outline btn-lg" href="#calculator">Calculate your earnings</a></div>
+  <div class="pill-row"><span class="pill">{ico('check')}No joining fee</span><span class="pill">{ico('check')}No cap on referrals</span><span class="pill">{ico('check')}Paid by UPI or bank transfer</span></div></div>
+  <div>{fr('partner-top.webp', 'partners.tripsarthi.com', 'TripSarthi partner dashboard showing a personal referral link, customers referred, total earned and amount ready to be paid', 1800, 1125)}</div></div></section>
+<section class="wrap"><div class="big-stats reveal"><div><b>20%</b><span>commission on what each referred customer pays</span></div><div><b>12</b><span>months of commission from their first payment</span></div><div><b>30 days</b><span>hold, then your earnings are ready to pay out</span></div><div><b>₹1,000</b><span>minimum payout — UPI or bank transfer</span></div></div></section>"""
+    how = f"""<section class="section" id="how"><div class="wrap"><div class="head"><p class="kicker">How it works</p><h2>From a conversation to a commission in four steps</h2><p class="sub">No stock, no targets, no technical work. You introduce, we onboard and support.</p></div>
+  <ol class="flow reveal"><li><span class="n">{ico('users')}</span><h3>1. Join the programme</h3><p>Apply below. After a quick conversation we create your partner account and e-mail you a private invite link.</p></li>
+  <li><span class="n">{ico('link')}</span><h3>2. Share your link</h3><p>Copy your personal link or code, or share it on WhatsApp or e-mail straight from your dashboard.</p></li>
+  <li><span class="n">{ico('plane')}</span><h3>3. They sign up and subscribe</h3><p>Anyone who registers through your link is credited to you automatically — the first referral is remembered for 90 days.</p></li>
+  <li><span class="n">{ico('wallet')}</span><h3>4. You get paid</h3><p>Every payment they make earns you 20% for 12 months. Ready earnings are paid out to your UPI ID or bank account.</p></li></ol></div></section>"""
+    calc = f"""<section class="section soft" id="calculator"><div class="wrap"><div class="head"><p class="kicker">Earnings calculator</p><h2>See what a small network can earn</h2><p class="sub">Move the slider to the number of agencies you could refer. Figures use list prices before GST and the standard 20% for 12 months.</p></div>
+  <div class="calc reveal"><div class="calc-in"><h3>Your referral network</h3><p>An illustration, not a guarantee — real earnings depend on who subscribes and for how long.</p>
+    <label for="pc-n">Paying agencies you refer <output id="pc-n-o">10</output></label><input type="range" id="pc-n" min="1" max="100" value="10">
+    <label>Plan they choose</label><div class="seg" id="pc-plan" role="group" aria-label="Plan"><button type="button" aria-pressed="false" data-price="1499">Starter<small>₹1,499 / mo</small></button><button type="button" aria-pressed="true" data-price="3999">Growth<small>₹3,999 / mo</small></button><button type="button" aria-pressed="false" data-price="6999">Pro<small>₹6,999 / mo</small></button></div></div>
+  <div class="calc-out"><small>You would earn about</small><div class="amt" id="pc-month">₹0</div><small>every month</small><hr><div class="two-col"><div><small>In the first 12 months</small><b id="pc-year">₹0</b></div><div><small>Their monthly spend on TripSarthi</small><b id="pc-base">₹0</b></div></div><a class="btn btn-accent btn-lg" href="{apply}">Start earning {ico('arrow')}</a></div></div></div></section>"""
+    portal = f"""<section class="section"><div class="wrap"><div class="head"><p class="kicker">Your partner dashboard</p><h2>Every rupee, every referral — in plain sight</h2><p class="sub">You get your own secure portal. No spreadsheets, no chasing us for statements.</p></div>
+  <div class="row"><div class="copy"><span class="tag blue">Real dashboard</span><h3>Know exactly where you stand</h3><p>See who signed up, who is paying, what you earned on each payment and when it becomes payable.</p>
+  <ul class="bul"><li>Your personal link and code, with one-tap sharing on WhatsApp and e-mail</li><li>Customers you referred, their plan and how much each has earned you</li><li>Every commission with the amount they paid, your rate and its status: on hold, ready to pay or paid</li><li>Payout history with the UPI or bank reference</li></ul></div>
+  <div class="shot">{fr('partner-list.webp', 'partners.tripsarthi.com', 'Partner dashboard listing referred agencies with plan, payments and earnings, and a commission statement with on hold, ready to pay and paid statuses', 1800, 1125)}</div></div></div></section>"""
+    who = f"""<section class="section soft"><div class="wrap"><div class="head"><p class="kicker">Who it is for</p><h2>Built for people the travel trade already trusts</h2></div>
+  <div class="who reveal"><article class="card"><span class="ico-bubble blue">{ico('users')}</span><h3>Travel consultants</h3><p>You advise agencies on growth and operations — recommend the tool and earn from it.</p></article>
+  <article class="card"><span class="ico-bubble teal">{ico('receipt')}</span><h3>CAs &amp; accountants</h3><p>Your travel clients struggle with GST and TCS. Point them to software that handles both.</p></article>
+  <article class="card"><span class="ico-bubble orange">{ico('globe')}</span><h3>Associations &amp; communities</h3><p>Run a travel trade group or WhatsApp community? Offer members a better way to work.</p></article>
+  <article class="card"><span class="ico-bubble purple">{ico('sparkles')}</span><h3>Trainers &amp; creators</h3><p>Teach, blog or post about travel business? Share a product your audience actually needs.</p></article></div></div></section>"""
+    trust = f"""<section class="section navy"><div class="wrap"><div class="head light"><p class="kicker">Fair and transparent</p><h2>Clear rules, written down</h2><p class="sub">You should never have to wonder how you are credited or paid.</p></div>
+  <div class="trust-grid reveal"><div class="trust"><span class="ico-bubble glass">{ico('link')}</span><div><h3>First referral wins</h3><p>The first partner link a visitor uses is remembered for 90 days. Nobody can overwrite it later.</p></div></div>
+  <div class="trust"><span class="ico-bubble glass">{ico('rupee')}</span><div><h3>Paid on what customers pay</h3><p>Commission is calculated on the plan price the customer actually paid — before GST, after any discount.</p></div></div>
+  <div class="trust"><span class="ico-bubble glass">{ico('calendar')}</span><div><h3>A short hold, then yours</h3><p>Earnings are held for 30 days to cover refunds and reversals, then become payable.</p></div></div>
+  <div class="trust"><span class="ico-bubble glass">{ico('lock')}</span><div><h3>Customer privacy respected</h3><p>You see a workspace’s name, plan and your earnings — never their contacts, messages or business data.</p></div></div>
+  <div class="trust"><span class="ico-bubble glass">{ico('shield')}</span><div><h3>Payout details encrypted</h3><p>Your UPI or bank details are encrypted, and changing them needs your password.</p></div></div>
+  <div class="trust"><span class="ico-bubble glass">{ico('file')}</span><div><h3>Terms in writing</h3><p>Rate, period and hold are confirmed in your partner agreement. Individual terms can differ for larger partners.</p></div></div></div></div></section>"""
+    faq = [('Who can become a partner?', 'Anyone who can introduce TripSarthi to Indian travel agencies, tour operators or DMCs — consultants, accountants, community owners, trainers and other professionals. We review each application, and we create your partner account and send you a private invite link.'),
+           ('How much do I earn?', 'The standard rate is 20% of what each referred customer pays for their plan, for 12 months from their first payment. The calculation is on the plan price before GST and after any discount. Your agreement states your exact terms.'),
+           ('How are referrals tracked?', 'Through your personal link (for example tripsarthi.com/?ref=YOURCODE) or your referral code. The first partner link a visitor uses is remembered for 90 days and credited when they register. You can follow every sign-up in your dashboard.'),
+           ('When and how do I get paid?', 'Commission is held for 30 days after the customer’s payment, then becomes ready to pay. Once you have at least ₹1,000 ready, the TripSarthi team pays it to your UPI ID or bank account and records the reference in your dashboard.'),
+           ('What if a customer is refunded or stops paying?', 'If a payment is refunded or reversed during the hold period, the commission on it is cancelled. If a customer stops paying, you simply stop earning on them; commission already paid out is yours.'),
+           ('Are there taxes on my commission?', 'Commission income may be taxable, and tax deduction rules can apply depending on your status. Please check with your own adviser; we will confirm the details of invoicing and any deductions in your partner agreement.'),
+           ('Can I refer my own business?', 'No. Signing up with your own e-mail or mailbox does not earn you commission. Referrals have to be genuine, separate customers.'),
+           ('Is there a limit on how many agencies I can refer?', 'No. There is no cap on referrals and no joining fee.')]
+    fq = ''.join(f'<details><summary>{q}</summary><p>{a}</p></details>' for q, a in faq)
+    body = hero_html + how + calc + portal + who + trust + f'<section class="section"><div class="wrap narrow"><div class="head"><p class="kicker">FAQ</p><h2>Partner programme questions</h2></div><div class="faq">{fq}</div></div></section>' + \
+        cta('Ready to earn with TripSarthi?', 'Tell us a little about your network and we will set up your partner account.', '').replace('Start free', 'Apply now').replace('data-app="signup" href="https://app.tripsarthi.com/#/register"', f'href="{apply}"')
+    return page('partners.html', 'Partner Programme — Earn 20% Recurring Commission | TripSarthi', 'Refer Indian travel agencies to TripSarthi and earn 20% commission for 12 months. Personal referral link, live partner dashboard and UPI or bank payouts.', body, 'partners.html',
+                crumbs=[('Partners', SITE + '/partners.html')], faq=faq)
 
 def about_page():
     body = hero('About us', 'Built in India, for the people who <span class="grad">plan journeys</span>', 'TripSarthi is the workspace we wished every travel agency had — one calm place for enquiries, quotes, payments and paperwork.') + f'''
@@ -390,16 +451,16 @@ if __name__ == '__main__':
     ensure_variants()
     minify_css()
     patch_index()
-    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
+    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('partners.html', partners_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
     pages += [(f'{x["slug"]}.html', (lambda x=x: solution_page(x))) for x in SOLUTIONS] + [(f'blog/{a["slug"]}.html', (lambda a=a: article_page(a))) for a in ARTICLES]
     for f, fn in pages:
         write(f, fn())
-    urls = [('', '1.0', 'weekly'), ('features.html', '0.9', 'monthly'), ('solutions.html', '0.8', 'monthly'), ('pricing.html', '0.9', 'monthly')] + [(f'{x["slug"]}.html', '0.8', 'monthly') for x in SOLUTIONS] + \
+    urls = [('', '1.0', 'weekly'), ('features.html', '0.9', 'monthly'), ('solutions.html', '0.8', 'monthly'), ('pricing.html', '0.9', 'monthly'), ('partners.html', '0.8', 'monthly')] + [(f'{x["slug"]}.html', '0.8', 'monthly') for x in SOLUTIONS] + \
            [('blog/index.html', '0.7', 'weekly')] + [(f'blog/{a["slug"]}.html', '0.7', 'monthly') for a in ARTICLES] + [('about.html', '0.6', 'yearly'), ('contact.html', '0.7', 'yearly'), ('privacy.html', '0.3', 'yearly'), ('terms.html', '0.3', 'yearly')]
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{SITE}/{u}</loc><lastmod>{TODAY}</lastmod><changefreq>{c}</changefreq><priority>{pr}</priority></url>\n' for u, pr, c in urls) + '</urlset>\n'
     open(os.path.join(ROOT, 'sitemap.xml'), 'w').write(sm); print('wrote sitemap.xml')
     keys = [('Features', 'features.html', 'Everything the product does'), ('Pricing', 'pricing.html', 'Starter ₹1,499, Growth ₹3,999, Pro ₹6,999 per month'), ('Travel agency software', 'travel-agency-software.html', 'Overview for Indian travel agencies'),
             ('WhatsApp CRM for travel agents', 'whatsapp-crm-for-travel-agents.html', 'Shared inbox and automations within WhatsApp rules'), ('GST billing for travel agents', 'gst-billing-for-travel-agents.html', 'GST invoices, TCS, GSTR exports'),
-            ('Tour operator software', 'tour-operator-software.html', 'Group departures, supplier rates, payables'), ('Blog', 'blog/index.html', 'Guides for travel agents'), ('Contact', 'contact.html', f'{EMAIL}, {PHONES[0][0]}')]
+            ('Tour operator software', 'tour-operator-software.html', 'Group departures, supplier rates, payables'), ('Partner programme', 'partners.html', 'Earn 20% recurring commission by referring travel agencies'), ('Blog', 'blog/index.html', 'Guides for travel agents'), ('Contact', 'contact.html', f'{EMAIL}, {PHONES[0][0]}')]
     llms = f'# TripSarthi\n> TripSarthi is travel agency software for India: CRM, WhatsApp shared inbox and automation, itinerary quotes, instalment payments, GST invoicing and TCS tracking, group departures, supplier rate cards and Meta/Google ad management. A product of {COMPANY}, Faridabad, Haryana.\n\n## Key pages\n' + ''.join(f'- [{n}]({SITE}/{u}): {d}\n' for n, u, d in keys)
     open(os.path.join(ROOT, 'llms.txt'), 'w').write(llms); print('wrote llms.txt')

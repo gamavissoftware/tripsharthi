@@ -8,5 +8,6 @@
 - [WhatsApp CRM for travel agents](https://tripsarthi.com/whatsapp-crm-for-travel-agents.html): Shared inbox and automations within WhatsApp rules
 - [GST billing for travel agents](https://tripsarthi.com/gst-billing-for-travel-agents.html): GST invoices, TCS, GSTR exports
 - [Tour operator software](https://tripsarthi.com/tour-operator-software.html): Group departures, supplier rates, payables
+- [Partner programme](https://tripsarthi.com/partners.html): Earn 20% recurring commission by referring travel agencies
 - [Blog](https://tripsarthi.com/blog/index.html): Guides for travel agents
 - [Contact](https://tripsarthi.com/contact.html): manglesh@gamavis.com, +91-9718991797

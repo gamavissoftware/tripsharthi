@@ -77,6 +77,7 @@
   var loaded = Date.now();
   var topics = { demo: 'Demo request', pricing: 'Pricing enquiry', support: 'Help / support', partner: 'Partnership', other: 'Enquiry' };
   var hash = (location.hash || '').replace('#', ''); if (topics[hash]) form.topic.value = hash;
+  var qt = /[?&]topic=([a-z]+)/.exec(location.search); if (qt && topics[qt[1]]) form.topic.value = qt[1];
   function say(msg, cls) { note.textContent = msg; note.className = 'fine' + (cls ? ' ' + cls : ''); }
   function fallback(v) {
     var body = ['Name: ' + v.name, 'Email: ' + v.email, 'Phone: ' + (v.phone || '-'), 'Company: ' + (v.company || '-'), '', v.message].join('\n');
@@ -100,4 +101,37 @@
       .catch(function () { fallback(v); })
       .then(function () { btn.disabled = false; });
   });
+})();
+
+
+/* partner earnings calculator + plan finder */
+(function () {
+  'use strict';
+  var inr = function (n) { return '₹' + Math.round(n).toLocaleString('en-IN'); };
+  var n = document.getElementById('pc-n'), plans = document.querySelectorAll('#pc-plan button');
+  if (n && plans.length) {
+    var price = 3999;
+    var calc = function () {
+      var c = Number(n.value), base = c * price, m = base * 0.2;
+      document.getElementById('pc-n-o').textContent = c;
+      document.getElementById('pc-month').textContent = inr(m); document.getElementById('pc-year').textContent = inr(m * 12); document.getElementById('pc-base').textContent = inr(base);
+    };
+    n.addEventListener('input', calc);
+    plans.forEach(function (b) { b.addEventListener('click', function () { price = Number(b.getAttribute('data-price')); plans.forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); calc(); }); });
+    calc();
+  }
+  var pf = document.getElementById('pf');
+  if (pf) {
+    var LIM = [['Free', 0, 200, 1, 1], ['Starter', 1499, 1000, 3, 1], ['Growth', 3999, 5000, 10, 2], ['Pro', 6999, 25000, 50, 5]];
+    var inputs = { a: document.getElementById('pf-a'), c: document.getElementById('pf-c'), w: document.getElementById('pf-w') };
+    var run = function () {
+      var a = Number(inputs.a.value), c = Number(inputs.c.value), w = Number(inputs.w.value);
+      document.getElementById('pf-a-o').textContent = a; document.getElementById('pf-c-o').textContent = c.toLocaleString('en-IN'); document.getElementById('pf-w-o').textContent = w;
+      var hit = LIM.filter(function (p) { return a <= p[3] && c <= p[2] && w <= p[4]; })[0], out = document.getElementById('pf-out');
+      if (!hit) { out.innerHTML = '<small>Your needs are above our standard plans</small><div class="amt" style="font-size:34px">Let’s talk</div><a class="btn btn-accent btn-lg" href="contact.html?topic=pricing#demo">Contact us</a>'; return; }
+      out.innerHTML = '<small>We would suggest</small><div class="amt">' + hit[0] + '</div><small>' + (hit[1] ? inr(hit[1]) + ' / month + GST' : 'Free forever to explore') + '</small><hr><div class="two-col"><div><small>Contacts</small><b>' + hit[2].toLocaleString('en-IN') + '</b></div><div><small>Team agents · WhatsApp numbers</small><b>' + hit[3] + ' · ' + hit[4] + '</b></div></div><a class="btn btn-accent btn-lg" data-app="signup" href="#">Start free</a>';
+      document.querySelectorAll('#pf-out [data-app]').forEach(function (el) { el.href = (window.TRIPSARTHI_APP_URL || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:5917' : 'https://app.tripsarthi.com')) + '/#/register'; });
+    };
+    Object.keys(inputs).forEach(function (k) { inputs[k].addEventListener('input', run); }); run();
+  }
 })();

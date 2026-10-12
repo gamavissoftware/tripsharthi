@@ -35,6 +35,8 @@ Anywhere else they point at `https://app.tripsarthi.com`. To host the app elsewh
 - Pricing on the page mirrors the in-app Billing plans (`BillingPage.jsx` / `BillingService`). Change both together.
 
 ## Refreshing the screenshots
+Quick way: `node scripts/capture_screens.mjs <outdir>` (see CLAUDE.md, "Website v2"), then convert to WebP.
+
 `scripts/showcase_seed.py` builds a fictional agency (Blue Horizon Holidays) in the LOCAL dev database; every name and number is invented.
 `python3 scripts/showcase_seed.py` (login `showcase@tripsarthi.test`), then `--extras`, `--ads`, `--runs`, `--polish`; `--reset` removes it again.
 Capture with headless Chrome at 1440x900 @2x and convert to WebP (see the commands used in the session notes: crop with Pillow, `quality=80`).
