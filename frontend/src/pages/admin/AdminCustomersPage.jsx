@@ -12,7 +12,7 @@ const PLANS = ['free', 'starter', 'growth', 'pro']
 const lbl = { display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 4 }
 
 /** Right-hand panel: one customer's plan, usage, people and subscription history, with the actions the owner can take. */
-/** "Log in as customer": a reason (shown to the customer in their audit log), full access or view only, then the customer app opens in a new tab. */
+/** "Log in as customer": a reason (kept in the admin Access log), full access or view only, then the customer app opens in a new tab. */
 function LoginAsCustomer({ tenant, startOpen = false }) {
   const [open, setOpen] = useState(startOpen)
   const [reason, setReason] = useState('')
@@ -32,11 +32,11 @@ function LoginAsCustomer({ tenant, startOpen = false }) {
   return (
     <div className="ad-impersonate">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <div><b>Log in as this customer</b><div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Opens their app as the workspace owner. The owner is not signed out or notified; the visit appears in their audit log.</div></div>
+        <div><b>Log in as this customer</b><div style={{ fontSize: 12.5, color: 'var(--text-3)' }}>Opens their app as the workspace owner. The owner is not signed out or notified, and the visit is not shown in their audit log (it is kept in the admin Access log).</div></div>
         <button className="btn btn-primary btn-sm" onClick={() => setOpen(o => !o)}><LogIn size={14} /> Log in as customer</button>
       </div>
       {open && <div className="card card-body" style={{ marginTop: 10, padding: 12 }}>
-        <label style={{ fontSize: 12.5, fontWeight: 700 }}>Reason (the customer can see this in their audit log)</label>
+        <label style={{ fontSize: 12.5, fontWeight: 700 }}>Reason (kept in the admin Access log; the customer does not see it)</label>
         <textarea className="form-input" rows={2} maxLength={300} value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Customer reported invoices will not generate (ticket TS-00012)" />
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, fontSize: 13.5 }}><input type="checkbox" checked={viewOnly} onChange={e => setViewOnly(e.target.checked)} /> View only (no changes can be made)</label>
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 6 }}>Lasts up to 2 hours. Changing the owner's password or e-mail and paying for plans are always blocked inside a session.</div>

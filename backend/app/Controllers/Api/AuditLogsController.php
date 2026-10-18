@@ -29,6 +29,9 @@ class AuditLogsController extends ResourceController
         $tenantId = CurrentUser::tenantId();
         $m        = (new AuditLogModel())->setTenant($tenantId);
 
+        // TripSarthi support visits (and changes made during them) are internal: the workspace never sees them here. The admin app's Access log keeps the record.
+        $m->where('impersonated_by', null)->whereNotIn('action', ['support.access.start', 'support.access.end']);
+
         foreach (['entity_type' => 'entity_type', 'action' => 'action', 'entity_id' => 'entity_id', 'actor_user_id' => 'actor_user_id'] as $param => $col) {
             $v = $this->request->getGet($param);
             if ($v !== null && $v !== '') {
