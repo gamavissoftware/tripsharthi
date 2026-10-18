@@ -87,6 +87,7 @@ import SuppliersPage      from './pages/SuppliersPage'
 import AdsReportPage      from './pages/AdsReportPage'
 import PublicQuotePage    from './pages/PublicQuotePage'
 import SupportSessionBar from './components/SupportSessionBar'
+import { isImpersonating } from './lib/impersonation'
 import PublicPortalPage   from './pages/PublicPortalPage'
 import DunningSettingsPage from './pages/DunningSettingsPage'
 import AdPlatformsPage from './pages/AdPlatformsPage'
@@ -292,7 +293,7 @@ function Sidebar({ user, onLogout, open = false, onNavigate, collapsed = false, 
         {/* Settings section */}
         <div className="sidebar-divider" />
         <div className="sidebar-section-label">Settings</div>
-        {SETTINGS_GROUPS.map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} collapsed={collapsed} up />)}
+        {SETTINGS_GROUPS.map(g => isImpersonating() ? { ...g, items: g.items.filter(i => i.to !== '/settings/audit') } : g).map(g => <NavGroup key={g.label} group={g} onNavigate={onNavigate} collapsed={collapsed} up />)}
       </div>
 
       {/* Footer */}
@@ -397,7 +398,7 @@ function Layout({ user, onLogout }) {
           <Route path="/settings/scoring"       element={<ScoringPage />} />
           <Route path="/settings/assignment"    element={<AssignmentRulesPage />} />
           <Route path="/settings/hours"         element={<BusinessHoursPage />} />
-          <Route path="/settings/audit"         element={<AuditLogPage />} />
+          <Route path="/settings/audit"         element={isImpersonating() ? <Navigate to="/" replace /> : <AuditLogPage />} />
           <Route path="/settings/teams"         element={<TeamsPage />} />
 
           {/* Messaging */}
