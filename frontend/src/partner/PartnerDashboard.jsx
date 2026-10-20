@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { partnerApi } from '../api/partner'
 import { toast } from '../components/Toast'
+import Field from '../components/FormField'
+import { firstInvalid, shake } from '../lib/formFocus'
 import { Users, IndianRupee, Hourglass, BadgeCheck, Copy, MessageCircle, Mail, Link2, Sparkles, Landmark, BellRing, KeyRound, Receipt, Wallet } from 'lucide-react'
 import { inr, fmtDate } from './format'
 import './partner.css'
@@ -20,17 +22,17 @@ function PayoutForm({ current, onSaved }) {
   }
   return (
     <form onSubmit={save} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">Receive money by</label>
-        <select className="form-select" value={f.method} onChange={e => set('method', e.target.value)}><option value="upi">UPI</option><option value="bank">Bank account</option></select></div>
+      <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-method">Receive money by *</label>
+        <select id="po-method" required className="form-select" value={f.method} onChange={e => set('method', e.target.value)}><option value="upi">UPI</option><option value="bank">Bank account</option></select></div>
       {f.method === 'upi'
-        ? <div className="form-group" style={{ margin: 0 }}><label className="form-label">UPI ID</label><input className="form-input" value={f.upi} onChange={e => set('upi', e.target.value)} placeholder="name@bank" required /></div>
+        ? <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-upi">UPI ID *</label><input id="po-upi" className="form-input" value={f.upi} onChange={e => set('upi', e.target.value.trim())} placeholder="name@bank" required pattern="[A-Za-z0-9._\-]{2,}@[A-Za-z][A-Za-z0-9]{1,}" title="A UPI ID looks like name@bank, with no spaces" autoComplete="off" autoCapitalize="none" spellCheck={false} /></div>
         : <>
-          <div className="form-group" style={{ margin: 0 }}><label className="form-label">Account holder name</label><input className="form-input" value={f.account_name} onChange={e => set('account_name', e.target.value)} required /></div>
-          <div className="form-group" style={{ margin: 0 }}><label className="form-label">Account number</label><input className="form-input" inputMode="numeric" value={f.account_no} onChange={e => set('account_no', e.target.value)} required /></div>
-          <div className="form-group" style={{ margin: 0 }}><label className="form-label">IFSC</label><input className="form-input" value={f.ifsc} onChange={e => set('ifsc', e.target.value.toUpperCase())} placeholder="HDFC0001234" required /></div>
+          <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-name">Account holder name *</label><input id="po-name" className="form-input" value={f.account_name} onChange={e => set('account_name', e.target.value)} required minLength={2} maxLength={100} autoComplete="off" /></div>
+          <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-acno">Account number *</label><input id="po-acno" className="form-input" inputMode="numeric" value={f.account_no} onChange={e => set('account_no', e.target.value.replace(/\s+/g, ''))} required pattern="[0-9]{6,20}" title="Digits only, 6 to 20 of them, no spaces" autoComplete="off" /></div>
+          <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-ifsc">IFSC *</label><input id="po-ifsc" className="form-input" value={f.ifsc} onChange={e => set('ifsc', e.target.value.toUpperCase().trim())} placeholder="HDFC0001234" required maxLength={11} pattern="[A-Z]{4}0[A-Z0-9]{6}" title="An IFSC is 11 characters: 4 letters, a zero, then 6 letters or digits, like HDFC0001234" autoComplete="off" spellCheck={false} /></div>
         </>}
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">PAN (for tax)</label><input className="form-input" value={f.pan} onChange={e => set('pan', e.target.value.toUpperCase())} placeholder="ABCDE1234F" maxLength={10} /></div>
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">Your password</label><input className="form-input" type="password" value={f.current_password} onChange={e => set('current_password', e.target.value)} required autoComplete="current-password" /><div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>Needed to change where your money goes.</div></div>
+      <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-pan">PAN (for tax)</label><input id="po-pan" className="form-input" value={f.pan} onChange={e => set('pan', e.target.value.toUpperCase().trim())} placeholder="ABCDE1234F" maxLength={10} pattern="[A-Z]{5}[0-9]{4}[A-Z]" title="A PAN is 10 characters: 5 letters, 4 digits, 1 letter, like ABCDE1234F" autoComplete="off" spellCheck={false} /></div>
+      <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="po-pw">Your password *</label><input id="po-pw" className="form-input" type="password" value={f.current_password} onChange={e => set('current_password', e.target.value)} required autoComplete="current-password" /><div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>Needed to change where your money goes.</div></div>
       <div style={{ gridColumn: '1/-1' }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save payout details'}</button></div>
     </form>
   )
@@ -48,7 +50,7 @@ function PreferencesForm({ prefs, onSaved }) {
   }
   return (
     <form onSubmit={save} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))' }}>
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">Your WhatsApp number</label><input className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" /></div>
+      <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor="pr-phone">Your WhatsApp number</label><input id="pr-phone" className="form-input" type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 98765 43210" autoComplete="tel" pattern="\+?[0-9 \-()]{10,18}" title="Enter the full number with country code, like +91 98765 43210" required={wa} /></div>
       <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.4, cursor: 'pointer' }}>
         <input type="checkbox" checked={wa} onChange={e => setWa(e.target.checked)} style={{ marginTop: 3 }} />
         <span>Send me partner program updates on WhatsApp. Untick to stop — or reply STOP to any message.</span>
@@ -64,17 +66,39 @@ function PreferencesForm({ prefs, onSaved }) {
 
 function PasswordForm() {
   const [f, setF] = useState({ current: '', next: '' })
+  const [errs, setErrs] = useState({})
+  const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
+  const formRef = useRef(null)
+  const check = (d) => {
+    const n = {}
+    if (!d.current) n.current = 'Enter your current password'
+    if (!d.next) n.next = 'Choose a new password'
+    else if (d.next.length < 10) n.next = `Use at least 10 characters (you have ${d.next.length})`
+    else if (d.current && d.next === d.current) n.next = 'Your new password must be different from the current one'
+    return n
+  }
+  const change = (k) => (e) => { const d = { ...f, [k]: e.target.value }; setF(d); if (errs.current || errs.next) { const n = check(d); setErrs(s => ({ current: s.current ? n.current : undefined, next: s.next ? n.next : undefined })) } }
   async function save(e) {
-    e.preventDefault(); setBusy(true)
+    e.preventDefault()
+    const n = check(f); setErrs(n)
+    const keys = Object.keys(n)
+    if (keys.length) {
+      shake(formRef.current); setTimeout(() => firstInvalid(formRef.current), 0)
+      toast.warning(keys.length === 1 ? 'One thing needs fixing' : `${keys.length} things need fixing`, n[keys[0]]); return
+    }
+    setBusy(true)
     try { await partnerApi.changePassword(f.current, f.next); toast.success('Password changed'); setF({ current: '', next: '' }) }
     catch (err) { toast.error('Not changed', err.message) } finally { setBusy(false) }
   }
   return (
-    <form onSubmit={save} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">Current password</label><input className="form-input" type="password" value={f.current} onChange={e => setF({ ...f, current: e.target.value })} required autoComplete="current-password" /></div>
-      <div className="form-group" style={{ margin: 0 }}><label className="form-label">New password</label><input className="form-input" type="password" minLength={10} value={f.next} onChange={e => setF({ ...f, next: e.target.value })} required autoComplete="new-password" /><div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>At least 10 characters.</div></div>
-      <div style={{ gridColumn: '1/-1' }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button></div>
+    <form onSubmit={save} noValidate ref={formRef} style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
+      <Field label="Current password" required error={errs.current}><input className="form-input" type={show ? 'text' : 'password'} value={f.current} onChange={change('current')} autoComplete="current-password" /></Field>
+      <Field label="New password" required error={errs.next} hint="At least 10 characters."><input className="form-input" type={show ? 'text' : 'password'} value={f.next} onChange={change('next')} autoComplete="new-password" /></Field>
+      <div style={{ gridColumn: '1/-1', display: 'flex', alignItems: 'center', gap: 14 }}>
+        <button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Change password'}</button>
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShow(v => !v)} aria-pressed={show}>{show ? 'Hide passwords' : 'Show passwords'}</button>
+      </div>
     </form>
   )
 }

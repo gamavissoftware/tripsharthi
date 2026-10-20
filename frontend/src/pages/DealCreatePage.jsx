@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId, cloneElement } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { contacts as contactsApi } from '../api/contacts'
@@ -11,8 +11,11 @@ const SOURCES = ['manual', 'web_form', 'meta_lead_ads', 'google_lead_forms', 'wh
 const lbl = { fontSize: 12.5, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }
 
 function Field({ label, required, children }) {
-  return <div><label style={lbl}>{label}{required && <span style={{ color: '#dc2626' }}> *</span>}</label>{children}</div>
+  const id = useId()
+  const input = children.type === 'label' ? children : cloneElement(children, { id })
+  return <div><label htmlFor={children.type === 'label' ? undefined : id} style={lbl}>{label}{required && <span style={{ color: '#dc2626' }}> *</span>}</label>{input}</div>
 }
+const PHONE = { type: 'tel', inputMode: 'tel', pattern: '\\+?[0-9 \\-]{8,18}', title: 'Use 8 to 15 digits with the country code, like +919999900000' }
 
 /**
  * Rich "Add Deal" — captures the full lead profile (contact + qualification) AND
@@ -49,7 +52,7 @@ export default function DealCreatePage() {
 
   async function submit(e) {
     e.preventDefault()
-    if (!f.lead_name.trim() && !f.deal_title.trim()) { toast.error('Add a lead name or a deal title'); return }
+    if (!f.lead_name.trim() && !f.deal_title.trim()) { toast.error('Add a lead name or a deal title'); return }  // safety net; each field is required while the other is empty
     setSaving(true)
     try {
       let contactId = null, accountId = null
@@ -108,11 +111,11 @@ export default function DealCreatePage() {
 
         <div style={sec}>Lead &amp; contact</div>
         <div style={grid}>
-          <Field label="Lead name" required><input className="lp-cd-input" value={f.lead_name} onChange={set('lead_name')} placeholder="Full name of contact" /></Field>
+          <Field label="Lead name" required={!f.deal_title.trim()}><input required={!f.deal_title.trim()} maxLength={150} className="lp-cd-input" value={f.lead_name} onChange={set('lead_name')} placeholder="Full name of contact" /></Field>
           <Field label="Company"><input className="lp-cd-input" value={f.company} onChange={set('company')} placeholder="Employer / corporate entity" /></Field>
-          <Field label="Mobile number"><input className="lp-cd-input" value={f.mobile} onChange={set('mobile')} placeholder="e.g. +919999900000" /></Field>
-          <Field label="Alternate mobile"><input className="lp-cd-input" value={f.alt_mobile} onChange={set('alt_mobile')} placeholder="Optional secondary phone" /></Field>
-          <Field label="Email"><input className="lp-cd-input" value={f.email} onChange={set('email')} placeholder="contact@company.com" /></Field>
+          <Field label="Mobile number"><input {...PHONE} className="lp-cd-input" value={f.mobile} onChange={set('mobile')} placeholder="e.g. +919999900000" /></Field>
+          <Field label="Alternate mobile"><input {...PHONE} className="lp-cd-input" value={f.alt_mobile} onChange={set('alt_mobile')} placeholder="Optional secondary phone" /></Field>
+          <Field label="Email"><input type="email" inputMode="email" maxLength={190} className="lp-cd-input" value={f.email} onChange={set('email')} placeholder="contact@company.com" /></Field>
           <Field label="City"><input className="lp-cd-input" value={f.city} onChange={set('city')} /></Field>
           <Field label="State"><input className="lp-cd-input" value={f.state} onChange={set('state')} /></Field>
           <Field label="Country"><input className="lp-cd-input" value={f.country} onChange={set('country')} /></Field>
@@ -122,8 +125,8 @@ export default function DealCreatePage() {
 
         <div style={sec}>Deal</div>
         <div style={grid}>
-          <Field label="Deal title"><input className="lp-cd-input" value={f.deal_title} onChange={set('deal_title')} placeholder="Defaults to lead name" /></Field>
-          <Field label="Budget (₹)"><input type="number" className="lp-cd-input" value={f.budget} onChange={set('budget')} placeholder="Available funds" /></Field>
+          <Field label="Deal title" required={!f.lead_name.trim()}><input required={!f.lead_name.trim()} maxLength={190} className="lp-cd-input" value={f.deal_title} onChange={set('deal_title')} placeholder="Defaults to lead name" /></Field>
+          <Field label="Budget (₹)"><input type="number" min="0" step="0.01" inputMode="decimal" className="lp-cd-input" value={f.budget} onChange={set('budget')} placeholder="Available funds" /></Field>
           <Field label="Stage">
             <select className="lp-cd-select" value={f.stage_id} onChange={set('stage_id')}>
               {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}

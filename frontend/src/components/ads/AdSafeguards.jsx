@@ -29,9 +29,9 @@ export default function AdSafeguards({ settings, onSaved }) {
       <p style={{ color: 'var(--text-2)', marginTop: 0 }}>Everything TripSarthi creates starts <b>paused</b>. Launching or raising a budget is checked against these limits; cutting spend and pausing are always allowed.</p>
       <form onSubmit={save}>
         <div style={{ ...row, marginBottom: 10 }}>
-          <label>Daily spend cap (all live campaigns) ₹ <input className="form-input" type="number" min="0" style={{ width: 120 }} value={s.cap} onChange={e => setS({ ...s, cap: e.target.value })} /></label>
-          <label>Minimum daily budget ₹ <input className="form-input" type="number" min="1" style={{ width: 100 }} value={s.min} onChange={e => setS({ ...s, min: e.target.value })} /></label>
-          <label>Max raise per change % <input className="form-input" type="number" min="0" max="100" style={{ width: 80 }} value={s.pct} onChange={e => setS({ ...s, pct: e.target.value })} /></label>
+          <label>Daily spend cap (all live campaigns) ₹ * <input className="form-input" type="number" required min="0" step="any" inputMode="decimal" style={{ width: 120 }} value={s.cap} onChange={e => setS({ ...s, cap: e.target.value })} /></label>
+          <label>Minimum daily budget ₹ * <input className="form-input" type="number" required min="1" step="any" inputMode="decimal" style={{ width: 100 }} value={s.min} onChange={e => setS({ ...s, min: e.target.value })} /></label>
+          <label>Max raise per change % * <input className="form-input" type="number" required min="0" max="100" step="1" inputMode="numeric" style={{ width: 80 }} value={s.pct} onChange={e => setS({ ...s, pct: e.target.value })} /></label>
         </div>
         <label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}><input type="checkbox" checked={s.rules} onChange={e => setS({ ...s, rules: e.target.checked })} /> Run automatic rules (hourly)</label>
         <button className="btn btn-primary">Save safeguards</button>
@@ -45,11 +45,11 @@ export default function AdSafeguards({ settings, onSaved }) {
           <button className="btn btn-sm btn-ghost" onClick={async () => { await travel.deleteAdRule(x.id); loadRules() }}>Remove</button>
         </div>))}
       <form onSubmit={addRule} style={{ ...row, marginTop: 10 }}>
-        <input className="form-input" style={{ width: 170 }} placeholder="Rule name" value={r.name} onChange={e => setR({ ...r, name: e.target.value })} required />
-        <select className="form-select" style={{ width: 210 }} value={r.metric} onChange={e => setR({ ...r, metric: e.target.value })}>{Object.entries(METRICS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        <input className="form-input" style={{ width: 100 }} type="number" min="1" placeholder="₹" value={r.threshold_rs} onChange={e => setR({ ...r, threshold_rs: e.target.value })} required />
-        <label>over <input className="form-input" style={{ width: 60 }} type="number" min="1" max="30" value={r.window_days} onChange={e => setR({ ...r, window_days: e.target.value })} /> days</label>
-        <input className="form-input" style={{ width: 130 }} type="number" min="0" placeholder="min spend ₹" value={r.min_spend_rs} onChange={e => setR({ ...r, min_spend_rs: e.target.value })} />
+        <input className="form-input" style={{ width: 170 }} placeholder="Rule name" aria-label="Rule name" maxLength={100} value={r.name} onChange={e => setR({ ...r, name: e.target.value })} required />
+        <select className="form-select" aria-label="Metric" style={{ width: 210 }} value={r.metric} onChange={e => setR({ ...r, metric: e.target.value })}>{Object.entries(METRICS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <input className="form-input" style={{ width: 100 }} type="number" min="1" step="any" inputMode="decimal" aria-label="Threshold amount" placeholder="₹" value={r.threshold_rs} onChange={e => setR({ ...r, threshold_rs: e.target.value })} required />
+        <label>over <input className="form-input" style={{ width: 60 }} type="number" required min="1" max="30" step="1" value={r.window_days} onChange={e => setR({ ...r, window_days: e.target.value })} /> days</label>
+        <input className="form-input" style={{ width: 130 }} type="number" min="0" step="any" inputMode="decimal" aria-label="Minimum spend" placeholder="min spend ₹" value={r.min_spend_rs} onChange={e => setR({ ...r, min_spend_rs: e.target.value })} />
         <select className="form-select" style={{ width: 120 }} value={r.action} onChange={e => setR({ ...r, action: e.target.value })}><option value="pause">Pause it</option><option value="notify">Notify me</option></select>
         <select className="form-select" style={{ width: 110 }} value={r.platform} onChange={e => setR({ ...r, platform: e.target.value })}><option value="any">Any platform</option><option value="meta">Meta</option><option value="google">Google</option></select>
         <button className="btn btn-ghost">Add rule</button>

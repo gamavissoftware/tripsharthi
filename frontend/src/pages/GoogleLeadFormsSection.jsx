@@ -174,14 +174,14 @@ function ConnectModal({ onClose, onConnected, webhookUrl }) {
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                <label className="form-label" style={{ fontWeight: 700 }}>Label <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
-                <input className="form-input" value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Spring Campaign Form" autoFocus />
+                <label className="form-label" htmlFor="glf-label" style={{ fontWeight: 700 }}>Label <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
+                <input id="glf-label" className="form-input" maxLength={100} value={form.label} onChange={e => setForm(p => ({ ...p, label: e.target.value }))} placeholder="e.g. Spring Campaign Form" autoFocus />
                 <div className="field-hint">Helps you tell multiple forms apart</div>
               </div>
 
               <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label" style={{ fontWeight: 700 }}>Default Country Code <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
-                <input className="form-input" value={form.default_country_code} onChange={e => setForm(p => ({ ...p, default_country_code: e.target.value }))} placeholder="+91" style={{ maxWidth: 120 }} />
+                <label className="form-label" htmlFor="glf-cc" style={{ fontWeight: 700 }}>Default Country Code <span style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional)</span></label>
+                <input id="glf-cc" className="form-input" inputMode="tel" pattern="\+?[0-9]{1,4}" title="Digits only, like +91 or 91" maxLength={5} value={form.default_country_code} onChange={e => setForm(p => ({ ...p, default_country_code: e.target.value }))} placeholder="+91" style={{ maxWidth: 120 }} />
                 <div className="field-hint">Applied to phone numbers without a country code</div>
               </div>
             </>

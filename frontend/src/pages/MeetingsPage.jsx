@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 import ContactPicker from '../components/crm/ContactPicker'
 import { CalendarDays } from 'lucide-react'
 import { StatRow, StatTile } from '../components/StatTile'
@@ -54,6 +55,8 @@ export default function MeetingsPage() {
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState({ title: '', start_at: '', end_at: '', location: '', notes: '', contact_id: '' })
   const [saving, setSaving] = useState(false)
+  const [endErr, setEndErr] = useState('')
+  const formRef = useRef(null)
 
   useEffect(() => { load() }, [])
 
@@ -70,6 +73,12 @@ export default function MeetingsPage() {
     e.preventDefault()
     if (!form.title.trim()) { toast.error('Meeting title is required'); return }
     if (!form.start_at)     { toast.error('Start time is required'); return }
+    if (form.end_at && form.end_at <= form.start_at) {
+      const msg = 'The end must be after the start'
+      setEndErr(msg); toast.warning('One thing needs fixing', msg)
+      setTimeout(() => { firstInvalid(formRef.current); shake(formRef.current) }, 0)
+      return
+    }
     setSaving(true)
     try {
       const payload = {
@@ -127,21 +136,22 @@ export default function MeetingsPage() {
       })()}
 
       {/* Quick add */}
-      <form onSubmit={add} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.85rem', marginBottom: '1rem', display: 'grid', gap: 8 }}>
+      <form ref={formRef} onSubmit={add} style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.85rem', marginBottom: '1rem', display: 'grid', gap: 8 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+          <input aria-label="Meeting title" required maxLength={190} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
             placeholder="Meeting title…" style={{ flex: '2 1 220px', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }} />
-          <input value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
+          <input aria-label="Location or link" maxLength={255} value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))}
             placeholder="Location / link" style={{ flex: '1 1 160px', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }} />
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <label style={{ fontSize: '.78rem', color: '#6b7280' }}>Start
-            <input type="datetime-local" value={form.start_at} onChange={e => setForm(f => ({ ...f, start_at: e.target.value }))}
+          <label style={{ fontSize: '.78rem', color: '#6b7280' }}>Start *
+            <input type="datetime-local" required value={form.start_at} onChange={e => { setForm(f => ({ ...f, start_at: e.target.value })); setEndErr('') }}
               style={{ display: 'block', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.4rem .5rem', fontSize: '.85rem' }} />
           </label>
           <label style={{ fontSize: '.78rem', color: '#6b7280' }}>End
-            <input type="datetime-local" value={form.end_at} onChange={e => setForm(f => ({ ...f, end_at: e.target.value }))}
+            <input type="datetime-local" className={endErr ? 'is-invalid' : ''} aria-invalid={endErr ? 'true' : undefined} value={form.end_at} onChange={e => { setForm(f => ({ ...f, end_at: e.target.value })); setEndErr('') }}
               style={{ display: 'block', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.4rem .5rem', fontSize: '.85rem' }} />
+            {endErr && <div className="ff-err" role="alert" style={{ marginTop: 4 }}>{endErr}</div>}
           </label>
           <ContactPicker value={form.contact_id ? Number(form.contact_id) : null}
             onChange={(id) => setForm(f => ({ ...f, contact_id: id || '' }))}

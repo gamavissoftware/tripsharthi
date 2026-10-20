@@ -46,7 +46,7 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
           ) : (
             <form onSubmit={handleSubmit} style={S.form}>
               <div className="form-group">
-                <label className="form-label" htmlFor="email">Email address</label>
+                <label className="form-label" htmlFor="email">Email address *</label>
                 <input
                   id="email"
                   type="email"
@@ -56,6 +56,9 @@ export default function ForgotPasswordPage({ onBackToLogin }) {
                   placeholder="you@example.com"
                   required
                   autoComplete="email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  spellCheck={false}
                   autoFocus
                 />
               </div>

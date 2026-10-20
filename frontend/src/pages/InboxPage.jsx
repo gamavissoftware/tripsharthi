@@ -1336,31 +1336,31 @@ export default function InboxPage() {
       {showPayModal && (
         <div onClick={e => { if (e.target === e.currentTarget) setShowPayModal(false) }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 14, maxWidth: 400, width: '100%', padding: '1.5rem' }}>
+          <form onSubmit={e => { e.preventDefault(); handleSendPayment() }} style={{ background: '#fff', borderRadius: 14, maxWidth: 400, width: '100%', padding: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
               <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800 }}>Request Payment</h2>
-              <button onClick={() => setShowPayModal(false)} style={{ background: 'none', border: 'none', display: 'flex', cursor: 'pointer', color: '#9ca3af' }}><X size={18} strokeWidth={2} /></button>
+              <button type="button" aria-label="Close" onClick={() => setShowPayModal(false)} style={{ background: 'none', border: 'none', display: 'flex', cursor: 'pointer', color: '#9ca3af' }}><X size={18} strokeWidth={2} /></button>
             </div>
             <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 14 }}>
               Sends a Razorpay payment link to {activeConv?.contact_name || activeConv?.wa_number} on WhatsApp.
             </div>
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Amount (₹)</label>
-            <input type="number" min="1" step="0.01" autoFocus value={payForm.amount}
+            <label htmlFor="pay-amt" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Amount (₹) *</label>
+            <input id="pay-amt" type="number" required inputMode="decimal" min="1" step="0.01" autoFocus value={payForm.amount}
               onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))}
               style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 15, marginBottom: 12 }}
               placeholder="e.g. 499" />
-            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Description</label>
-            <input value={payForm.description} maxLength={255}
+            <label htmlFor="pay-desc" style={{ display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Description</label>
+            <input id="pay-desc" value={payForm.description} maxLength={255}
               onChange={e => setPayForm(f => ({ ...f, description: e.target.value }))}
               style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: 9, fontSize: 15 }}
               placeholder="e.g. Order #1234" />
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button className="btn btn-ghost" onClick={() => setShowPayModal(false)} disabled={payBusy}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleSendPayment} disabled={payBusy}>
+              <button type="button" className="btn btn-ghost" onClick={() => setShowPayModal(false)} disabled={payBusy}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={payBusy}>
                 {payBusy ? 'Sending…' : 'Send link'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

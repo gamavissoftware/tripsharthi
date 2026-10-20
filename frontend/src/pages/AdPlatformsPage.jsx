@@ -43,11 +43,11 @@ function MetaCard({ st, names, reload }) {
       <p style={{ color: 'var(--text-2)' }}>Tells Meta which leads became quotes and bookings, so your ads find more people who actually book. Works for lead ads and Click-to-WhatsApp ads.</p>
       <form onSubmit={async (e) => { e.preventDefault(); await run('save', async () => { const r = await travel.saveMeta(f); setF(s => ({ ...s, access_token: '' })); await reload(); return r }, r => `Verified with Meta: ${r.dataset_name || r.dataset_id}`) }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(240px,1fr))', gap: 12 }}>
-          <div className="form-group"><label className="form-label">Dataset (Pixel) ID *</label><input className="form-input" value={f.dataset_id} onChange={set('dataset_id')} placeholder="e.g. 1234567890123456" inputMode="numeric" /></div>
-          <div className="form-group"><label className="form-label">Access token {st.has_token ? '(saved — leave blank to keep)' : '*'}</label>
-            <input className="form-input" type="password" autoComplete="off" value={f.access_token} onChange={set('access_token')} placeholder={st.has_token ? '••••••••••••' : 'Paste system-user token'} /></div>
-          <div className="form-group"><label className="form-label">WhatsApp Business Account ID <small style={{ color: 'var(--text-3)' }}>(Click-to-WhatsApp)</small></label><input className="form-input" value={f.waba_id} onChange={set('waba_id')} inputMode="numeric" /></div>
-          <div className="form-group"><label className="form-label">Test Event Code <small style={{ color: 'var(--text-3)' }}>(for the test button)</small></label><input className="form-input" value={f.test_event_code} onChange={set('test_event_code')} placeholder="TEST12345" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="ap-ds">Dataset (Pixel) ID *</label><input id="ap-ds" className="form-input" required pattern="[0-9]{8,20}" title="Digits only, like 1234567890123456" value={f.dataset_id} onChange={set('dataset_id')} placeholder="e.g. 1234567890123456" inputMode="numeric" autoComplete="off" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="ap-tok">Access token {st.has_token ? '(saved — leave blank to keep)' : '*'}</label>
+            <input id="ap-tok" className="form-input" type="password" required={!st.has_token} minLength={20} autoComplete="new-password" value={f.access_token} onChange={set('access_token')} placeholder={st.has_token ? '••••••••••••' : 'Paste system-user token'} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="ap-waba">WhatsApp Business Account ID <small style={{ color: 'var(--text-3)' }}>(Click-to-WhatsApp)</small></label><input id="ap-waba" className="form-input" pattern="[0-9]{8,20}" title="Digits only, like 104857391234567" value={f.waba_id} onChange={set('waba_id')} inputMode="numeric" autoComplete="off" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="ap-test">Test Event Code <small style={{ color: 'var(--text-3)' }}>(for the test button)</small></label><input id="ap-test" className="form-input" maxLength={30} pattern="[A-Za-z0-9_\-]*" title="Letters and numbers only, like TEST12345" value={f.test_event_code} onChange={set('test_event_code')} placeholder="TEST12345" /></div>
         </div>
         <EventToggles names={names} value={f.events} onChange={(events) => setF(s => ({ ...s, events }))} />
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -145,15 +145,15 @@ function GoogleCard({ st, names, reload }) {
         <button className="btn btn-primary" disabled={busy === 'go'} onClick={async () => { const r = await run('go', () => travel.googleStart()); if (r?.auth_url) window.location.href = r.auth_url }}>Connect with Google</button>)}
 
       {st.connected && !st.customer_id && (
-        <div>
-          <div className="form-group"><label className="form-label">Google Ads account</label>
+        <form onSubmit={e => { e.preventDefault(); run('acct', () => travel.googleAccount({ customer_id: cid, login_customer_id: mcc }), () => 'Account saved').then(() => reload()) }}>
+          <div className="form-group"><label className="form-label" htmlFor="ap-cid">Google Ads account *</label>
             {customers === null ? <small>Loading your accounts…</small> : customers.length > 0 ? (
-              <select className="form-select" value={cid} onChange={e => setCid(e.target.value)}><option value="">Choose…</option>{customers.map(c => <option key={c.id} value={c.id}>{c.id}</option>)}</select>
-            ) : <input className="form-input" placeholder="10-digit customer ID" value={cid} onChange={e => setCid(e.target.value)} />}</div>
-          <div className="form-group"><label className="form-label">Manager (MCC) account ID <small style={{ color: 'var(--text-3)' }}>— only if you access this account through a manager account</small></label>
-            <input className="form-input" value={mcc} onChange={e => setMcc(e.target.value)} placeholder="optional" /></div>
-          <button className="btn btn-primary" disabled={!cid || busy === 'acct'} onClick={async () => { await run('acct', () => travel.googleAccount({ customer_id: cid, login_customer_id: mcc }), () => 'Account saved'); reload() }}>Use this account</button>
-        </div>)}
+              <select id="ap-cid" className="form-select" required value={cid} onChange={e => setCid(e.target.value)}><option value="">Choose…</option>{customers.map(c => <option key={c.id} value={c.id}>{c.id}</option>)}</select>
+            ) : <input id="ap-cid" className="form-input" required pattern="[0-9\-]{10,12}" title="The 10-digit Google Ads customer ID, like 123-456-7890" inputMode="numeric" placeholder="10-digit customer ID" value={cid} onChange={e => setCid(e.target.value)} />}</div>
+          <div className="form-group"><label className="form-label" htmlFor="ap-mcc">Manager (MCC) account ID <small style={{ color: 'var(--text-3)' }}>— only if you access this account through a manager account</small></label>
+            <input id="ap-mcc" className="form-input" pattern="[0-9\-]{10,12}" title="The 10-digit manager account ID, like 123-456-7890" inputMode="numeric" value={mcc} onChange={e => setMcc(e.target.value)} placeholder="optional" /></div>
+          <button type="submit" className="btn btn-primary" disabled={busy === 'acct'}>Use this account</button>
+        </form>)}
 
       {st.connected && st.customer_id && (
         <div>

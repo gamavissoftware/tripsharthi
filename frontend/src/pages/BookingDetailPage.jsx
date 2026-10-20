@@ -106,10 +106,10 @@ export default function BookingDetailPage() {
               <div style={{ fontSize: 13 }}>{t.has_passport ? <><ShieldCheck size={14} className="ps-inl" /> Passport on file (encrypted)</> : 'No passport yet'}{t.passport_expiry ? <span style={{ color: soon(t.passport_expiry) ? 'var(--danger)' : 'inherit' }}> · expires {t.passport_expiry}{soon(t.passport_expiry) ? ' ⚠ <6 months' : ''}</span> : ''}</div>
             </div>))}
           <form onSubmit={addTraveler} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
-            <input className="form-input" placeholder="Full name (as on passport)" value={tr.full_name} onChange={e => setTr({ ...tr, full_name: e.target.value })} required />
-            <input className="form-input" placeholder="Passport no." value={tr.passport_no} onChange={e => setTr({ ...tr, passport_no: e.target.value })} />
-            <input className="form-input" type="date" title="Passport expiry" value={tr.passport_expiry} onChange={e => setTr({ ...tr, passport_expiry: e.target.value })} />
-            <input className="form-input" type="date" title="Date of birth" value={tr.dob} onChange={e => setTr({ ...tr, dob: e.target.value })} />
+            <input className="form-input" aria-label="Full name" placeholder="Full name (as on passport)" value={tr.full_name} onChange={e => setTr({ ...tr, full_name: e.target.value })} required minLength={2} maxLength={120} autoComplete="off" />
+            <input className="form-input" aria-label="Passport number" placeholder="Passport no." value={tr.passport_no} onChange={e => setTr({ ...tr, passport_no: e.target.value.toUpperCase().replace(/\s/g, '') })} pattern="[A-Z0-9]{6,12}" title="A passport number has 6 to 12 letters and digits, like K1234567" maxLength={12} autoComplete="off" />
+            <input className="form-input" aria-label="Passport expiry date" type="date" title="Passport expiry" min="1990-01-01" max="2100-12-31" value={tr.passport_expiry} onChange={e => setTr({ ...tr, passport_expiry: e.target.value })} />
+            <input className="form-input" aria-label="Date of birth" type="date" title="Date of birth" min="1900-01-01" max={new Date(nowMs).toISOString().slice(0, 10)} value={tr.dob} onChange={e => setTr({ ...tr, dob: e.target.value })} />
             <button className="btn btn-sm btn-primary" style={{ gridColumn: '1 / -1' }}>Add traveller</button>
           </form>
         </div>

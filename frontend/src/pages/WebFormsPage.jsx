@@ -259,15 +259,15 @@ function FormModal({ editData, onClose, onSaved }) {
 
           {/* Title */}
           <div className="form-group" style={{ marginBottom:'1.25rem' }}>
-            <label className="form-label" style={{ fontWeight:700 }}>Form title *</label>
-            <input className="form-input" value={title} onChange={e=>setTitle(e.target.value)}
+            <label className="form-label" htmlFor="wf-title" style={{ fontWeight:700 }}>Form title *</label>
+            <input id="wf-title" className="form-input" required maxLength={150} value={title} onChange={e=>setTitle(e.target.value)}
               placeholder="e.g. Contact Us, Get a Quote, Free Demo Request…" autoFocus />
           </div>
 
           {/* Redirect URL */}
           <div className="form-group" style={{ marginBottom:'1.5rem' }}>
-            <label className="form-label" style={{ fontWeight:700 }}>Redirect URL <span style={{ fontWeight:400, color:'var(--text-3)' }}>(optional)</span></label>
-            <input className="form-input" value={redirectUrl} onChange={e=>setRedirect(e.target.value)}
+            <label className="form-label" htmlFor="wf-redir" style={{ fontWeight:700 }}>Redirect URL <span style={{ fontWeight:400, color:'var(--text-3)' }}>(optional)</span></label>
+            <input id="wf-redir" className="form-input" pattern="https?://.+" title="Enter a full web address starting with https://" inputMode="url" value={redirectUrl} onChange={e=>setRedirect(e.target.value)}
               placeholder="https://yoursite.com/thank-you" type="url" />
             <div className="field-hint">After submitting, redirect users to this URL</div>
           </div>
@@ -292,7 +292,7 @@ function FormModal({ editData, onClose, onSaved }) {
                     style={{ display:'flex', alignItems:'center', gap:8, padding:'.5rem .6rem', borderRadius:10, border:'1px solid var(--border)', background:'#fff', opacity: dragKey === f.field_key ? .5 : 1 }}>
                     <span title="Drag to reorder" style={{ cursor:'grab', color:'#cbd5e1', display:'flex' }}><GripVertical size={15} strokeWidth={2} /></span>
                     <span style={{ display:'flex', alignItems:'center', color:'var(--text-3)' }}>{m?.icon ?? (f.custom ? <Puzzle size={14} strokeWidth={2} /> : <FileText size={14} strokeWidth={2} />)}</span>
-                    <input value={f.label} onChange={e => patchField(f.field_key, { label: e.target.value })}
+                    <input value={f.label} required maxLength={80} aria-label={`Label for ${f.field_key}`} onChange={e => patchField(f.field_key, { label: e.target.value })}
                       style={{ flex:1, border:'1px solid var(--border)', borderRadius:8, padding:'.35rem .5rem', fontSize:'.85rem' }} />
                     <code style={{ fontSize:'.68rem', color:'#94a3b8' }}>{f.field_key}</code>
                     <label style={{ display:'flex', alignItems:'center', gap:4, fontSize:'.72rem', color:'#475569', cursor: locked ? 'default' : 'pointer' }}>
@@ -304,7 +304,7 @@ function FormModal({ editData, onClose, onSaved }) {
               })}
             </div>
             {addable.length > 0 && (
-              <select value="" onChange={e => { addField(e.target.value); e.target.value = '' }}
+              <select value="" aria-label="Add a field" onChange={e => { addField(e.target.value); e.target.value = '' }}
                 style={{ marginTop:8, border:'1px dashed var(--border)', borderRadius:8, padding:'.45rem .6rem', fontSize:'.82rem', color:'#475569', background:'#fff' }}>
                 <option value="">＋ Add a field…</option>
                 {addable.map(a => <option key={a.field_key} value={a.field_key}>{a.label}{a.custom ? ' (custom)' : ''}</option>)}

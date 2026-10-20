@@ -20,6 +20,9 @@ export default function AdminPaymentsPage() {
 
   async function save(e) {
     e.preventDefault()
+    if (f.key_id.trim() !== (st.key_id || '') && !f.key_secret.trim()) {
+      toast.warning('One thing needs fixing', 'A new Key ID needs its Key Secret too'); document.getElementById('rzp-secret')?.focus(); return
+    }
     const live = f.key_id.startsWith('rzp_live_')
     if (live && !(await confirmAsk('These are LIVE keys: customers will be charged real money through this account. Save them?'))) return
     setBusy('save')
@@ -74,10 +77,10 @@ export default function AdminPaymentsPage() {
             <div style={{ fontWeight: 800, color: '#0a1f44', marginBottom: 2 }}>Razorpay keys</div>
             <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 12 }}>From the Razorpay dashboard → Account &amp; Settings → API keys. Razorpay is asked to confirm the pair before anything is saved. Leave a secret box empty to keep the one already saved.</div>
             <div style={{ display: 'grid', gap: 12 }}>
-              <label>Key ID<input className="form-input" value={f.key_id} onChange={e => setF({ ...f, key_id: e.target.value })} placeholder="rzp_live_…" spellCheck={false} autoComplete="off" required /></label>
-              <label>Key Secret<input className="form-input" type="password" value={f.key_secret} onChange={e => setF({ ...f, key_secret: e.target.value })} placeholder={st.secret_set ? '•••••••• saved — leave empty to keep' : 'Paste the Key Secret'} autoComplete="new-password" spellCheck={false} /></label>
+              <label>Key ID *<input className="form-input" value={f.key_id} onChange={e => setF({ ...f, key_id: e.target.value.trim() })} placeholder="rzp_live_…" spellCheck={false} autoComplete="off" autoCapitalize="none" required pattern="rzp_(live|test)_[A-Za-z0-9]{8,}" title="A Razorpay Key ID starts with rzp_live_ or rzp_test_" /></label>
+              <label>Key Secret<input id="rzp-secret" className="form-input" type="password" minLength={10} title="Paste the full Key Secret from Razorpay" value={f.key_secret} onChange={e => setF({ ...f, key_secret: e.target.value })} placeholder={st.secret_set ? '•••••••• saved — leave empty to keep' : 'Paste the Key Secret'} autoComplete="new-password" spellCheck={false} /></label>
               <label>Webhook secret <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(recommended)</span>
-                <input className="form-input" type="password" value={f.webhook_secret} onChange={e => setF({ ...f, webhook_secret: e.target.value })} placeholder={st.webhook_set ? '•••••••• saved — leave empty to keep' : 'The secret you typed in Razorpay → Webhooks'} autoComplete="new-password" spellCheck={false} /></label>
+                <input className="form-input" type="password" minLength={6} title="At least 6 characters" value={f.webhook_secret} onChange={e => setF({ ...f, webhook_secret: e.target.value })} placeholder={st.webhook_set ? '•••••••• saved — leave empty to keep' : 'The secret you typed in Razorpay → Webhooks'} autoComplete="new-password" spellCheck={false} /></label>
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
               <button className="btn btn-primary" disabled={busy !== ''}>{busy === 'save' ? 'Checking with Razorpay…' : 'Check & save'}</button>

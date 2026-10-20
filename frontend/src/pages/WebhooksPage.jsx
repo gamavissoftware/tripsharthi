@@ -39,6 +39,7 @@ export default function WebhooksPage() {
 
   async function create() {
     if (!form.url.trim()) { toast.error('Endpoint URL is required'); return }
+    if (!/^https:\/\//i.test(form.url.trim())) { toast.error('Endpoint URL must start with https://'); return }
     setCreating(true)
     try {
       await api.create(form)
@@ -87,19 +88,19 @@ export default function WebhooksPage() {
       </StatRow>
 
       {/* Create */}
-      <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>
+      <form className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }} onSubmit={e => { e.preventDefault(); create() }}>
         <div style={{ fontWeight: 700, marginBottom: 12 }}>Add endpoint</div>
-        <label style={lbl}>Endpoint URL</label>
-        <input className="form-input" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://hooks.zapier.com/..." />
+        <label style={lbl} htmlFor="wh-url">Endpoint URL *</label>
+        <input id="wh-url" className="form-input" type="url" required pattern="https://.+" title="Enter a secure web address starting with https://" inputMode="url" autoComplete="off" value={form.url} onChange={e => setForm(f => ({ ...f, url: e.target.value }))} placeholder="https://hooks.zapier.com/..." />
         <div style={{ margin: '14px 0 6px', fontSize: 13, fontWeight: 600, color: '#374151' }}>Events</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Chip active={allChecked} onClick={() => setForm(f => ({ ...f, events: ['*'] }))}>All events</Chip>
           {events.map(ev => <Chip key={ev} active={!allChecked && form.events.includes(ev)} onClick={() => toggleEvent(ev)}>{ev}</Chip>)}
         </div>
-        <button className="btn btn-primary" style={{ marginTop: 16 }} onClick={create} disabled={creating}>
+        <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }} disabled={creating}>
           {creating ? 'Adding…' : <><Plus size={15} strokeWidth={2} /> Add webhook</>}
         </button>
-      </div>
+      </form>
 
       {/* List */}
       <div className="card" style={{ overflow: 'hidden' }}>
@@ -144,7 +145,7 @@ export default function WebhooksPage() {
 
 function Chip({ active, onClick, children }) {
   return (
-    <button onClick={onClick} style={{
+    <button type="button" onClick={onClick} style={{
       padding: '5px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
       border: '1.5px solid ' + (active ? '#08569f' : '#e5e7eb'),
       background: active ? '#e8f3fc' : '#fff', color: active ? '#08569f' : '#374151',

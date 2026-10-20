@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { crm } from '../api/crm'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 import { fmt } from '../components/Charts'
 import { TrendingUp } from 'lucide-react'
 import { StatRow, StatTile } from '../components/StatTile'
@@ -14,10 +15,18 @@ const inr = fmt.inr
 function TargetModal({ members, onClose, onSaved }) {
   const [f, setF] = useState({ user_id: '', metric: 'won_value', period_start: '', period_end: '', target_amount: '' })
   const [saving, setSaving] = useState(false)
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }))
+  const [endErr, setEndErr] = useState('')
+  const formRef = useRef(null)
+  const set = (k, v) => { setF(p => ({ ...p, [k]: v })); if (k === 'period_start' || k === 'period_end') setEndErr('') }
   async function save(e) {
     e.preventDefault()
-    if (!f.user_id || !f.period_start || !f.period_end) { toast.error('User and period are required'); return }
+    if (!f.user_id || !f.period_start || !f.period_end) { toast.error('User and period are required'); return }  // safety net; the fields are required
+    if (f.period_end < f.period_start) {
+      const msg = 'The end date must be on or after the start date'
+      setEndErr(msg); toast.warning('One thing needs fixing', msg)
+      setTimeout(() => { firstInvalid(formRef.current); shake(formRef.current) }, 0)
+      return
+    }
     setSaving(true)
     try {
       await crm.createTarget({ ...f, user_id: Number(f.user_id), target_amount: f.metric === 'won_value' ? Math.round(parseFloat(f.target_amount || 0) * 100) : Number(f.target_amount || 0) })
@@ -29,23 +38,24 @@ function TargetModal({ members, onClose, onSaved }) {
   const l = { display: 'block', fontSize: '.78rem', fontWeight: 700, color: '#374151', margin: '.7rem 0 .25rem' }
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)' }}>
-      <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, padding: '1.5rem' }}>
+      <form ref={formRef} onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, padding: '1.5rem' }}>
         <h3 style={{ margin: '0 0 .5rem', fontWeight: 800, fontSize: '1.05rem' }}>🎯 Set sales target</h3>
-        <label style={l}>Rep</label>
-        <select style={s} value={f.user_id} onChange={e => set('user_id', e.target.value)}>
+        <label htmlFor="tg-rep" style={l}>Rep *</label>
+        <select id="tg-rep" required style={s} value={f.user_id} onChange={e => set('user_id', e.target.value)}>
           <option value="">Choose…</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
         </select>
-        <label style={l}>Metric</label>
-        <select style={s} value={f.metric} onChange={e => set('metric', e.target.value)}>
+        <label htmlFor="tg-metric" style={l}>Metric</label>
+        <select id="tg-metric" style={s} value={f.metric} onChange={e => set('metric', e.target.value)}>
           <option value="won_value">Won value (₹)</option><option value="won_count">Won deals (count)</option>
         </select>
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}><label style={l}>From</label><input type="date" style={s} value={f.period_start} onChange={e => set('period_start', e.target.value)} /></div>
-          <div style={{ flex: 1 }}><label style={l}>To</label><input type="date" style={s} value={f.period_end} onChange={e => set('period_end', e.target.value)} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tg-from" style={l}>From *</label><input id="tg-from" required type="date" style={s} value={f.period_start} onChange={e => set('period_start', e.target.value)} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tg-to" style={l}>To *</label><input id="tg-to" required type="date" className={endErr ? 'is-invalid' : ''} aria-invalid={endErr ? 'true' : undefined} style={s} value={f.period_end} onChange={e => set('period_end', e.target.value)} />
+            {endErr && <div className="ff-err" role="alert" style={{ marginTop: 4 }}>{endErr}</div>}</div>
         </div>
-        <label style={l}>Target ({f.metric === 'won_value' ? '₹' : 'deals'})</label>
-        <input type="number" style={s} value={f.target_amount} onChange={e => set('target_amount', e.target.value)} placeholder={f.metric === 'won_value' ? '500000' : '10'} />
+        <label htmlFor="tg-amt" style={l}>Target ({f.metric === 'won_value' ? '₹' : 'deals'}) *</label>
+        <input id="tg-amt" required type="number" min="1" step={f.metric === 'won_value' ? '0.01' : '1'} inputMode="decimal" title="Enter a target greater than zero" style={s} value={f.target_amount} onChange={e => set('target_amount', e.target.value)} placeholder={f.metric === 'won_value' ? '500000' : '10'} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: '1.25rem' }}>
           <button type="button" onClick={onClose} style={btn(false)}>Cancel</button>
           <button type="submit" disabled={saving} style={btn(true)}>{saving ? 'Saving…' : 'Save'}</button>
@@ -114,9 +124,9 @@ export default function ForecastPage() {
         <div className="lp-wrap-mobile" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '.8rem 1.1rem', borderBottom: '1px solid #f0f1f3' }}>
           <span style={{ fontSize: 13, fontWeight: 800 }}>Attainment</span>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', fontSize: 12.5 }}>
-            <input type="date" value={period.from} onChange={e => setPeriod(p => ({ ...p, from: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 7, padding: '.3rem .4rem' }} />
+            <input aria-label="From date" type="date" value={period.from} onChange={e => setPeriod(p => ({ ...p, from: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 7, padding: '.3rem .4rem' }} />
             <span style={{ color: '#94a3b8' }}>→</span>
-            <input type="date" value={period.to} onChange={e => setPeriod(p => ({ ...p, to: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 7, padding: '.3rem .4rem' }} />
+            <input aria-label="To date" type="date" value={period.to} onChange={e => setPeriod(p => ({ ...p, to: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 7, padding: '.3rem .4rem' }} />
           </div>
         </div>
         {rows.length === 0 ? (

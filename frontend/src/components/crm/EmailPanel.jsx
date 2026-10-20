@@ -38,7 +38,7 @@ export default function EmailPanel({ contactId, onSent }) {
 
   async function send(e) {
     e.preventDefault()
-    if (!form.subject.trim()) { toast.error('Subject is required'); return }
+    if (!form.subject.trim()) { toast.error('Subject is required'); return }  // safety net; the fields are required
     if (!form.body.trim())    { toast.error('Message is required'); return }
     setSending(true)
     try {
@@ -64,9 +64,9 @@ export default function EmailPanel({ contactId, onSent }) {
 
       {open && (
         <form onSubmit={send} style={{ display: 'grid', gap: 8, marginBottom: 14 }}>
-          <input value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+          <input aria-label="Subject" required maxLength={200} value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
             placeholder="Subject" style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }} />
-          <textarea value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
+          <textarea aria-label="Message" required maxLength={20000} value={form.body} onChange={e => setForm(f => ({ ...f, body: e.target.value }))}
             placeholder="Write your message…" rows={5}
             style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem', resize: 'vertical' }} />
           <button type="submit" disabled={sending}

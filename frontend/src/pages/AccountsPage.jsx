@@ -19,7 +19,7 @@ function CreateModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false)
   async function save(e) {
     e.preventDefault()
-    if (!form.name.trim()) { toast.error('Company name is required'); return }
+    if (!form.name.trim()) { toast.error('Company name is required'); return }  // safety net; the form's required attribute handles it
     setSaving(true)
     try { const r = await crm.createAccount(form); toast.success('Account created', form.name); onCreated(r.data) }
     catch (e) { toast.error('Could not create account', e.message) }
@@ -31,14 +31,14 @@ function CreateModal({ onClose, onCreated }) {
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>🏢 New Account</h3>
         {[['name', 'Company name *', 'Acme Corp'], ['industry', 'Industry', 'Software'], ['website', 'Website', 'acme.com'], ['phone', 'Phone', '+91…']].map(([k, label, ph]) => (
           <div key={k} style={{ marginBottom: '.85rem' }}>
-            <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>{label}</label>
-            <input value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} placeholder={ph} autoFocus={k === 'name'}
+            <label htmlFor={'ac-' + k} style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>{label}</label>
+            <input id={'ac-' + k} required={k === 'name'} maxLength={k === 'name' ? 150 : 190} {...(k === 'phone' ? { type: 'tel', inputMode: 'tel', pattern: '\\+?[0-9 \\-]{8,18}', title: 'Use 8 to 15 digits with the country code, like +919999900000' } : {})} {...(k === 'website' ? { inputMode: 'url', autoComplete: 'off', pattern: '\\S+\\.\\S+', title: 'Enter a website like acme.com or https://acme.com' } : {})} value={form[k]} onChange={e => setForm(f => ({ ...f, [k]: e.target.value }))} placeholder={ph} autoFocus={k === 'name'}
               style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }} />
           </div>
         ))}
         <div style={{ marginBottom: '1.25rem' }}>
-          <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Type</label>
-          <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.9rem' }}>
+          <label htmlFor="ac-type" style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>Type</label>
+          <select id="ac-type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.9rem' }}>
             {Object.keys(TYPE).map(t => <option key={t} value={t}>{TYPE[t].label}</option>)}
           </select>
         </div>

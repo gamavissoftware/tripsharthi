@@ -12,15 +12,23 @@ const curQ = () => { const m = new Date().getMonth() + 1; return m >= 4 && m <= 
 function PanCell({ row, onSaved }) {
   const [v, setV] = useState(row.pan || '')
   const [busy, setBusy] = useState(false)
+  const [bad, setBad] = useState('')
   const dirty = v.toUpperCase() !== (row.pan || '')
+  const PAN = /^[A-Z]{5}[0-9]{4}[A-Z]$/
+  const msg = (x) => x && !PAN.test(x) ? 'A PAN has 5 letters, 4 digits and 1 letter, like ABCDE1234F' : ''
   async function save() {
+    const m = msg(v)
+    if (m) { setBad(m); toast.warning('One thing needs fixing', m); return }
     setBusy(true)
     try { await travel.setBookingPan(row.booking_id, v); toast.success('PAN saved'); onSaved() } catch (e) { toast.error('Not saved', e.message) } finally { setBusy(false) }
   }
   return (
-    <span style={{ display: 'inline-flex', gap: 4 }}>
-      <input className="form-input" style={{ width: 120, padding: '3px 6px' }} maxLength={10} placeholder="ABCDE1234F" value={v} onChange={e => setV(e.target.value.toUpperCase().replace(/\s/g, ''))} />
-      {dirty && <button className="btn btn-sm btn-primary" disabled={busy} onClick={save}>Save</button>}
+    <span className="ff" style={{ display: 'inline-grid' }}>
+      <span style={{ display: 'inline-flex', gap: 4 }}>
+        <input className={'form-input' + (bad ? ' is-invalid' : '')} aria-label={`PAN for ${row.booking_ref}`} aria-invalid={bad ? 'true' : undefined} autoComplete="off" style={{ width: 120, padding: '3px 6px' }} maxLength={10} placeholder="ABCDE1234F" value={v} onChange={e => { const nv = e.target.value.toUpperCase().replace(/\s/g, ''); setV(nv); if (bad && !msg(nv)) setBad('') }} onBlur={() => setBad(msg(v))} />
+        {dirty && <button className="btn btn-sm btn-primary" disabled={busy} onClick={save}>Save</button>}
+      </span>
+      {bad && <span className="ff-err" role="alert">{bad}</span>}
     </span>)
 }
 
@@ -34,10 +42,10 @@ function ChallanForm({ period, onDone, onCancel }) {
   }
   return (
     <form onSubmit={submit} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', background: 'var(--bg-2, #f8fafc)', padding: 10, borderRadius: 8, marginTop: 8 }}>
-      <label style={{ fontSize: 12 }}>Amount (₹)<input className="form-input" type="number" min="1" step="0.01" required value={f.amount_rs} onChange={set('amount_rs')} style={{ width: 120 }} /></label>
-      <label style={{ fontSize: 12 }}>BSR code<input className="form-input" required maxLength={7} value={f.bsr_code} onChange={set('bsr_code')} style={{ width: 100 }} /></label>
-      <label style={{ fontSize: 12 }}>Challan serial<input className="form-input" required maxLength={5} value={f.challan_serial} onChange={set('challan_serial')} style={{ width: 90 }} /></label>
-      <label style={{ fontSize: 12 }}>Paid on<input className="form-input" type="date" required value={f.deposit_date} onChange={set('deposit_date')} /></label>
+      <label style={{ fontSize: 12 }}>Amount (₹)<input className="form-input" type="number" inputMode="decimal" min="1" step="0.01" required value={f.amount_rs} onChange={set('amount_rs')} style={{ width: 120 }} /></label>
+      <label style={{ fontSize: 12 }}>BSR code<input className="form-input" required inputMode="numeric" pattern="[0-9]{7}" title="The BSR code has 7 digits, as printed on the challan" maxLength={7} value={f.bsr_code} onChange={e => setF(x => ({ ...x, bsr_code: e.target.value.replace(/\D/g, '') }))} style={{ width: 100 }} /></label>
+      <label style={{ fontSize: 12 }}>Challan serial<input className="form-input" required inputMode="numeric" pattern="[0-9]{1,5}" title="The challan serial has up to 5 digits, as printed on the challan" maxLength={5} value={f.challan_serial} onChange={e => setF(x => ({ ...x, challan_serial: e.target.value.replace(/\D/g, '') }))} style={{ width: 90 }} /></label>
+      <label style={{ fontSize: 12 }}>Paid on<input className="form-input" type="date" required min="2000-01-01" max={new Date().toISOString().slice(0, 10)} value={f.deposit_date} onChange={set('deposit_date')} /></label>
       <button className="btn btn-primary btn-sm" disabled={busy}>Save challan</button><button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
     </form>)
 }

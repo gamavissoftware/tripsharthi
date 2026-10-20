@@ -90,15 +90,15 @@ export default function TasksPage() {
 
       {/* Quick add */}
       <form onSubmit={add} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', background: '#fff', border: '1px solid #e5e7eb', borderRadius: 12, padding: '.75rem', marginBottom: '1rem' }}>
-        <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+        <input aria-label="Task title" required maxLength={190} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
           placeholder="Add a task…" style={{ flex: '2 1 240px', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem' }} />
-        <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.85rem' }}>
+        <select aria-label="Task type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.85rem' }}>
           {Object.keys(TYPE_ICON).map(t => <option key={t} value={t}>{TYPE_ICON[t]} {t}</option>)}
         </select>
-        <select value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.85rem' }}>
+        <select aria-label="Priority" value={form.priority} onChange={e => setForm(f => ({ ...f, priority: e.target.value }))} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem', fontSize: '.85rem' }}>
           {Object.keys(PRIORITY).map(p => <option key={p} value={p}>{PRIORITY[p].label}</option>)}
         </select>
-        <input type="datetime-local" value={form.due_at} onChange={e => setForm(f => ({ ...f, due_at: e.target.value }))}
+        <input aria-label="Due date and time" type="datetime-local" value={form.due_at} onChange={e => setForm(f => ({ ...f, due_at: e.target.value }))}
           style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: '.45rem .5rem', fontSize: '.85rem' }} />
         <button type="submit" disabled={saving} style={{ background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 8, padding: '.5rem 1rem', fontSize: '.85rem', fontWeight: 600, cursor: 'pointer' }}>
           {saving ? '…' : 'Add'}

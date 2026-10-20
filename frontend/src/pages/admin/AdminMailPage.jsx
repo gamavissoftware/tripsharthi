@@ -67,13 +67,13 @@ export default function AdminMailPage() {
             <span style={{ color: 'var(--text-3)' }}>fills server, port and encryption only — you type the login and key yourself.</span>
           </div>
           <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))' }}>
-            <label>Mail server<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp-relay.brevo.com" spellCheck={false} required /></label>
-            <label>Port<input className="form-input" type="number" value={f.port} onChange={e => setF({ ...f, port: Number(e.target.value) })} required /></label>
-            <label>Encryption
-              <select className="form-select" value={f.crypto} onChange={set('crypto')}><option value="tls">TLS (port 587)</option><option value="ssl">SSL (port 465)</option><option value="none">None</option></select></label>
+            <label>Mail server *<input className="form-input" value={f.host} onChange={set('host')} placeholder="smtp-relay.brevo.com" spellCheck={false} required pattern="[A-Za-z0-9.\-]+" title="Just the server name, like smtp-relay.brevo.com (no https:// and no port)" autoCapitalize="none" /></label>
+            <label>Port *<input className="form-input" type="number" min={1} max={65535} step={1} inputMode="numeric" value={f.port} onChange={e => setF({ ...f, port: Number(e.target.value) })} required /></label>
+            <label>Encryption *
+              <select className="form-select" required value={f.crypto} onChange={set('crypto')}><option value="tls">TLS (port 587)</option><option value="ssl">SSL (port 465)</option><option value="none">None</option></select></label>
             <label>Username<input className="form-input" value={f.user} onChange={set('user')} placeholder="SMTP login" autoComplete="off" spellCheck={false} /></label>
             <label>Password<input className="form-input" type="password" value={f.pass} onChange={set('pass')} placeholder={st.pass_set ? '•••••••• saved — leave empty to keep' : 'SMTP key / app password'} autoComplete="new-password" spellCheck={false} /></label>
-            <label>“From” address<input className="form-input" type="email" value={f.from_email} onChange={set('from_email')} placeholder="noreply@tripsarthi.com" required /></label>
+            <label>“From” address *<input className="form-input" type="email" inputMode="email" autoCapitalize="none" value={f.from_email} onChange={set('from_email')} placeholder="noreply@tripsarthi.com" required /></label>
             <label>“From” name<input className="form-input" value={f.from_name} onChange={set('from_name')} maxLength={60} /></label>
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>

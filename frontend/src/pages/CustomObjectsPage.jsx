@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { crm } from '../api/crm'
 import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 import { Boxes } from 'lucide-react'
 import { StatRow, StatTile } from '../components/StatTile'
 import { Boxes as IcBoxes, ListChecks as IcList, Database as IcDb, Star as IcStar } from 'lucide-react'
@@ -13,7 +14,7 @@ function CreateObjectModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false)
   async function save(e) {
     e.preventDefault()
-    if (!form.label_singular.trim()) { toast.error('Name is required'); return }
+    if (!form.label_singular.trim()) { toast.error('Name is required'); return }  // safety net; the field is required
     setSaving(true)
     try { const r = await crm.createObject(form); toast.success('Object created', form.label_singular); onCreated(r.data) }
     catch (e) { toast.error('Could not create', e.message) }
@@ -23,12 +24,12 @@ function CreateObjectModal({ onClose, onCreated }) {
     <div onClick={onClose} style={modalBg}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={modalCard}>
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>New Custom Object</h3>
-        <label style={lbl}>Singular name *</label>
-        <input value={form.label_singular} onChange={e => setForm(f => ({ ...f, label_singular: e.target.value }))} placeholder="e.g. Property" autoFocus style={inp} />
-        <label style={lbl}>Plural name</label>
-        <input value={form.label_plural} onChange={e => setForm(f => ({ ...f, label_plural: e.target.value }))} placeholder="e.g. Properties (auto)" style={inp} />
-        <label style={lbl}>Icon</label>
-        <input value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} maxLength={2} style={{ ...inp, width: 70, textAlign: 'center', fontSize: '1.2rem' }} />
+        <label htmlFor="co-sing" style={lbl}>Singular name *</label>
+        <input id="co-sing" required maxLength={60} value={form.label_singular} onChange={e => setForm(f => ({ ...f, label_singular: e.target.value }))} placeholder="e.g. Property" autoFocus style={inp} />
+        <label htmlFor="co-plur" style={lbl}>Plural name</label>
+        <input id="co-plur" maxLength={60} value={form.label_plural} onChange={e => setForm(f => ({ ...f, label_plural: e.target.value }))} placeholder="e.g. Properties (auto)" style={inp} />
+        <label htmlFor="co-icon" style={lbl}>Icon</label>
+        <input id="co-icon" value={form.icon} onChange={e => setForm(f => ({ ...f, icon: e.target.value }))} maxLength={2} style={{ ...inp, width: 70, textAlign: 'center', fontSize: '1.2rem' }} />
         <div style={{ display: 'flex', gap: 10, marginTop: '1.25rem' }}>
           <button type="button" onClick={onClose} style={btnGhost}>Cancel</button>
           <button type="submit" disabled={saving} style={{ ...btnPrimary, flex: 2 }}>{saving ? 'Creating…' : 'Create object'}</button>
@@ -41,11 +42,20 @@ function CreateObjectModal({ onClose, onCreated }) {
 function FieldManager({ object, onChanged }) {
   const [fields, setFields] = useState(object.fields ?? [])
   const [nf, setNf] = useState({ label: '', type: 'text', required: 0, options: '' })
+  const [fe, setFe] = useState({})
+  const boxRef = useRef(null)
 
   useEffect(() => { crm.getObject(object.id).then(r => setFields(r.data.fields ?? [])).catch(() => {}) }, [object.id])
 
   async function add() {
-    if (!nf.label.trim()) return
+    const errs = {}
+    if (!nf.label.trim()) errs.label = 'Give the field a label, like "Budget"'
+    if (nf.type === 'select' && !nf.options.split(',').some(o => o.trim())) errs.options = 'List the choices, separated by commas'
+    if (Object.keys(errs).length) {
+      setFe(errs); toast.warning(Object.keys(errs).length === 1 ? 'One thing needs fixing' : `${Object.keys(errs).length} things need fixing`, Object.values(errs)[0])
+      setTimeout(() => { firstInvalid(boxRef.current); shake(boxRef.current) }, 0)
+      return
+    }
     const payload = { label: nf.label, type: nf.type, required: nf.required }
     if (nf.type === 'select' && nf.options.trim()) payload.options = nf.options.split(',').map(s => s.trim()).filter(Boolean)
     try {
@@ -57,7 +67,7 @@ function FieldManager({ object, onChanged }) {
   async function remove(id) { try { await crm.deleteField(id); setFields(fs => fs.filter(f => f.id !== id)); onChanged?.() } catch { /* noop */ } }
 
   return (
-    <div style={{ background: '#f8fafc', borderRadius: 10, padding: '.85rem', marginTop: '.5rem' }}>
+    <div ref={boxRef} style={{ background: '#f8fafc', borderRadius: 10, padding: '.85rem', marginTop: '.5rem' }}>
       <div style={{ fontSize: '.72rem', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '.5rem' }}>Fields</div>
       {fields.map(f => (
         <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '.3rem 0' }}>
@@ -66,9 +76,15 @@ function FieldManager({ object, onChanged }) {
         </div>
       ))}
       <div style={{ display: 'flex', gap: 6, marginTop: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <input value={nf.label} onChange={e => setNf(s => ({ ...s, label: e.target.value }))} placeholder="Field label" style={{ ...inp, flex: '2 1 120px', margin: 0 }} />
-        <select value={nf.type} onChange={e => setNf(s => ({ ...s, type: e.target.value }))} style={{ ...inp, width: 110, margin: 0 }}>{FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select>
-        {nf.type === 'select' && <input value={nf.options} onChange={e => setNf(s => ({ ...s, options: e.target.value }))} placeholder="opt1, opt2" style={{ ...inp, flex: '1 1 120px', margin: 0 }} />}
+        <div style={{ flex: '2 1 120px' }}>
+          <input aria-label="Field label" maxLength={80} aria-invalid={fe.label ? 'true' : undefined} className={fe.label ? 'is-invalid' : ''} value={nf.label} onChange={e => { setNf(s => ({ ...s, label: e.target.value })); setFe(x => ({ ...x, label: '' })) }} placeholder="Field label" style={{ ...inp, margin: 0 }} />
+          {fe.label && <div className="ff-err" role="alert" style={{ marginTop: 4 }}>{fe.label}</div>}
+        </div>
+        <select aria-label="Field type" value={nf.type} onChange={e => { setNf(s => ({ ...s, type: e.target.value })); setFe({}) }} style={{ ...inp, width: 110, margin: 0 }}>{FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}</select>
+        {nf.type === 'select' && <div style={{ flex: '1 1 120px' }}>
+          <input aria-label="Choices" aria-invalid={fe.options ? 'true' : undefined} className={fe.options ? 'is-invalid' : ''} value={nf.options} onChange={e => { setNf(s => ({ ...s, options: e.target.value })); setFe(x => ({ ...x, options: '' })) }} placeholder="opt1, opt2" style={{ ...inp, margin: 0 }} />
+          {fe.options && <div className="ff-err" role="alert" style={{ marginTop: 4 }}>{fe.options}</div>}
+        </div>}
         <label style={{ fontSize: '.78rem', display: 'flex', alignItems: 'center', gap: 4 }}><input type="checkbox" checked={!!nf.required} onChange={e => setNf(s => ({ ...s, required: e.target.checked ? 1 : 0 }))} /> req</label>
         <button onClick={add} style={{ ...btnPrimary, padding: '.4rem .8rem' }}>Add field</button>
       </div>

@@ -66,24 +66,24 @@ export default function ImapInboundSection() {
 
       <form onSubmit={save} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div style={{ gridColumn: '1 / 3' }}>
-          <label style={lbl}>IMAP host</label>
-          <input style={inp} value={form.host} onChange={set('host')} placeholder="imap.gmail.com" required />
+          <label style={lbl} htmlFor="imap-host">IMAP host *</label>
+          <input id="imap-host" style={inp} value={form.host} onChange={set('host')} placeholder="imap.gmail.com" required pattern="[A-Za-z0-9]([A-Za-z0-9.\-]*[A-Za-z0-9])?" title="Enter the server name only, like imap.gmail.com (no https:// or spaces)" autoComplete="off" />
         </div>
         <div>
-          <label style={lbl}>Port</label>
-          <input style={inp} type="number" value={form.port} onChange={set('port')} />
+          <label style={lbl} htmlFor="imap-port">Port *</label>
+          <input id="imap-port" style={inp} type="number" required min={1} max={65535} step={1} inputMode="numeric" value={form.port} onChange={set('port')} />
         </div>
         <div>
-          <label style={lbl}>Folder</label>
-          <input style={inp} value={form.folder} onChange={set('folder')} placeholder="INBOX" />
+          <label style={lbl} htmlFor="imap-folder">Folder</label>
+          <input id="imap-folder" style={inp} maxLength={100} value={form.folder} onChange={set('folder')} placeholder="INBOX" />
         </div>
         <div>
-          <label style={lbl}>Username</label>
-          <input style={inp} value={form.username} onChange={set('username')} placeholder="you@company.com" required />
+          <label style={lbl} htmlFor="imap-user">Username *</label>
+          <input id="imap-user" style={inp} value={form.username} onChange={set('username')} placeholder="you@company.com" required autoComplete="off" />
         </div>
         <div>
-          <label style={lbl}>Password {hasPassword && <span style={{ color: '#9ca3af', fontWeight: 400 }}>(leave blank to keep)</span>}</label>
-          <input style={inp} type="password" value={form.password} onChange={set('password')} placeholder={hasPassword ? '••••••••' : 'mailbox password / app password'} />
+          <label style={lbl} htmlFor="imap-pass">Password {!hasPassword && '*'} {hasPassword && <span style={{ color: '#9ca3af', fontWeight: 400 }}>(leave blank to keep)</span>}</label>
+          <input id="imap-pass" style={inp} type="password" required={!hasPassword} autoComplete="new-password" value={form.password} onChange={set('password')} placeholder={hasPassword ? '••••••••' : 'mailbox password / app password'} />
         </div>
         <label style={{ gridColumn: '1 / 3', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#374151' }}>
           <input type="checkbox" checked={form.ssl} onChange={set('ssl')} /> Use SSL/TLS (recommended)

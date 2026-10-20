@@ -152,7 +152,7 @@ class AuthController extends ResourceController
 
         // Send welcome email (fire-and-forget — don't fail registration if email fails)
         $appUrl = EmailService::appUrl();
-        EmailService::sendWelcome($email, $name, $appUrl);
+        EmailService::afterResponse(static fn () => EmailService::sendWelcome($email, $name, $appUrl));
 
         return $this->respondCreated([
             'success' => true,
@@ -307,7 +307,7 @@ class AuthController extends ResourceController
             $appUrl    = EmailService::appUrl();
             $resetUrl  = $appUrl . '/#/reset-password?token=' . urlencode($rawToken);
 
-            EmailService::sendPasswordReset($email, $name, $resetUrl);
+            EmailService::afterResponse(static fn () => EmailService::sendPasswordReset($email, $name, $resetUrl));
         }
 
         return $this->respond([

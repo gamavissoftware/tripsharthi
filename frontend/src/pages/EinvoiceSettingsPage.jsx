@@ -52,23 +52,23 @@ export default function EinvoiceSettingsPage() {
         {f.mode === 'gsp' && (
           <div className="card card-body" style={{ display: 'grid', gap: 10 }}>
             <h3 style={{ margin: 0 }}>Your provider</h3>
-            <label style={lbl}>Provider API address *<input className="form-input" value={f.base_url} onChange={set('base_url')} placeholder="https://api.yourprovider.com/einvoice" /></label>
+            <label style={lbl}>Provider API address *<input className="form-input" type="url" required={f.enabled} pattern="https?://.+" title="Use the full address your provider gave you, starting with https://" maxLength={300} autoComplete="off" value={f.base_url} onChange={set('base_url')} placeholder="https://api.yourprovider.com/einvoice" /></label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-              <label style={lbl}>Generate path<input className="form-input" value={f.generate_path} onChange={set('generate_path')} /></label>
-              <label style={lbl}>Cancel path<input className="form-input" value={f.cancel_path} onChange={set('cancel_path')} /></label>
-              <label style={lbl}>Find-by-document path<input className="form-input" value={f.find_path} onChange={set('find_path')} /></label>
+              <label style={lbl}>Generate path<input className="form-input" maxLength={200} autoComplete="off" value={f.generate_path} onChange={set('generate_path')} /></label>
+              <label style={lbl}>Cancel path<input className="form-input" maxLength={200} autoComplete="off" value={f.cancel_path} onChange={set('cancel_path')} /></label>
+              <label style={lbl}>Find-by-document path<input className="form-input" maxLength={200} autoComplete="off" value={f.find_path} onChange={set('find_path')} /></label>
             </div>
             <label style={lbl}>How the provider authenticates you
               <select className="form-select" value={f.auth_type} onChange={set('auth_type')}><option value="headers">Custom headers (API key, client id/secret, GSTIN…)</option><option value="bearer">Bearer token</option><option value="basic">Username and password</option></select></label>
             {f.auth_type === 'headers' && <div>
               <div style={lbl}>Headers {s.config.has_secret && <small style={{ fontWeight: 400, color: 'var(--text-3)' }}>— leave a value blank to keep the stored one</small>}</div>
               {f.headers.map((h, i) => <div key={i} style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                <input className="form-input" placeholder="Header name, e.g. X-Api-Key" value={h.name} onChange={e => setF(x => ({ ...x, headers: x.headers.map((r, j) => j === i ? { ...r, name: e.target.value } : r) }))} />
-                <input className="form-input" type="password" autoComplete="new-password" placeholder={s.config.header_names.includes(h.name) ? '•••••••• (stored)' : 'Value'} value={h.value} onChange={e => setF(x => ({ ...x, headers: x.headers.map((r, j) => j === i ? { ...r, value: e.target.value } : r) }))} />
+                <input className="form-input" aria-label="Header name" required={!!h.value} pattern="[A-Za-z0-9\-_]+" title="A header name uses letters, digits, hyphens or underscores, like X-Api-Key" maxLength={80} autoComplete="off" placeholder="Header name, e.g. X-Api-Key" value={h.name} onChange={e => setF(x => ({ ...x, headers: x.headers.map((r, j) => j === i ? { ...r, name: e.target.value } : r) }))} />
+                <input className="form-input" aria-label="Header value" maxLength={500} type="password" autoComplete="new-password" placeholder={s.config.header_names.includes(h.name) ? '•••••••• (stored)' : 'Value'} value={h.value} onChange={e => setF(x => ({ ...x, headers: x.headers.map((r, j) => j === i ? { ...r, value: e.target.value } : r) }))} />
                 <button type="button" className="btn btn-sm btn-ghost" onClick={() => setF(x => ({ ...x, headers: x.headers.filter((_, j) => j !== i) }))}>✕</button></div>)}
               <button type="button" className="btn btn-sm btn-ghost" style={{ marginTop: 6 }} onClick={() => setF(x => ({ ...x, headers: [...x.headers, { name: '', value: '' }] }))}>+ Add header</button></div>}
             {f.auth_type === 'bearer' && <label style={lbl}>Token<input className="form-input" type="password" autoComplete="new-password" value={f.token} onChange={set('token')} placeholder={s.config.has_secret ? '•••••••• (stored — leave blank to keep)' : ''} /></label>}
-            {f.auth_type === 'basic' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><label style={lbl}>Username<input className="form-input" value={f.username} onChange={set('username')} /></label>
+            {f.auth_type === 'basic' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><label style={lbl}>Username<input className="form-input" maxLength={150} autoComplete="off" value={f.username} onChange={set('username')} /></label>
               <label style={lbl}>Password<input className="form-input" type="password" autoComplete="new-password" value={f.password} onChange={set('password')} placeholder={s.config.has_secret ? '•••••••• (stored)' : ''} /></label></div>}
             <small style={{ color: 'var(--text-3)' }}>Credentials are stored encrypted and are never shown again. The exact paths and headers are in your provider's API documentation.</small>
           </div>)}

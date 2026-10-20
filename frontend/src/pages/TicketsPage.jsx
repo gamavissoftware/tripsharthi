@@ -39,7 +39,7 @@ function CreateModal({ onClose, onCreated }) {
 
   async function save(e) {
     e.preventDefault()
-    if (!f.subject.trim()) { toast.error('Subject is required'); return }
+    if (!f.subject.trim()) { toast.error('Subject is required'); return }  // safety net; the field is required
     setSaving(true)
     try {
       let contactId = null, accountId = null
@@ -68,41 +68,42 @@ function CreateModal({ onClose, onCreated }) {
 
   const sec = { fontSize: 11.5, fontWeight: 800, letterSpacing: '.04em', textTransform: 'uppercase', color: '#6b7280', margin: '1.1rem 0 .3rem' }
   const row = { display: 'flex', gap: 10 }
+  const PHONE = { type: 'tel', inputMode: 'tel', pattern: '\\+?[0-9 \\-]{8,18}', title: 'Use 8 to 15 digits with the country code, like +919999900000' }
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)', overflowY: 'auto' }}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 620, padding: '1.5rem', boxShadow: '0 24px 64px rgba(0,0,0,.22)', margin: 'auto' }}>
         <h3 style={{ margin: '0 0 .3rem', fontWeight: 800, fontSize: '1.05rem' }}>🎫 New Ticket</h3>
 
         <div style={sec}>Ticket</div>
-        <label style={lbl}>Subject *</label>
-        <input value={f.subject} onChange={set('subject')} placeholder="What's the issue?" autoFocus style={inp} />
-        <label style={lbl}>Description</label>
-        <textarea value={f.description} onChange={set('description')} rows={3} style={{ ...inp, resize: 'vertical' }} placeholder="Details of the problem…" />
+        <label htmlFor="tk-subject" style={lbl}>Subject *</label>
+        <input id="tk-subject" required minLength={3} maxLength={190} value={f.subject} onChange={set('subject')} placeholder="What's the issue?" autoFocus style={inp} />
+        <label htmlFor="tk-desc" style={lbl}>Description</label>
+        <textarea id="tk-desc" maxLength={5000} value={f.description} onChange={set('description')} rows={3} style={{ ...inp, resize: 'vertical' }} placeholder="Details of the problem…" />
         <div style={row}>
-          <div style={{ flex: 1 }}><label style={lbl}>Priority</label>
-            <select value={f.priority} onChange={set('priority')} style={inp}>{Object.keys(PRIORITY).map(p => <option key={p} value={p}>{PRIORITY[p].label}</option>)}</select>
+          <div style={{ flex: 1 }}><label htmlFor="tk-pr" style={lbl}>Priority</label>
+            <select id="tk-pr" value={f.priority} onChange={set('priority')} style={inp}>{Object.keys(PRIORITY).map(p => <option key={p} value={p}>{PRIORITY[p].label}</option>)}</select>
           </div>
-          <div style={{ flex: 1 }}><label style={lbl}>Category</label>
-            <select value={f.category} onChange={set('category')} style={inp}>{CATEGORIES.map(c => <option key={c} value={c}>{c ? c.replace(/_/g, ' ') : '— none —'}</option>)}</select>
+          <div style={{ flex: 1 }}><label htmlFor="tk-cat" style={lbl}>Category</label>
+            <select id="tk-cat" value={f.category} onChange={set('category')} style={inp}>{CATEGORIES.map(c => <option key={c} value={c}>{c ? c.replace(/_/g, ' ') : '— none —'}</option>)}</select>
           </div>
         </div>
         <div style={row}>
-          <div style={{ flex: 1 }}><label style={lbl}>Source</label>
-            <select value={f.source} onChange={set('source')} style={inp}>{['manual', 'whatsapp', 'email', 'web'].map(s => <option key={s} value={s}>{s}</option>)}</select>
+          <div style={{ flex: 1 }}><label htmlFor="tk-src" style={lbl}>Source</label>
+            <select id="tk-src" value={f.source} onChange={set('source')} style={inp}>{['manual', 'whatsapp', 'email', 'web'].map(s => <option key={s} value={s}>{s}</option>)}</select>
           </div>
-          <div style={{ flex: 1 }}><label style={lbl}>Assign to agent</label>
-            <select value={f.owner_id} onChange={set('owner_id')} style={inp}><option value="">Auto-assign</option>{agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
+          <div style={{ flex: 1 }}><label htmlFor="tk-own" style={lbl}>Assign to agent</label>
+            <select id="tk-own" value={f.owner_id} onChange={set('owner_id')} style={inp}><option value="">Auto-assign</option>{agents.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select>
           </div>
         </div>
 
         <div style={sec}>Customer <span style={{ fontWeight: 400, textTransform: 'none', color: '#9ca3af' }}>(optional — links a contact)</span></div>
         <div style={row}>
-          <div style={{ flex: 1 }}><label style={lbl}>Name</label><input value={f.cust_name} onChange={set('cust_name')} placeholder="Customer name" style={inp} /></div>
-          <div style={{ flex: 1 }}><label style={lbl}>Company</label><input value={f.cust_company} onChange={set('cust_company')} placeholder="Company" style={inp} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tk-cn" style={lbl}>Name</label><input id="tk-cn" maxLength={150} value={f.cust_name} onChange={set('cust_name')} placeholder="Customer name" style={inp} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tk-cc" style={lbl}>Company</label><input id="tk-cc" maxLength={150} value={f.cust_company} onChange={set('cust_company')} placeholder="Company" style={inp} /></div>
         </div>
         <div style={row}>
-          <div style={{ flex: 1 }}><label style={lbl}>Mobile</label><input value={f.cust_mobile} onChange={set('cust_mobile')} placeholder="+9199…" style={inp} /></div>
-          <div style={{ flex: 1 }}><label style={lbl}>Email</label><input value={f.cust_email} onChange={set('cust_email')} placeholder="customer@company.com" style={inp} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tk-cm" style={lbl}>Mobile</label><input id="tk-cm" {...PHONE} value={f.cust_mobile} onChange={set('cust_mobile')} placeholder="+9199…" style={inp} /></div>
+          <div style={{ flex: 1 }}><label htmlFor="tk-ce" style={lbl}>Email</label><input id="tk-ce" type="email" inputMode="email" maxLength={190} value={f.cust_email} onChange={set('cust_email')} placeholder="customer@company.com" style={inp} /></div>
         </div>
 
         <label style={lbl}>Attach documents <span style={{ color: '#9ca3af', fontWeight: 400 }}>(optional)</span></label>

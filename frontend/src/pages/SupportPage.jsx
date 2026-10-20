@@ -57,12 +57,12 @@ export default function SupportPage() {
       {showForm && (
         <form className="card card-body" onSubmit={submit} style={{ marginBottom: 18, maxWidth: 720 }}>
           <div style={{ display: 'grid', gap: 12 }}>
-            <label>What is it about?
-              <select className="form-select" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+            <label>What is it about? *
+              <select className="form-select" required value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                 {Object.entries(d?.categories || {}).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select></label>
-            <label>Short title<input id="support-title" className="form-input" value={form.subject} maxLength={160} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Cannot connect my WhatsApp number" required /></label>
-            <label>Tell us what happened<textarea className="form-input" rows={6} value={form.message} maxLength={5000} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="What you did, what you expected, what you saw. Please don't include passwords or card numbers." required /></label>
+            <label>Short title *<input id="support-title" className="form-input" value={form.subject} minLength={5} maxLength={160} onChange={e => setForm({ ...form, subject: e.target.value })} placeholder="e.g. Cannot connect my WhatsApp number" required /></label>
+            <label>Tell us what happened *<textarea className="form-input" rows={6} value={form.message} minLength={10} maxLength={5000} onChange={e => setForm({ ...form, message: e.target.value })} placeholder="What you did, what you expected, what you saw. Please don't include passwords or card numbers." required /></label>
           </div>
           <div style={{ marginTop: 12 }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Sending…' : 'Send to the TripSarthi team'}</button></div>
         </form>

@@ -18,7 +18,9 @@ export default function RateImportPanel({ suppliers, destinations, onDone }) {
   const th = { padding: '8px 10px', textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase' }; const td = { padding: '8px 10px', borderTop: '1px solid var(--border)', verticalAlign: 'top' }
 
   async function run(e) {
-    e.preventDefault(); setBusy(true)
+    e.preventDefault()
+    if (!supplier || (!text.trim() && !file)) return   // safety net: the form's `required` checks stop this first
+    setBusy(true)
     try {
       const p = await travel.ratePreview({ supplier_id: supplier, destination_id: dest, currency, text: file ? '' : text }, file)
       setPrev(p); setEdit({}); setBig({})
@@ -43,15 +45,15 @@ export default function RateImportPanel({ suppliers, destinations, onDone }) {
       {!prev ? (
         <form className="card card-body" onSubmit={run} style={{ display: 'grid', gap: 10 }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <select className="form-select" style={{ flex: '2 1 200px' }} value={supplier} onChange={e => setSupplier(e.target.value)} required><option value="">Supplier these rates belong to…</option>{suppliers.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-            <select className="form-select" style={{ flex: '1 1 160px' }} value={dest} onChange={e => setDest(e.target.value)}><option value="">Destination (optional)</option>{destinations.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
-            <select className="form-select" style={{ flex: '1 1 110px' }} value={currency} onChange={e => setCurrency(e.target.value)} title="Used when the sheet doesn't say"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>AED</option><option>SGD</option><option>THB</option><option>MYR</option><option>IDR</option><option>LKR</option></select>
+            <select className="form-select" aria-label="Supplier" style={{ flex: '2 1 200px' }} value={supplier} onChange={e => setSupplier(e.target.value)} required><option value="">Supplier these rates belong to…</option>{suppliers.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select className="form-select" aria-label="Destination" style={{ flex: '1 1 160px' }} value={dest} onChange={e => setDest(e.target.value)}><option value="">Destination (optional)</option>{destinations.map(x => <option key={x.id} value={x.id}>{x.name}</option>)}</select>
+            <select className="form-select" aria-label="Currency" style={{ flex: '1 1 110px' }} value={currency} onChange={e => setCurrency(e.target.value)} title="Used when the sheet doesn't say"><option>INR</option><option>USD</option><option>EUR</option><option>GBP</option><option>AED</option><option>SGD</option><option>THB</option><option>MYR</option><option>IDR</option><option>LKR</option></select>
           </div>
-          <textarea className="form-input" rows={9} placeholder={'Paste the rate list here — any format, e.g.\nDeluxe Room – ₹12,500 per night (1 Dec – 31 Dec)\nAirport transfer, Innova: 2,000 per vehicle\n\n…or upload a CSV / Excel file below.'} value={text} onChange={e => setText(e.target.value)} disabled={!!file} />
+          <textarea className="form-input" aria-label="Rate list" required={!file} maxLength={200000} rows={9} placeholder={'Paste the rate list here — any format, e.g.\nDeluxe Room – ₹12,500 per night (1 Dec – 31 Dec)\nAirport transfer, Innova: 2,000 per vehicle\n\n…or upload a CSV / Excel file below.'} value={text} onChange={e => setText(e.target.value)} disabled={!!file} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <input type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" onChange={e => setFile(e.target.files?.[0] || null)} />
+            <input type="file" aria-label="Rate sheet file" accept=".csv,.tsv,.txt,.xlsx,.xls" onChange={e => setFile(e.target.files?.[0] || null)} />
             {file && <a style={{ cursor: 'pointer' }} onClick={() => setFile(null)}>remove file</a>}
-            <button className="btn btn-primary" style={{ marginLeft: 'auto' }} disabled={busy || !supplier || (!text.trim() && !file)}>{busy ? 'Reading…' : 'Read & preview'}</button>
+            <button className="btn btn-primary" style={{ marginLeft: 'auto' }} disabled={busy}>{busy ? 'Reading…' : 'Read & preview'}</button>
           </div>
           <small style={{ color: 'var(--text-3)' }}>Nothing is saved yet — you review every row first. The AI only copies prices that are printed in your text; it never works out or guesses a price. PDFs: copy the table and paste it. Prices are your cost (not shown to customers).</small>
         </form>
@@ -70,10 +72,10 @@ export default function RateImportPanel({ suppliers, destinations, onDone }) {
                 return (
                   <tr key={i} style={{ opacity: r.status === 'same' || r.status === 'duplicate_in_file' ? 0.6 : 1 }}>
                     <td style={td}><input type="checkbox" checked={!!pick[i]} disabled={r.status === 'duplicate_in_file' || (bad && ed.amount === undefined)} onChange={e => setPick(x => ({ ...x, [i]: e.target.checked }))} /></td>
-                    <td style={td}><input className="form-input" style={{ minWidth: 180 }} value={ed.service_name ?? r.service_name} onChange={e => setField(i, 'service_name', e.target.value)} />
+                    <td style={td}><input className="form-input" aria-label="Service name" maxLength={200} style={{ minWidth: 180 }} value={ed.service_name ?? r.service_name} onChange={e => setField(i, 'service_name', e.target.value)} />
                       {(r.errors || []).map((m, j) => <div key={j} style={{ color: 'var(--danger)', fontSize: 12 }}>{m}</div>)}{(r.warnings || []).map((m, j) => <div key={j} style={{ color: 'var(--warning)', fontSize: 12 }}>{m}</div>)}</td>
                     <td style={td}>{r.service_type}</td><td style={td}>{r.unit.replace('_', ' ')}</td>
-                    <td style={td}><input className="form-input" style={{ width: 110 }} type="number" step="any" value={ed.amount ?? r.amount_major} onChange={e => { setField(i, 'amount', e.target.value); setPick(x => ({ ...x, [i]: true })) }} /> <small>{r.currency}</small>
+                    <td style={td}><input className="form-input" aria-label="Price" style={{ width: 110 }} type="number" inputMode="decimal" min="0" step="any" value={ed.amount ?? r.amount_major} onChange={e => { setField(i, 'amount', e.target.value); setPick(x => ({ ...x, [i]: true })) }} /> <small>{r.currency}</small>
                       {r.status === 'change' && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>was {fmt(r.old_amount, r.currency)}</div>}
                       {r.big_change && <label style={{ fontSize: 12, display: 'block', color: 'var(--warning)' }}><input type="checkbox" checked={!!big[i]} onChange={e => { setBig(x => ({ ...x, [i]: e.target.checked })); if (e.target.checked) setPick(x => ({ ...x, [i]: true })) }} /> I checked this price</label>}</td>
                     <td style={td}>{r.valid_from ? `${r.valid_from} → ${r.valid_to || 'open'}` : '—'}</td>

@@ -38,7 +38,8 @@ export default function RoutingRulesPage() {
     setLoading(false)
   }
 
-  async function save() {
+  async function save(e) {
+    e?.preventDefault?.()
     const r = editing
     if (!r.name.trim()) { toast.error('Name is required'); return }
     const payload = {
@@ -133,34 +134,34 @@ export default function RoutingRulesPage() {
       {editing && (
         <div onClick={e => { if (e.target === e.currentTarget) setEditing(null) }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: '1.5rem' }}>
+          <form onSubmit={save} style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: '1.5rem' }}>
             <h2 style={{ margin: '0 0 1rem', fontSize: 18, fontWeight: 800 }}>{editing.id ? 'Edit' : 'New'} routing rule</h2>
 
-            <label style={lbl}>Name</label>
-            <input className="form-input" value={editing.name} onChange={e => setEditing(s => ({ ...s, name: e.target.value }))} placeholder="e.g. VIP customers → Priya" />
+            <label style={lbl} htmlFor="rr-name">Name *</label>
+            <input id="rr-name" className="form-input" required maxLength={100} autoFocus value={editing.name} onChange={e => setEditing(s => ({ ...s, name: e.target.value }))} placeholder="e.g. VIP customers → Priya" />
 
-            <label style={lbl}>When</label>
-            <select className="form-select" value={editing.match_type} onChange={e => setEditing(s => ({ ...s, match_type: e.target.value, match_value: '' }))}>
+            <label style={lbl} htmlFor="rr-when">When</label>
+            <select id="rr-when" className="form-select" value={editing.match_type} onChange={e => setEditing(s => ({ ...s, match_type: e.target.value, match_value: '' }))}>
               {Object.entries(MATCH_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
 
             {editing.match_type === 'tag' && (
-              <select className="form-select" style={{ marginTop: 8 }} value={editing.match_value} onChange={e => setEditing(s => ({ ...s, match_value: e.target.value }))}>
+              <select className="form-select" aria-label="Tag to match" required style={{ marginTop: 8 }} value={editing.match_value} onChange={e => setEditing(s => ({ ...s, match_value: e.target.value }))}>
                 <option value="">— choose tag —</option>
                 {tagList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             )}
             {editing.match_type === 'keyword' && (
-              <input className="form-input" style={{ marginTop: 8 }} value={editing.match_value} onChange={e => setEditing(s => ({ ...s, match_value: e.target.value }))} placeholder="keyword to match in the message" />
+              <input className="form-input" aria-label="Keyword to match" required maxLength={100} style={{ marginTop: 8 }} value={editing.match_value} onChange={e => setEditing(s => ({ ...s, match_value: e.target.value }))} placeholder="keyword to match in the message" />
             )}
 
-            <label style={lbl}>Assign to</label>
-            <select className="form-select" value={editing.strategy} onChange={e => setEditing(s => ({ ...s, strategy: e.target.value }))}>
+            <label style={lbl} htmlFor="rr-assign">Assign to</label>
+            <select id="rr-assign" className="form-select" value={editing.strategy} onChange={e => setEditing(s => ({ ...s, strategy: e.target.value }))}>
               <option value="least_loaded">Least-loaded agent (auto-balance)</option>
               <option value="specific">A specific agent</option>
             </select>
             {editing.strategy === 'specific' && (
-              <select className="form-select" style={{ marginTop: 8 }} value={editing.assigned_user_id ?? ''} onChange={e => setEditing(s => ({ ...s, assigned_user_id: e.target.value }))}>
+              <select className="form-select" aria-label="Agent" required style={{ marginTop: 8 }} value={editing.assigned_user_id ?? ''} onChange={e => setEditing(s => ({ ...s, assigned_user_id: e.target.value }))}>
                 <option value="">— choose agent —</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
@@ -168,7 +169,7 @@ export default function RoutingRulesPage() {
 
             <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
               <label style={lbl}>Priority
-                <input type="number" className="form-input" style={{ marginTop: 4, width: 90 }} value={editing.sort_order ?? 0} onChange={e => setEditing(s => ({ ...s, sort_order: parseInt(e.target.value, 10) || 0 }))} />
+                <input type="number" min={0} max={9999} step={1} className="form-input" style={{ marginTop: 4, width: 90 }} value={editing.sort_order ?? 0} onChange={e => setEditing(s => ({ ...s, sort_order: parseInt(e.target.value, 10) || 0 }))} />
               </label>
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, marginTop: 22 }}>
                 <input type="checkbox" checked={!!editing.is_active} onChange={e => setEditing(s => ({ ...s, is_active: e.target.checked }))} /> Active
@@ -176,10 +177,10 @@ export default function RoutingRulesPage() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={save}>Save rule</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Save rule</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
     </div>

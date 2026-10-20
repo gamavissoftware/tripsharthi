@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { travel, inr, toPaise } from '../api/travel'
 import { toast } from '../components/Toast'
 import { toMinor, toMajor, fmt, toInrPaise } from '../lib/currency'
 import LoadFailed from '../components/LoadFailed'
 import { confirmAsk } from '../components/confirmAsk'
+import Field from '../components/FormField'
+import { firstInvalid, shake } from '../lib/formFocus'
 import './ItineraryBuilderPage.css'
 
 const TYPE_ICON = { hotel: '🏨', flight: '✈️', train: '🚆', transfer: '🚗', sightseeing: '📸', activity: '🎯', meal: '🍽️', visa: '🛂', insurance: '🛡️', other: '•' }
@@ -66,8 +68,7 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
 
   async function add(e) {
     e.preventDefault()
-    if (!f.title.trim()) return toast.error('Give the service a title')
-    if (qty <= 0) return toast.error('Quantity must be at least 1')
+    if (!f.title.trim() || qty <= 0) return   // safety net: the inputs are `required` / min 1, so the form check normally stops this first
     const rate = rates.find(x => String(x.id) === String(f.rate_id))
     try {
       const price = f.currency === 'INR' ? { unit_cost: toPaise(f.cost_rs) } : { cost_currency: f.currency, unit_cost_fx: toMinor(f.cost_rs, f.currency) }
@@ -80,9 +81,9 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
     <form onSubmit={add} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))', gap: 8, background: 'var(--surface-2)', padding: 10, borderRadius: 10, marginTop: 8 }}>
       <div className="rp-box">
         <div className="rp-filters">
-          <input className="form-input" style={{ flex: '2 1 200px' }} placeholder={rates.length ? `Search ${rates.length} rate cards: hotel, city, service…` : 'No rate cards yet: type the service below, or add rates under Suppliers & Rates'} value={q}
+          <input className="form-input" aria-label="Search rate cards" style={{ flex: '2 1 200px' }} placeholder={rates.length ? `Search ${rates.length} rate cards: hotel, city, service…` : 'No rate cards yet: type the service below, or add rates under Suppliers & Rates'} value={q}
             onFocus={() => setList(true)} onChange={e => { setQ(e.target.value); setList(true) }} />
-          <select className="form-select" style={{ flex: '1 1 120px' }} value={ft} onChange={e => { setFt(e.target.value); setList(true) }}>
+          <select className="form-select" aria-label="Rate type" style={{ flex: '1 1 120px' }} value={ft} onChange={e => { setFt(e.target.value); setList(true) }}>
             <option value="">All types</option>{['hotel', 'transfer', 'sightseeing', 'activity', 'flight', 'visa', 'insurance', 'meal', 'other'].map(t => <option key={t}>{t}</option>)}</select>
         </div>
         {list && rates.length > 0 && (
@@ -97,15 +98,15 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
             ))}
           </div>)}
       </div>
-      <select className="form-select" value={f.type} onChange={set('type')}>{Object.keys(TYPE_ICON).map(t => <option key={t}>{t}</option>)}</select>
-      <input className="form-input" placeholder="Service title" value={f.title} onChange={set('title')} />
+      <select className="form-select" aria-label="Service type" value={f.type} onChange={set('type')}>{Object.keys(TYPE_ICON).map(t => <option key={t}>{t}</option>)}</select>
+      <input className="form-input" aria-label="Service title" required maxLength={200} placeholder="Service title" value={f.title} onChange={set('title')} />
       <div style={{ display: 'flex', gap: 4 }}>
-        {fx.length > 0 && <select className="form-select" style={{ maxWidth: 82 }} value={f.currency} onChange={set('currency')} title="Currency the supplier charges in"><option>INR</option>{fx.map(x => <option key={x.currency}>{x.currency}</option>)}</select>}
-        <input className="form-input" type="number" step="any" min="0" placeholder={f.currency === 'INR' ? `Cost ₹ ${UNIT_LABEL[f.unit] || 'per unit'}` : `Cost ${f.currency} per unit`} value={f.cost_rs} onChange={set('cost_rs')} />
+        {fx.length > 0 && <select className="form-select" style={{ maxWidth: 82 }} value={f.currency} onChange={set('currency')} aria-label="Currency" title="Currency the supplier charges in"><option>INR</option>{fx.map(x => <option key={x.currency}>{x.currency}</option>)}</select>}
+        <input className="form-input" aria-label="Cost per unit" type="number" inputMode="decimal" step="any" min="0" placeholder={f.currency === 'INR' ? `Cost ₹ ${UNIT_LABEL[f.unit] || 'per unit'}` : `Cost ${f.currency} per unit`} value={f.cost_rs} onChange={set('cost_rs')} />
       </div>
       <label style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-3)' }}>{f.unit === 'per_pax' ? 'Number of people' : f.unit === 'per_room' || f.unit === 'per_night' ? 'Number of rooms' : f.unit === 'per_vehicle' ? 'Number of vehicles' : 'Quantity'}
-        <input className="form-input" type="number" min="1" step="any" value={f.quantity} onChange={set('quantity')} /></label>
-      {f.type === 'hotel' && <label style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-3)' }}>Nights<input className="form-input" type="number" min="1" value={f.nights} onChange={set('nights')} /></label>}
+        <input className="form-input" type="number" inputMode="decimal" required min="1" step="any" value={f.quantity} onChange={set('quantity')} /></label>
+      {f.type === 'hotel' && <label style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-3)' }}>Nights<input className="form-input" type="number" inputMode="numeric" required min="1" max="365" step="1" value={f.nights} onChange={set('nights')} /></label>}
       {fxRate && f.cost_rs !== '' && <small style={{ gridColumn: '1 / -1', color: 'var(--text-2)' }}>{fmt(toMinor(f.cost_rs, f.currency), f.currency)} ≈ <b>{inr(toInrPaise(toMinor(f.cost_rs, f.currency), f.currency, fxRate.cost_rate))}</b> per unit at ₹{fxRate.cost_rate.toFixed(4)} ({fxRate.rate.toFixed(4)} + {fxRate.buffer_pct}% buffer){fxRate.stale ? <b style={{ color: 'var(--danger)' }}> — this rate is {fxRate.age_days} days old</b> : ''}</small>}
       {f.cost_rs !== '' && <small style={{ gridColumn: '1 / -1' }} className="il-calc">
         {inr(unitInr)} × {qty}{f.type === 'hotel' ? ` × ${nights} night${nights > 1 ? 's' : ''}` : ''} = <b style={{ color: 'var(--text)' }}>{inr(total)}</b> your cost
@@ -122,13 +123,31 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
   const foreign = i.cost_currency && i.cost_currency !== 'INR'
   const cur = foreign ? i.cost_currency : 'INR'
   const [f, setF] = useState(null)
+  const [errs, setErrs] = useState({})
+  const editRef = useRef(null)
   const rate = rates.find(r => String(r.id) === String(i.rate_id))
   const unit = rate?.unit || i.meta?.unit
   const qty = Number(i.quantity) || 1
   const nights = Number(i.nights) || 1
   const opt = Number(i.is_optional) === 1
-  const startEdit = () => { setF({ title: i.title, quantity: qty, nights, price: foreign ? toMajor(i.unit_cost_fx, cur) : Number(i.unit_cost) / 100, is_optional: opt }); setEdit(true) }
+  const startEdit = () => { setF({ title: i.title, quantity: qty, nights, price: foreign ? toMajor(i.unit_cost_fx, cur) : Number(i.unit_cost) / 100, is_optional: opt }); setErrs({}); setEdit(true) }
+  const check = (d) => {
+    const e = {}
+    if (!String(d.title).trim()) e.title = 'Give the service a title'
+    if (d.quantity === '' || !(Number(d.quantity) >= 1)) e.quantity = 'Enter a quantity of 1 or more'
+    if (i.type === 'hotel' && (d.nights === '' || !(Number(d.nights) >= 1) || !Number.isInteger(Number(d.nights)))) e.nights = 'Enter whole nights, 1 or more'
+    if (d.price === '' || !(Number(d.price) >= 0)) e.price = 'Enter the price per unit (0 if not known yet)'
+    return e
+  }
+  const upd = (k, v) => { const nf = { ...f, [k]: v }; setF(nf); if (errs[k]) { const n = check(nf); setErrs(o => { const c = { ...o }; if (n[k]) c[k] = n[k]; else delete c[k]; return c }) } }
   async function save() {
+    const bad = check(f)
+    if (Object.keys(bad).length) {
+      setErrs(bad); const n = Object.keys(bad).length
+      setTimeout(() => { firstInvalid(editRef.current); shake(editRef.current) }, 0)
+      toast.warning(n === 1 ? 'One thing needs fixing' : `${n} things need fixing`, Object.values(bad)[0])
+      return
+    }
     try {
       const price = foreign ? { unit_cost_fx: toMinor(f.price, cur), cost_currency: cur } : { unit_cost: toPaise(f.price) }
       await travel.updateItem(itin.id, i.id, { title: f.title, quantity: Number(f.quantity), nights: Number(f.nights), is_optional: f.is_optional ? 1 : 0, ...price })
@@ -154,11 +173,11 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
           {!lock && <button className="btn btn-sm btn-ghost" title="Remove" onClick={async () => { if (!(await confirmAsk(`Remove “${i.title}” from this quote?`, { okLabel: 'Remove', danger: true }))) return; try { await travel.deleteItem(itin.id, i.id); onChanged() } catch (er) { toast.error('Could not remove', er.message) } }}>✕</button>}</span>
       </div>
       {edit && f && (
-        <div className="il-edit">
-          <label style={{ flex: '2 1 160px' }}>Title<input className="form-input" style={{ width: '100%' }} value={f.title} onChange={e => setF({ ...f, title: e.target.value })} /></label>
-          <label>{unit === 'per_pax' ? 'People' : unit === 'per_room' || unit === 'per_night' ? 'Rooms' : unit === 'per_vehicle' ? 'Vehicles' : 'Quantity'}<input className="form-input" type="number" min="1" step="any" value={f.quantity} onChange={e => setF({ ...f, quantity: e.target.value })} /></label>
-          {i.type === 'hotel' && <label>Nights<input className="form-input" type="number" min="1" value={f.nights} onChange={e => setF({ ...f, nights: e.target.value })} /></label>}
-          <label>Price per unit ({cur})<input className="form-input" type="number" min="0" step="any" value={f.price} onChange={e => setF({ ...f, price: e.target.value })} /></label>
+        <div className="il-edit" ref={editRef}>
+          <Field label="Title" required error={errs.title} style={{ flex: '2 1 160px' }}><input className="form-input" style={{ width: '100%' }} maxLength={200} value={f.title} onChange={e => upd('title', e.target.value)} /></Field>
+          <Field label={unit === 'per_pax' ? 'People' : unit === 'per_room' || unit === 'per_night' ? 'Rooms' : unit === 'per_vehicle' ? 'Vehicles' : 'Quantity'} required error={errs.quantity}><input className="form-input" type="number" inputMode="decimal" min="1" step="any" value={f.quantity} onChange={e => upd('quantity', e.target.value)} /></Field>
+          {i.type === 'hotel' && <Field label="Nights" required error={errs.nights}><input className="form-input" type="number" inputMode="numeric" min="1" max="365" step="1" value={f.nights} onChange={e => upd('nights', e.target.value)} /></Field>}
+          <Field label={`Price per unit (${cur})`} required error={errs.price}><input className="form-input" type="number" inputMode="decimal" min="0" step="any" value={f.price} onChange={e => upd('price', e.target.value)} /></Field>
           <label style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8 }}><input type="checkbox" checked={f.is_optional} onChange={e => setF({ ...f, is_optional: e.target.checked })} /> Optional add-on</label>
           <button className="btn btn-sm btn-primary" onClick={save}>Save</button><button className="btn btn-sm btn-ghost" onClick={() => setEdit(false)}>Cancel</button>
         </div>)}

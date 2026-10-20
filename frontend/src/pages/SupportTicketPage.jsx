@@ -57,8 +57,8 @@ export default function SupportTicketPage() {
         ? <p style={{ color: 'var(--text-3)', marginTop: 12 }}>This request is closed. <Link to="/support">Open a new one</Link> if you still need help.</p>
         : (
           <form onSubmit={send} style={{ marginTop: 12 }}>
-            <textarea className="form-input" rows={4} value={msg} maxLength={5000} onChange={e => setMsg(e.target.value)} placeholder="Write a reply…" />
-            <div style={{ marginTop: 8 }}><button className="btn btn-primary" disabled={busy || !msg.trim()}>{busy ? 'Sending…' : 'Send reply'}</button></div>
+            <textarea className="form-input" rows={4} value={msg} minLength={2} maxLength={5000} required aria-label="Reply" onChange={e => setMsg(e.target.value)} placeholder="Write a reply…" />
+            <div style={{ marginTop: 8 }}><button className="btn btn-primary" disabled={busy}>{busy ? 'Sending…' : 'Send reply'}</button></div>
           </form>)}
     </div>
   )

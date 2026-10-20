@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { cloneElement, useEffect, useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { admin } from '../../api/admin'
 import { inr } from '../../api/travel'
@@ -23,14 +23,14 @@ function EditTerms({ p, onSaved, onCancel }) {
     try { await admin.updatePartner(p.id, { ...f, commission_pct: Number(f.commission_pct), commission_months: Number(f.commission_months), hold_days: Number(f.hold_days) }); toast.success('Saved'); onSaved() }
     catch (err) { toast.error('Not saved', err.message) } finally { setBusy(false) }
   }
-  const G = ({ label, hint, children }) => <div className="form-group" style={{ margin: 0 }}><label className="form-label">{label}</label>{children}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div>
+  const G = ({ label, hint, children }) => { const id = 'pt-' + label.replace(/\W+/g, ''); return <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor={id}>{label}{children.props.required ? ' *' : ''}</label>{cloneElement(children, { id })}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div> }
   return (
     <form onSubmit={save} className="card card-body" style={{ marginBottom: 14, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))' }}>
       <div style={{ gridColumn: '1/-1', fontWeight: 700 }}>Edit partner</div>
       <div style={{ gridColumn: '1/-1', fontSize: 13, color: 'var(--text-3)' }}>New terms apply to FUTURE commissions only; each commission keeps the rate it was earned at.</div>
-      {G({ label: 'Name', children: <input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required /> })}
+      {G({ label: 'Name', children: <input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required minLength={2} maxLength={120} /> })}
       {G({ label: 'Company', children: <input className="form-input" value={f.company} onChange={e => set('company', e.target.value)} /> })}
-      {G({ label: 'Phone', children: <input className="form-input" value={f.phone} onChange={e => set('phone', e.target.value)} /> })}
+      {G({ label: 'Phone', children: <input className="form-input" type="tel" pattern="[0-9+\-() ]{7,20}" title="Digits only, with an optional + at the start" value={f.phone} onChange={e => set('phone', e.target.value)} /> })}
       {G({ label: 'Commission %', children: <input className="form-input" type="number" min="1" max="60" step="0.5" value={f.commission_pct} onChange={e => set('commission_pct', e.target.value)} required /> })}
       {G({ label: 'Months (0 = lifetime)', children: <input className="form-input" type="number" min="0" max="120" value={f.commission_months} onChange={e => set('commission_months', e.target.value)} required /> })}
       {G({ label: 'Hold (days)', children: <input className="form-input" type="number" min="0" max="180" value={f.hold_days} onChange={e => set('hold_days', e.target.value)} required /> })}
@@ -71,10 +71,10 @@ function PayoutPanel({ d, onDone }) {
         <form onSubmit={save} style={{ display: 'grid', gap: 8 }}>
           <div>Available now: <b style={{ fontSize: 18 }}>{inr(avail)}</b>{below && <span style={{ color: 'var(--warning)', fontSize: 12.5 }}> (below the {inr(d.min_payout_paise)} minimum)</span>}</div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <select className="form-select" value={f.method} onChange={e => setF({ ...f, method: e.target.value })}><option value="upi">UPI</option><option value="bank">Bank transfer</option><option value="other">Other</option></select>
-            <input className="form-input" value={f.reference} onChange={e => setF({ ...f, reference: e.target.value })} placeholder="Bank / UPI reference (UTR)" required maxLength={100} />
+            <select className="form-select" aria-label="Payout method" required value={f.method} onChange={e => setF({ ...f, method: e.target.value })}><option value="upi">UPI</option><option value="bank">Bank transfer</option><option value="other">Other</option></select>
+            <input className="form-input" value={f.reference} onChange={e => setF({ ...f, reference: e.target.value })} placeholder="Bank / UPI reference (UTR)" aria-label="Bank or UPI reference" required minLength={6} maxLength={100} title="The bank or UPI reference (UTR) of the transfer you made" />
           </div>
-          <input className="form-input" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="Note (optional), e.g. October payout" maxLength={300} />
+          <input className="form-input" value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="Note (optional), e.g. October payout" aria-label="Note" maxLength={300} />
           {below && <label style={{ fontSize: 13, display: 'flex', gap: 6, alignItems: 'center' }}><input type="checkbox" checked={f.pay_anyway} onChange={e => setF({ ...f, pay_anyway: e.target.checked })} /> Pay anyway (below the minimum)</label>}
           <div><button className="btn btn-primary" disabled={busy || avail <= 0 || (below && !f.pay_anyway)}>{busy ? 'Recording…' : 'Record payout'}</button></div>
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Make the transfer first, then record it here with the bank reference. TDS and GST on partner payments are not calculated — check with your CA.</div>

@@ -436,10 +436,12 @@ function CreateModal({ onClose, onCreate }) {
 
             {/* Flow name */}
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
-                Flow Name
+              <label htmlFor="fl-name" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+                Flow Name *
               </label>
               <input
+                id="fl-name"
+                maxLength={120}
                 className="lp-fl-input"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -451,10 +453,11 @@ function CreateModal({ onClose, onCreate }) {
 
             {/* Trigger */}
             <div>
-              <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
+              <label htmlFor="fl-trig" style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 6 }}>
                 Trigger Event
               </label>
               <select
+                id="fl-trig"
                 className="lp-fl-select"
                 value={form.trigger_type}
                 onChange={e => setForm(f => ({ ...f, trigger_type: e.target.value }))}
@@ -690,6 +693,7 @@ export default function FlowsPage() {
                 outline: 'none', transition: 'border-color .15s',
               }}
               placeholder="Search flows…"
+              aria-label="Search flows"
               value={search}
               onChange={e => setSearch(e.target.value)}
               onFocus={e => e.target.style.borderColor = '#0a6cc4'}

@@ -840,10 +840,10 @@ function BillingPanel() {
         {/* Coupon code */}
         <form onSubmit={e => { e.preventDefault(); setAppliedCode(couponInput.trim()) }} style={{ display:'flex', alignItems:'center', gap:'.6rem', flexWrap:'wrap', marginBottom:'1.2rem' }}>
           <input
-            value={couponInput} onChange={e => setCouponInput(e.target.value.toUpperCase())} placeholder="Have a coupon code?" maxLength={30} aria-label="Coupon code"
+            value={couponInput} onChange={e => setCouponInput(e.target.value.toUpperCase())} placeholder="Have a coupon code?" maxLength={30} aria-label="Coupon code" required minLength={3} pattern="[A-Za-z0-9_\-]+" title="Coupon codes use letters, numbers, - and _ only (no spaces)" autoComplete="off" autoCapitalize="characters" spellCheck={false}
             style={{ padding:'.5rem .8rem', borderRadius:10, border:'1.5px solid #e5e7eb', fontSize:13.5, width:210, textTransform:'uppercase', letterSpacing:'.04em' }}
           />
-          <button type="submit" disabled={!couponInput.trim()} style={{ padding:'.5rem 1rem', borderRadius:10, border:'1.5px solid #0a6cc4', background:'#fff', color:'#0a6cc4', fontWeight:700, fontSize:13, cursor:'pointer' }}>Apply</button>
+          <button type="submit" style={{ padding:'.5rem 1rem', borderRadius:10, border:'1.5px solid #0a6cc4', background:'#fff', color:'#0a6cc4', fontWeight:700, fontSize:13, cursor:'pointer' }}>Apply</button>
           {offers?.code?.applied && (
             <span style={{ fontSize:13, color:'#16a34a', fontWeight:600 }}>
               ✓ Code {offers.code.code} applied
@@ -1019,6 +1019,7 @@ function LicensePanel() {
             value={licenseKey}
             onChange={e => setLicenseKey(e.target.value)}
             placeholder="XXXX-XXXX-XXXX-XXXX"
+            aria-label="License key" required minLength={8} autoComplete="off" spellCheck={false}
             disabled={activating}
             style={{
               flex:'1 1 260px', padding:'.7rem 1rem', borderRadius:10,
@@ -1031,7 +1032,7 @@ function LicensePanel() {
           />
           <button
             type="submit"
-            disabled={activating || !licenseKey.trim()}
+            disabled={activating}
             style={{
               padding:'.7rem 1.4rem', borderRadius:10, border:'none',
               background: activating ? '#8ec5f0' : 'linear-gradient(135deg,#0a6cc4,#12a89e)',

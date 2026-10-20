@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { imports as importsApi } from '../api/imports'
 import { FileText, CheckCircle2, XCircle } from 'lucide-react'
+import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 
 // ── Inject styles once ──────────────────────────────────────────────────────
 if (typeof document !== 'undefined' && !document.getElementById('lp-import-css')) {
@@ -95,11 +97,20 @@ export default function ImportPage() {
   const [progress, setProgress]   = useState(null)
   const [error, setError]         = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [fileErr, setFileErr] = useState('')
+  const [mapErr, setMapErr] = useState('')
+  const uploadRef = useRef(null)
+  const mapRef = useRef(null)
 
   async function handleUpload(e) {
     e.preventDefault()
     const file = fileRef.current?.files?.[0]
-    if (!file) return setError('Please select a file.')
+    const problem = !file ? 'Choose a CSV or Excel file to upload' : !/\.(csv|xlsx|xls)$/i.test(file.name) ? 'This file type is not supported. Use a .csv, .xlsx or .xls file' : ''
+    if (problem) {
+      setFileErr(problem); toast.warning('One thing needs fixing', problem)
+      setTimeout(() => { firstInvalid(uploadRef.current); shake(uploadRef.current) }, 0)
+      return
+    }
     setError(null); setUploading(true)
     try {
       const res = await importsApi.upload(file, countryCode)
@@ -126,9 +137,12 @@ export default function ImportPage() {
 
   async function handleMap(e) {
     e.preventDefault()
-    setError(null)
+    setError(null); setMapErr('')
     if (!Object.values(mapping).includes('wa_number')) {
-      return setError('Map one column to “WhatsApp Number” — it’s required.')
+      const msg = 'Map one column to “WhatsApp Number”, it is needed to match contacts'
+      setMapErr(msg); toast.warning('One thing needs fixing', msg)
+      setTimeout(() => { firstInvalid(mapRef.current); shake(mapRef.current) }, 0)
+      return
     }
     try {
       await importsApi.map(importData.import_id, mapping)
@@ -165,7 +179,7 @@ export default function ImportPage() {
     ? Math.round(((progress.imported + (progress.updated ?? 0) + progress.failed) / progress.total) * 100)
     : 0
 
-  function reset() { setStep('upload'); setImport(null); setProgress(null); setError(null); setFileName('') }
+  function reset() { setFileErr(''); setMapErr(''); setStep('upload'); setImport(null); setProgress(null); setError(null); setFileName('') }
 
   return (
     <div className="page page-form">
@@ -183,22 +197,23 @@ export default function ImportPage() {
 
       {/* Step 1: Upload */}
       {step === 'upload' && (
-        <form onSubmit={handleUpload} className="lp-imp-card" style={{ padding: '1.5rem 1.6rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleUpload} noValidate ref={uploadRef} className="lp-imp-card" style={{ padding: '1.5rem 1.6rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: '.4rem' }}>File (CSV or Excel)</label>
-            <label className="lp-imp-drop">
-              <input ref={fileRef} type="file" accept=".csv,.xlsx,.xls" required style={{ display: 'none' }} onChange={e => setFileName(e.target.files?.[0]?.name ?? '')} />
+            <label htmlFor="imp-file" style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: '.4rem' }}>File (CSV or Excel) *</label>
+            <label className="lp-imp-drop" style={{ position: 'relative', ...(fileErr ? { borderColor: '#dc2626' } : {}) }}>
+              <input id="imp-file" ref={fileRef} type="file" accept=".csv,.xlsx,.xls" aria-invalid={fileErr ? 'true' : undefined} style={{ position: 'absolute', opacity: 0, width: 1, height: 1, pointerEvents: 'none' }} onChange={e => { setFileName(e.target.files?.[0]?.name ?? ''); setFileErr('') }} />
               <div style={{ marginBottom: 6, color: '#9ca3af' }}><FileText size={30} strokeWidth={1.4} /></div>
               <div style={{ fontSize: 14, fontWeight: 600, color: fileName ? '#111827' : '#6b7280' }}>
                 {fileName || 'Click to choose a file'}
               </div>
               <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>.csv, .xlsx or .xls</div>
             </label>
+            {fileErr && <div className="ff-err" role="alert" style={{ marginTop: 6 }}>{fileErr}</div>}
           </div>
 
           <div>
-            <label style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: '.4rem' }}>Default country code</label>
-            <select className="lp-imp-select" value={countryCode} onChange={e => setCode(e.target.value)}>
+            <label htmlFor="imp-cc" style={{ fontSize: 13, fontWeight: 700, color: '#374151', display: 'block', marginBottom: '.4rem' }}>Default country code</label>
+            <select id="imp-cc" className="lp-imp-select" value={countryCode} onChange={e => setCode(e.target.value)}>
               {COUNTRY_CODES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
             <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>Applied to numbers that don't already start with +</div>
@@ -212,7 +227,7 @@ export default function ImportPage() {
 
       {/* Step 2: Map columns */}
       {step === 'map' && importData && (
-        <form onSubmit={handleMap} className="lp-imp-card" style={{ overflow: 'hidden' }}>
+        <form onSubmit={handleMap} noValidate ref={mapRef} className="lp-imp-card" style={{ overflow: 'hidden' }}>
           <div style={{ padding: '.9rem 1.25rem', borderBottom: '1px solid #f0f1f3', background: '#f9fafb' }}>
             <span style={{ fontWeight: 700, color: '#111827', fontSize: 14 }}>{importData.total} rows detected</span>
             <span style={{ color: '#9ca3af', fontSize: 13, marginLeft: '.5rem' }}>— map your columns (WhatsApp Number required)</span>
@@ -227,12 +242,12 @@ export default function ImportPage() {
                 </tr>
               </thead>
               <tbody>
-                {importData.headers.map(h => (
+                {importData.headers.map((h, hi) => (
                   <tr key={h} style={{ borderBottom: '1px solid #f6f7f9' }}>
                     <td style={{ padding: '.6rem 1.25rem', fontWeight: 700, color: '#111827' }}>{h}</td>
                     <td style={{ padding: '.6rem .6rem', color: '#9ca3af', fontSize: 12.5 }}>{importData.preview.slice(0, 3).map(r => r[h]).filter(Boolean).join(' · ') || '—'}</td>
                     <td style={{ padding: '.6rem 1.25rem' }}>
-                      <select className="lp-imp-select" style={{ width: 'auto', minWidth: 180 }} value={mapping[h] ?? ''} onChange={e => setMapping(m => ({ ...m, [h]: e.target.value || undefined }))}>
+                      <select aria-label={`Map column ${h} to`} aria-invalid={mapErr && hi === 0 ? 'true' : undefined} className="lp-imp-select" style={{ width: 'auto', minWidth: 180 }} value={mapping[h] ?? ''} onChange={e => { setMapping(m => ({ ...m, [h]: e.target.value || undefined })); setMapErr('') }}>
                         <option value="">— skip —</option>
                         {CONTACT_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
                       </select>
@@ -242,6 +257,7 @@ export default function ImportPage() {
               </tbody>
             </table>
           </div>
+          {mapErr && <div className="ff-err" role="alert" style={{ padding: '.6rem 1.25rem 0' }}>{mapErr}</div>}
           <div style={{ display: 'flex', gap: '.7rem', padding: '1rem 1.25rem', borderTop: '1px solid #f0f1f3' }}>
             <button type="button" onClick={() => setStep('upload')} className="lp-imp-btn lp-imp-btn-ghost">← Back</button>
             <button type="submit" className="lp-imp-btn lp-imp-btn-primary">Start import →</button>

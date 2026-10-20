@@ -81,12 +81,12 @@ function CreateModal({ onClose, onCreated }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)' }}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '1.5rem', boxShadow: '0 24px 64px rgba(0,0,0,.22)' }}>
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>💼 New Deal</h3>
-        <label style={lbl}>Deal title *</label>
-        <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Acme annual contract" autoFocus style={inp} />
-        <label style={lbl}>Value (₹)</label>
-        <input type="number" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} placeholder="150000" style={inp} />
-        <label style={lbl}>Expected close</label>
-        <input type="date" value={form.expected_close_date} onChange={e => setForm(f => ({ ...f, expected_close_date: e.target.value }))} style={inp} />
+        <label htmlFor="dl-title" style={lbl}>Deal title *</label>
+        <input id="dl-title" required maxLength={190} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Acme annual contract" autoFocus style={inp} />
+        <label htmlFor="dl-value" style={lbl}>Value (₹)</label>
+        <input id="dl-value" type="number" min="0" step="0.01" inputMode="decimal" value={form.value} onChange={e => setForm(f => ({ ...f, value: e.target.value }))} placeholder="150000" style={inp} />
+        <label htmlFor="dl-close" style={lbl}>Expected close</label>
+        <input id="dl-close" type="date" value={form.expected_close_date} onChange={e => setForm(f => ({ ...f, expected_close_date: e.target.value }))} style={inp} />
         <div style={{ display: 'flex', gap: 10, marginTop: '1.25rem' }}>
           <button type="button" onClick={onClose} style={{ flex: 1, background: '#fff', border: '1.5px solid #e5e7eb', borderRadius: 10, padding: '.6rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
           <button type="submit" disabled={saving} style={{ flex: 2, background: 'var(--primary,#0a6cc4)', color: '#fff', border: 'none', borderRadius: 10, padding: '.6rem', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Creating…' : 'Create deal'}</button>

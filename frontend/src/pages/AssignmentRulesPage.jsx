@@ -38,27 +38,27 @@ function RuleModal({ entity, rule, members, onClose, onSaved }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)' }}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 480, padding: '1.5rem', boxShadow: '0 24px 64px rgba(0,0,0,.22)' }}>
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>{rule ? 'Edit' : 'New'} {entity} assignment rule</h3>
-        <label style={lbl}>Rule name</label>
-        <input style={inp} value={f.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Urgent → senior reps" autoFocus />
+        <label style={lbl} htmlFor="ar-name">Rule name *</label>
+        <input id="ar-name" style={inp} required maxLength={100} value={f.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Urgent → senior reps" autoFocus />
 
-        <label style={lbl}>Applies to</label>
-        <select style={inp} value={f.match_type} onChange={e => set('match_type', e.target.value)}>
+        <label style={lbl} htmlFor="ar-applies">Applies to</label>
+        <select id="ar-applies" style={inp} value={f.match_type} onChange={e => set('match_type', e.target.value)}>
           <option value="any">All new {entity}s</option>
           <option value="field">When a field equals…</option>
         </select>
         {f.match_type === 'field' && (
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <input style={inp} value={f.match_field} onChange={e => set('match_field', e.target.value)} placeholder="field (e.g. priority)" />
-            <input style={inp} value={f.match_value} onChange={e => set('match_value', e.target.value)} placeholder="value (e.g. urgent)" />
+            <input style={inp} aria-label="Field name" required maxLength={60} value={f.match_field} onChange={e => set('match_field', e.target.value)} placeholder="field (e.g. priority)" />
+            <input style={inp} aria-label="Field value" required maxLength={100} value={f.match_value} onChange={e => set('match_value', e.target.value)} placeholder="value (e.g. urgent)" />
           </div>
         )}
 
-        <label style={lbl}>Assign by</label>
-        <select style={inp} value={f.strategy} onChange={e => set('strategy', e.target.value)}>
+        <label style={lbl} htmlFor="ar-by">Assign by</label>
+        <select id="ar-by" style={inp} value={f.strategy} onChange={e => set('strategy', e.target.value)}>
           {Object.entries(STRATEGIES).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         {f.strategy === 'specific' && (
-          <select style={{ ...inp, marginTop: 8 }} value={f.assigned_user_id} onChange={e => set('assigned_user_id', e.target.value)}>
+          <select style={{ ...inp, marginTop: 8 }} aria-label="Person" required value={f.assigned_user_id} onChange={e => set('assigned_user_id', e.target.value)}>
             <option value="">Choose a person…</option>
             {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.role})</option>)}
           </select>
@@ -66,8 +66,8 @@ function RuleModal({ entity, rule, members, onClose, onSaved }) {
 
         {f.strategy !== 'specific' && (
           <>
-            <label style={lbl}>Capacity (max open per rep)</label>
-            <input style={inp} type="number" value={f.capacity} onChange={e => set('capacity', Number(e.target.value) || 0)} />
+            <label style={lbl} htmlFor="ar-cap">Capacity (max open per rep)</label>
+            <input id="ar-cap" style={inp} type="number" min={0} max={9999} step={1} value={f.capacity} onChange={e => set('capacity', Number(e.target.value) || 0)} />
           </>
         )}
 

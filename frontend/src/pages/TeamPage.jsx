@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 import { Crown, Shield, Headphones, Eye, EyeOff, Dices, Send, AlertTriangle, Users } from 'lucide-react'
 import { StatRow, StatTile } from '../components/StatTile'
 import { Users as IcUsers, Crown as IcCrown, ShieldCheck as IcShield, User as IcUser } from 'lucide-react'
@@ -28,7 +29,7 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-team-css')) 
   document.head.appendChild(el)
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
 const ROLE_PILL = {
   owner: { label: 'Owner', icon: <Crown size={12} strokeWidth={2} />, bg: 'linear-gradient(135deg,#e8f3fc,#bcdcf5)', color: '#074a8c' },
@@ -58,19 +59,25 @@ function InvitePanel({ onClose, onInvited }) {
   const [errors, setErrors] = useState({})
   const [showPw, setShowPw] = useState(false)
   const [saving, setSaving] = useState(false)
+  const formRef = useRef(null)
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setErrors(e => ({ ...e, [k]: null })) }
 
   async function submit(e) {
     e.preventDefault()
     const errs = {}
-    if (!form.name.trim()) errs.name = 'Full name is required.'
-    if (!form.email.trim()) errs.email = 'Email is required.'
-    else if (!EMAIL_RE.test(form.email)) errs.email = 'Enter a valid email.'
-    if (!form.password) errs.password = 'Password is required.'
-    else if (form.password.length < 8) errs.password = 'At least 8 characters.'
+    if (form.name.trim().length < 2) errs.name = 'Enter the teammate\'s full name'
+    if (!form.email.trim()) errs.email = 'Enter the teammate\'s email'
+    else if (!EMAIL_RE.test(form.email.trim())) errs.email = 'Enter a valid email address, like jane@company.com'
+    if (!form.password) errs.password = 'Set a temporary password for them'
+    else if (form.password.length < 8) errs.password = `Use at least 8 characters (you have ${form.password.length})`
     setErrors(errs)
-    if (Object.keys(errs).length) return
+    const keys = Object.keys(errs)
+    if (keys.length) {
+      shake(formRef.current); setTimeout(() => firstInvalid(formRef.current), 0)
+      toast.warning(keys.length === 1 ? 'One thing needs fixing' : `${keys.length} things need fixing`, errs[keys[0]])
+      return
+    }
 
     setSaving(true)
     try {
@@ -88,30 +95,30 @@ function InvitePanel({ onClose, onInvited }) {
   }
 
   return (
-    <form onSubmit={submit} className="lp-team-card" style={{ padding: '1.4rem 1.5rem', marginBottom: '1.25rem' }}>
+    <form onSubmit={submit} noValidate ref={formRef} className="lp-team-card" style={{ padding: '1.4rem 1.5rem', marginBottom: '1.25rem' }}>
       <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', marginBottom: '1.1rem' }}>Invite a teammate</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))', gap: '1rem' }}>
         <div>
-          <label className="lp-team-label">Full name</label>
-          <input className={`lp-team-input ${errors.name ? 'invalid' : ''}`} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Doe" autoComplete="off" />
+          <label className="lp-team-label" htmlFor="tm-name">Full name *</label>
+          <input id="tm-name" aria-invalid={errors.name ? 'true' : undefined} className={`lp-team-input ${errors.name ? 'invalid' : ''}`} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Jane Doe" autoComplete="off" />
           {errors.name && <div className="lp-team-err">{errors.name}</div>}
         </div>
         <div>
-          <label className="lp-team-label">Email</label>
-          <input className={`lp-team-input ${errors.email ? 'invalid' : ''}`} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="jane@company.com" autoComplete="off" />
+          <label className="lp-team-label" htmlFor="tm-email">Email *</label>
+          <input id="tm-email" aria-invalid={errors.email ? 'true' : undefined} inputMode="email" autoCapitalize="none" className={`lp-team-input ${errors.email ? 'invalid' : ''}`} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="jane@company.com" autoComplete="off" />
           {errors.email && <div className="lp-team-err">{errors.email}</div>}
         </div>
         <div>
-          <label className="lp-team-label">Role</label>
-          <select className="lp-team-input" value={form.role} onChange={e => set('role', e.target.value)} style={{ cursor: 'pointer' }}>
+          <label className="lp-team-label" htmlFor="tm-role">Role *</label>
+          <select id="tm-role" className="lp-team-input" value={form.role} onChange={e => set('role', e.target.value)} style={{ cursor: 'pointer' }}>
             <option value="agent">Agent — inbox & messaging</option>
             <option value="admin">Admin — full access</option>
           </select>
         </div>
         <div>
-          <label className="lp-team-label">Temporary password</label>
+          <label className="lp-team-label" htmlFor="tm-pw">Temporary password *</label>
           <div style={{ position: 'relative' }}>
-            <input className={`lp-team-input ${errors.password ? 'invalid' : ''}`} type={showPw ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" style={{ paddingRight: 64 }} />
+            <input id="tm-pw" aria-invalid={errors.password ? 'true' : undefined} className={`lp-team-input ${errors.password ? 'invalid' : ''}`} type={showPw ? 'text' : 'password'} value={form.password} onChange={e => set('password', e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" style={{ paddingRight: 64 }} />
             <button type="button" onClick={() => setShowPw(s => !s)} tabIndex={-1} title={showPw ? 'Hide' : 'Show'} style={{ position: 'absolute', right: 34, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: .55, display: 'inline-flex', alignItems: 'center' }}>{showPw ? <EyeOff size={15} strokeWidth={2} /> : <Eye size={15} strokeWidth={2} />}</button>
             <button type="button" onClick={() => { set('password', genPassword()); setShowPw(true) }} tabIndex={-1} title="Generate password" style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, opacity: .6, display: 'inline-flex', alignItems: 'center' }}><Dices size={15} strokeWidth={2} /></button>
           </div>

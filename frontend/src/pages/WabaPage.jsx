@@ -1067,6 +1067,10 @@ export default function WabaPage() {
                             onChange={e => setField('waba_id', e.target.value)}
                             placeholder="e.g. 123456789012345"
                             required
+                            inputMode="numeric"
+                            pattern="[0-9]{8,25}"
+                            title="Digits only, like 123456789012345"
+                            autoComplete="off"
                           />
                         </div>
                         <div className="form-group">
@@ -1081,6 +1085,10 @@ export default function WabaPage() {
                             onChange={e => setField('phone_number_id', e.target.value)}
                             placeholder="e.g. 987654321098765"
                             required
+                            inputMode="numeric"
+                            pattern="[0-9]{8,25}"
+                            title="Digits only, like 987654321098765"
+                            autoComplete="off"
                           />
                         </div>
                         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
@@ -1095,7 +1103,9 @@ export default function WabaPage() {
                             onChange={e => setField('access_token', e.target.value)}
                             placeholder="Permanent or long-lived system user token"
                             required={!isConnected}
-                            autoComplete="off"
+                            minLength={20}
+                            title="Paste the full token from Meta (it is long)"
+                            autoComplete="new-password"
                           />
                           {isConnected && (
                             <span style={{ fontSize: '.75rem', color: '#94a3b8', marginTop: 4, display: 'block' }}>
@@ -1115,6 +1125,7 @@ export default function WabaPage() {
                             onChange={e => setField('display_name', e.target.value)}
                             placeholder="e.g. Acme Corp"
                             required
+                            maxLength={100}
                           />
                         </div>
                         <div className="form-group">
@@ -1129,6 +1140,9 @@ export default function WabaPage() {
                             value={form.business_id || ''}
                             onChange={e => setField('business_id', e.target.value)}
                             placeholder="Meta Business Manager ID"
+                            inputMode="numeric"
+                            pattern="[0-9]{8,25}"
+                            title="Digits only"
                           />
                         </div>
                         <div className="form-group">
@@ -1143,6 +1157,9 @@ export default function WabaPage() {
                             value={form.app_id || ''}
                             onChange={e => setField('app_id', e.target.value)}
                             placeholder="Meta App ID (for image-template uploads)"
+                            inputMode="numeric"
+                            pattern="[0-9]{8,25}"
+                            title="Digits only"
                           />
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { travel, inr } from '../../api/travel'
 import { toast } from '../Toast'
@@ -30,6 +30,10 @@ function IssueModal({ bookingId, kind, defaults, states, einvoice, onClose, onDo
   const [err, setErr] = useState('')
   const set = (k) => (e) => setF(x => ({ ...x, [k]: e.target.value }))
   const gst = f.gstin.trim()
+  const gstRef = useRef(null)
+  const needEi = !!einvoice && validGstin(gst)   // a GST-registered buyer on an e-invoiced sale needs the full address
+  // the checksum can't be a regex: flag a well-formed but wrong GSTIN through the browser's own validity so it joins the same highlight/toast flow
+  useEffect(() => { gstRef.current?.setCustomValidity(gst.length === 15 && !validGstin(gst) ? 'This GSTIN is not valid. Please check it' : '') }, [gst])
   const stateName = (c) => states.find(s => s.code === c)?.name
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr('')
@@ -43,16 +47,16 @@ function IssueModal({ bookingId, kind, defaults, states, einvoice, onClose, onDo
     <Modal title={`Issue ${kind === 'bill_of_supply' ? 'bill of supply' : 'GST tax invoice'}`} onClose={onClose}>
       <p style={{ color: 'var(--text-2)' }}>Check the customer's details — once issued, an invoice <b>cannot be edited</b> (corrections are made with a credit note).</p>
       <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
-        <div><label style={lbl}>Customer name *</label><input className="form-input" value={f.name} onChange={set('name')} required /></div>
-        <div><label style={lbl}>Address</label><input className="form-input" placeholder="Address line 1" value={f.address_line1} onChange={set('address_line1')} /><input className="form-input" style={{ marginTop: 6 }} placeholder="Address line 2" value={f.address_line2} onChange={set('address_line2')} /></div>
+        <div><label style={lbl} htmlFor="bd-name">Customer name *</label><input id="bd-name" className="form-input" value={f.name} onChange={set('name')} required minLength={2} maxLength={150} /></div>
+        <div><label style={lbl} htmlFor="bd-a1">{needEi ? 'Address *' : 'Address'}</label><input id="bd-a1" className="form-input" placeholder="Address line 1" required={needEi} maxLength={200} value={f.address_line1} onChange={set('address_line1')} /><input aria-label="Address line 2" maxLength={200} className="form-input" style={{ marginTop: 6 }} placeholder="Address line 2" value={f.address_line2} onChange={set('address_line2')} /></div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-          <div><label style={lbl}>City</label><input className="form-input" value={f.city} onChange={set('city')} /></div>
-          <div><label style={lbl}>State</label>
-            <select className="form-select" value={states.find(s => s.name === f.state)?.code || (/^\d{2}$/.test(f.state) ? f.state : '')} onChange={e => setF(x => ({ ...x, state: e.target.value }))}><option value="">Choose…</option>{states.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}</select></div>
-          <div><label style={lbl}>PIN code</label><input className="form-input" maxLength={6} value={f.pincode} onChange={set('pincode')} /></div>
+          <div><label style={lbl} htmlFor="bd-city">{needEi ? 'City *' : 'City'}</label><input id="bd-city" className="form-input" required={needEi} maxLength={100} value={f.city} onChange={set('city')} /></div>
+          <div><label style={lbl} htmlFor="bd-state">{needEi ? 'State *' : 'State'}</label>
+            <select id="bd-state" className="form-select" required={needEi} value={states.find(s => s.name === f.state)?.code || (/^\d{2}$/.test(f.state) ? f.state : '')} onChange={e => setF(x => ({ ...x, state: e.target.value }))}><option value="">Choose…</option>{states.map(s => <option key={s.code} value={s.code}>{s.name}</option>)}</select></div>
+          <div><label style={lbl} htmlFor="bd-pin">{needEi ? 'PIN code *' : 'PIN code'}</label><input id="bd-pin" className="form-input" inputMode="numeric" autoComplete="postal-code" pattern="[1-9][0-9]{5}" title="A PIN code has 6 digits, like 400001" required={needEi} maxLength={6} value={f.pincode} onChange={e => setF(x => ({ ...x, pincode: e.target.value.replace(/\D/g, '') }))} /></div>
         </div>
-        {kind !== 'bill_of_supply' && <div><label style={lbl}>Customer GSTIN <small style={{ fontWeight: 400 }}>(only if the customer is GST-registered and wants input credit)</small></label>
-          <input className="form-input" value={f.gstin} onChange={e => setF(x => ({ ...x, gstin: e.target.value.toUpperCase().replace(/\s/g, '') }))} maxLength={15} style={{ borderColor: gst.length === 15 ? (validGstin(gst) ? 'var(--success)' : 'var(--danger)') : undefined }} />
+        {kind !== 'bill_of_supply' && <div><label style={lbl} htmlFor="bd-gstin">Customer GSTIN <small style={{ fontWeight: 400 }}>(only if the customer is GST-registered and wants input credit)</small></label>
+          <input id="bd-gstin" ref={gstRef} className="form-input" pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]" title="A GSTIN has 15 characters, like 27ABCDE1234F1Z5" autoComplete="off" value={f.gstin} onChange={e => setF(x => ({ ...x, gstin: e.target.value.toUpperCase().replace(/\s/g, '') }))} maxLength={15} style={{ borderColor: gst.length === 15 ? (validGstin(gst) ? 'var(--success)' : 'var(--danger)') : undefined }} />
           {gst.length === 15 && !validGstin(gst) && <small style={{ color: 'var(--danger)' }}>This GSTIN is not valid.</small>}</div>}
         {einvoice && validGstin(gst) && <div style={{ background: '#e0f2fe', padding: 8, borderRadius: 8, fontSize: 13 }}>🧾 <b>E-invoice:</b> this invoice will be registered with the government's Invoice Registration Portal before it is issued, so the customer's <b>address, city, state and 6-digit PIN</b> are required. If registration fails, nothing is issued and no invoice number is used.</div>}
         <div style={{ fontSize: 13, color: 'var(--text-3)' }}>No state given → treated as your own state (CGST + SGST). A state or GSTIN in another state → IGST.</div>
@@ -80,8 +84,8 @@ function CreditModal({ invoice, onClose, onDone }) {
       <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
         <label><input type="radio" checked={full} onChange={() => setFull(true)} /> Credit the full remaining amount (cancels the invoice)</label>
         <label><input type="radio" checked={!full} onChange={() => setFull(false)} /> Credit part of it</label>
-        {!full && <div><label style={lbl}>Amount to credit, before tax (₹)</label><input className="form-input" type="number" min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required /></div>}
-        <div><label style={lbl}>Reason * <small style={{ fontWeight: 400 }}>(printed on the credit note)</small></label><input className="form-input" value={reason} onChange={e => setReason(e.target.value)} required placeholder="e.g. Booking cancelled by customer" /></div>
+        {!full && <div><label style={lbl} htmlFor="cn-amt">Amount to credit, before tax (₹) *</label><input id="cn-amt" className="form-input" type="number" inputMode="decimal" min="1" max={Number(invoice.total) > 0 ? Number(invoice.total) / 100 : undefined} step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required /></div>}
+        <div><label style={lbl} htmlFor="cn-reason">Reason * <small style={{ fontWeight: 400 }}>(printed on the credit note)</small></label><input id="cn-reason" className="form-input" value={reason} onChange={e => setReason(e.target.value)} required minLength={5} maxLength={200} placeholder="e.g. Booking cancelled by customer" /></div>
         {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-danger" disabled={busy}>{busy ? 'Issuing…' : 'Issue credit note'}</button></div>
       </form>

@@ -300,7 +300,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
       <div className="lp-clv-card" style={{ padding: '.85rem 1rem', marginBottom: '1rem' }}>
         <div style={{ display: 'flex', gap: '.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {meta.searchable?.length > 0 && (
-            <input className="lp-clv-input" style={{ flex: '1 1 220px', minWidth: 180 }} value={q}
+            <input aria-label="Search" className="lp-clv-input" style={{ flex: '1 1 220px', minWidth: 180 }} value={q}
               onChange={e => { setQ(e.target.value); setPage(1) }} placeholder={`Search ${meta.searchable.join(', ')}…`} />
           )}
           <select className="lp-clv-input" value={match} onChange={e => { setActiveView(null); setMatch(e.target.value); setPage(1) }} style={{ fontWeight: 600 }}>
@@ -327,7 +327,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
                 {ops.map(o => <option key={o.v} value={o.v}>{o.label}</option>)}
               </select>
               {!NO_VALUE_OPS.includes(c.op) && (
-                <input className="lp-clv-input" style={{ flex: '1 1 160px' }} value={c.value ?? ''}
+                <input aria-label="Filter value" className="lp-clv-input" style={{ flex: '1 1 160px' }} value={c.value ?? ''}
                   onChange={e => setCond(i, { value: e.target.value })}
                   placeholder={c.op === 'in' ? 'comma,separated' : 'value'} />
               )}
@@ -347,7 +347,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
               <select className="lp-clv-input" value={bulkField} onChange={e => setBulkField(e.target.value)}>
                 {meta.bulk_set.map(f => <option key={f} value={f}>{labelize(f)}</option>)}
               </select>
-              <input className="lp-clv-input" style={{ width: 130 }} value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="value" />
+              <input aria-label="New value" className="lp-clv-input" style={{ width: 130 }} value={bulkValue} onChange={e => setBulkValue(e.target.value)} placeholder="value" />
               <button className="lp-clv-btn" disabled={bulkBusy || bulkValue === ''} onClick={() => runBulk('set', { field: bulkField, value: bulkValue })}>Apply</button>
             </>
           )}
@@ -438,8 +438,8 @@ function SaveViewModal({ onClose, onSave }) {
       <form onClick={e => e.stopPropagation()} onSubmit={e => { e.preventDefault(); if (name.trim()) onSave(name.trim(), shared) }}
         style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 420, padding: '1.5rem', boxShadow: '0 24px 64px rgba(0,0,0,.22)' }}>
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>💾 Save view</h3>
-        <label style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>View name</label>
-        <input autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Hot leads"
+        <label htmlFor="clv-view-name" style={{ fontSize: '.8rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4 }}>View name *</label>
+        <input id="clv-view-name" required pattern=".*\S.*" title="Give the view a name, like Hot leads" maxLength={80} autoFocus value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Hot leads"
           style={{ width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.55rem .7rem', fontSize: '.9rem', boxSizing: 'border-box', marginBottom: '1rem' }} />
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '.85rem', color: '#374151', marginBottom: '1.25rem', cursor: 'pointer' }}>
           <input type="checkbox" checked={shared} onChange={e => setShared(e.target.checked)} />
@@ -447,7 +447,7 @@ function SaveViewModal({ onClose, onSave }) {
         </label>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '.5rem' }}>
           <button type="button" className="lp-clv-btn" onClick={onClose}>Cancel</button>
-          <button type="submit" className="lp-clv-btn lp-clv-btn-primary" disabled={!name.trim()}>Save</button>
+          <button type="submit" className="lp-clv-btn lp-clv-btn-primary">Save</button>
         </div>
       </form>
     </div>

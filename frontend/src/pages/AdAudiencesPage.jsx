@@ -57,18 +57,18 @@ export default function AdAudiencesPage() {
         <div onClick={() => setForm(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
           <form onSubmit={submit} className="card card-body" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, margin: 'auto', display: 'grid', gap: 10 }}>
             <h3 style={{ margin: 0 }}>{form === 'custom' ? 'New customer audience' : 'New lookalike audience'}</h3>
-            <label style={lbl}>Name *<input className="form-input" required value={f.name} onChange={set('name')} placeholder={form === 'custom' ? 'Past customers' : 'Lookalike of past customers'} /></label>
+            <label style={lbl}>Name *<input className="form-input" required maxLength={100} value={f.name} onChange={set('name')} placeholder={form === 'custom' ? 'Past customers' : 'Lookalike of past customers'} /></label>
             {form === 'custom' ? <>
-              <label style={lbl}>Ad account *<select className="form-select" value={accountId} onChange={set('account_id')}>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
+              <label style={lbl}>Ad account *<select className="form-select" required value={accountId} onChange={set('account_id')}>{accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}</select></label>
               <label style={lbl}>Who to include<select className="form-select" value={f.source_type} onChange={set('source_type')}>{Object.entries(d.sources).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></label>
               {f.source_type === 'segment' && <label style={lbl}>Segment<select className="form-select" required value={f.source_ref} onChange={set('source_ref')}><option value="">Choose…</option>{d.segments.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>}
-              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: '#fef3c7', padding: 10, borderRadius: 8, fontSize: 13 }}><input type="checkbox" checked={f.consent} onChange={set('consent')} style={{ marginTop: 3 }} />
+              <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', background: '#fef3c7', padding: 10, borderRadius: 8, fontSize: 13 }}><input type="checkbox" required checked={f.consent} onChange={set('consent')} style={{ marginTop: 3 }} />
                 <span>I confirm I have the right to use these customers’ details for advertising (their consent, or my privacy policy covers it). Their phone numbers and emails are hashed before being sent to Meta.</span></label>
             </> : <>
               <label style={lbl}>Based on<select className="form-select" required value={f.seed} onChange={set('seed')}><option value="">Choose a customer audience…</option>{ready.map(a => <option key={a.id} value={a.id}>{a.name} ({a.member_count.toLocaleString('en-IN')})</option>)}</select></label>
               <label style={lbl}>How wide: {f.ratio}% of India <input type="range" min="1" max="10" value={f.ratio} onChange={set('ratio')} style={{ width: '100%' }} /><small style={{ fontWeight: 400, color: 'var(--text-3)' }}>1% is the closest match to your customers; larger reaches more people with less similarity.</small></label>
             </>}
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="btn btn-ghost" onClick={() => setForm(null)}>Cancel</button><button className="btn btn-primary" disabled={busy === 'save' || (form === 'custom' && !f.consent)}>{busy === 'save' ? 'Creating…' : 'Create'}</button></div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="btn btn-ghost" onClick={() => setForm(null)}>Cancel</button><button className="btn btn-primary" disabled={busy === 'save'}>{busy === 'save' ? 'Creating…' : 'Create'}</button></div>
           </form>
         </div>)}
     </div>

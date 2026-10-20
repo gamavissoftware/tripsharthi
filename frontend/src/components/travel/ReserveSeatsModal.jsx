@@ -36,7 +36,7 @@ export default function ReserveSeatsModal({ trip, onClose, onDone }) {
               </select></label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
               {[['adults', 'Adults', 1], ['children', 'Children', 0], ['single_rooms', 'Single rooms', 0], ['hold_hours', 'Hold (hours)', 1]].map(([k, l, min]) => (
-                <label key={k} style={{ fontSize: 12.5, fontWeight: 700 }}>{l}<input className="form-input" type="number" min={min} max={k === 'hold_hours' ? 168 : 50} value={f[k]} onChange={set(k)} /></label>))}
+                <label key={k} style={{ fontSize: 12.5, fontWeight: 700 }}>{l}<input className="form-input" type="number" required step="1" inputMode="numeric" min={min} max={k === 'hold_hours' ? 168 : k === 'adults' && dep ? Math.max(1, dep.available) : k === 'children' && dep ? Math.max(0, dep.available - (Number(f.adults) || 0)) : 50} title={dep && (k === 'adults' || k === 'children') ? `Adults and children together can be at most ${dep.available} (the seats left)` : undefined} value={f[k]} onChange={set(k)} /></label>))}
             </div>
             {dep && <div style={{ background: 'var(--bg-2, #f8fafc)', padding: 10, borderRadius: 8, fontSize: 13.5 }}>
               {seats} seat(s) · {dep.available} available · price before GST <b>{inr(est)}</b>{dep.is_international ? ' (+ GST and TCS on the quote)' : ' (+ GST on the quote)'}

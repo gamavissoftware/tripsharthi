@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { cloneElement, useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Handshake, Users, Wallet, Hourglass, Landmark, CheckCircle2, Copy, Search } from 'lucide-react'
 import { admin } from '../../api/admin'
@@ -20,15 +20,15 @@ function NewPartnerForm({ onCreated, onCancel }) {
     try { const r = await admin.createPartner({ ...f, commission_pct: Number(f.commission_pct), commission_months: Number(f.commission_months), hold_days: Number(f.hold_days) }); toast.success('Partner created', r.partner.name); onCreated(r) }
     catch (err) { toast.error('Not saved', err.message) } finally { setBusy(false) }
   }
-  const G = ({ label, hint, children }) => <div className="form-group" style={{ margin: 0 }}><label className="form-label">{label}</label>{children}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div>
+  const G = ({ label, hint, children }) => { const id = 'pt-' + label.replace(/\W+/g, ''); return <div className="form-group" style={{ margin: 0 }}><label className="form-label" htmlFor={id}>{label}{children.props.required ? ' *' : ''}</label>{cloneElement(children, { id })}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div> }
   return (
     <form onSubmit={save} className="card card-body" style={{ marginBottom: 14, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))' }}>
       <div style={{ gridColumn: '1/-1', fontWeight: 700 }}>New referral partner</div>
-      {G({ label: 'Name', children: <input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required /> })}
-      {G({ label: 'Email (their login)', children: <input className="form-input" type="email" value={f.email} onChange={e => set('email', e.target.value)} required /> })}
+      {G({ label: 'Name', children: <input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required minLength={2} maxLength={120} autoComplete="off" /> })}
+      {G({ label: 'Email (their login)', children: <input className="form-input" type="email" inputMode="email" autoCapitalize="none" autoComplete="off" value={f.email} onChange={e => set('email', e.target.value)} required /> })}
       {G({ label: 'Company (optional)', children: <input className="form-input" value={f.company} onChange={e => set('company', e.target.value)} /> })}
-      {G({ label: 'Phone (optional)', children: <input className="form-input" value={f.phone} onChange={e => set('phone', e.target.value)} /> })}
-      {G({ label: 'Referral code (optional)', hint: 'Leave empty to generate one. 3-20 letters/numbers.', children: <input className="form-input" value={f.code} onChange={e => set('code', e.target.value.toUpperCase())} maxLength={20} /> })}
+      {G({ label: 'Phone (optional)', children: <input className="form-input" type="tel" pattern="[0-9+\-() ]{7,20}" title="Digits only, with an optional + at the start" value={f.phone} onChange={e => set('phone', e.target.value)} /> })}
+      {G({ label: 'Referral code (optional)', hint: 'Leave empty to generate one. 3-20 letters/numbers.', children: <input className="form-input" value={f.code} onChange={e => set('code', e.target.value.toUpperCase())} minLength={3} maxLength={20} pattern="[A-Za-z0-9]{3,20}" title="3 to 20 letters or numbers, no spaces" autoCapitalize="characters" /> })}
       {G({ label: 'Commission %', hint: 'Of what each referred customer actually pays.', children: <input className="form-input" type="number" min="1" max="60" step="0.5" value={f.commission_pct} onChange={e => set('commission_pct', e.target.value)} required /> })}
       {G({ label: 'For how many months', hint: '0 = lifetime. Counted from the first commission.', children: <input className="form-input" type="number" min="0" max="120" value={f.commission_months} onChange={e => set('commission_months', e.target.value)} required /> })}
       {G({ label: 'Hold (days)', hint: 'A commission becomes payable this many days after the payment (the refund window).', children: <input className="form-input" type="number" min="0" max="180" value={f.hold_days} onChange={e => set('hold_days', e.target.value)} required /> })}

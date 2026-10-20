@@ -32,7 +32,8 @@ function Ticket({ id }) {
 
   const keepTeam = (next) => setT(prev => ({ ...next, team: prev?.team || [] }))
   async function send(e) {
-    e?.preventDefault(); if (!msg.trim() || busy) return
+    e?.preventDefault(); if (busy) return
+    if (msg.trim().length < 2) { toast.warning('One thing needs fixing', mode === 'note' ? 'Write the note first' : 'Write your reply first'); return }
     setBusy(true)
     try {
       keepTeam(mode === 'note' ? await admin.supportNote(id, msg) : await admin.supportReply(id, msg, after))
@@ -83,11 +84,11 @@ function Ticket({ id }) {
                     {tplOpen && <div className="sp-tpl-menu">{SUPPORT_TEMPLATES.map(x => <button key={x.key} type="button" onClick={() => applyTemplate(x)}>{x.label}</button>)}</div>}
                   </div>}
                 </div>
-                <textarea className={'form-input' + (mode === 'note' ? ' sp-note-input' : '')} rows={6} value={msg} maxLength={5000} onChange={e => setMsg(e.target.value)}
+                <textarea className={'form-input' + (mode === 'note' ? ' sp-note-input' : '')} rows={6} value={msg} required minLength={2} maxLength={5000} aria-label={mode === 'note' ? 'Internal note' : 'Reply to customer'} onChange={e => setMsg(e.target.value)}
                   onKeyDown={e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') send(e) }}
                   placeholder={mode === 'note' ? 'Only the TripSarthi team can read this.' : 'The customer gets this by e-mail and in their app. Ctrl/Cmd + Enter sends.'} />
                 <div style={{ display: 'flex', gap: 10, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button className="btn btn-primary" disabled={busy || !msg.trim()}>{busy ? 'Sending…' : mode === 'note' ? 'Save note' : 'Send reply'}</button>
+                  <button className="btn btn-primary" disabled={busy}>{busy ? 'Sending…' : mode === 'note' ? 'Save note' : 'Send reply'}</button>
                   {mode === 'reply' && <label style={{ fontSize: 13 }}>then mark as{' '}
                     <select className="form-select" style={{ display: 'inline-block', width: 'auto' }} value={after} onChange={e => setAfter(e.target.value)}>
                       <option value="pending">Waiting on customer</option><option value="resolved">Resolved</option><option value="open">Still open</option></select></label>}

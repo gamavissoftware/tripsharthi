@@ -27,18 +27,18 @@ function SourceForm({ src, fields, onClose, onDone }) {
       <div className="card card-body" onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 560, margin: 'auto' }}>
         <h3 style={{ marginTop: 0 }}>{src ? `Edit ${src.name}` : 'New lead source'}</h3>
         <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
-          <label style={lbl}>Name *<input className="form-input" required value={f.name} onChange={set('name')} placeholder="TravelTriangle, Justdial, Partner website…" /></label>
+          <label style={lbl}>Name *<input className="form-input" required minLength={2} maxLength={80} value={f.name} onChange={set('name')} placeholder="TravelTriangle, Justdial, Partner website…" /></label>
           <label style={lbl}>How do leads arrive?
-            <select className="form-select" value={f.kind} disabled={!!src} onChange={set('kind')}><option value="webhook">The portal posts to a webhook URL</option><option value="email">The portal emails me (read from my connected inbox)</option></select></label>
-          {f.kind === 'email' && <label style={lbl}>Portal's sender address or domain *<input className="form-input" required value={f.email_match} onChange={set('email_match')} placeholder="@justdial.com or leads@portal.com" /></label>}
+            <select className="form-select" aria-label="How leads arrive" value={f.kind} disabled={!!src} onChange={set('kind')}><option value="webhook">The portal posts to a webhook URL</option><option value="email">The portal emails me (read from my connected inbox)</option></select></label>
+          {f.kind === 'email' && <label style={lbl}>Portal's sender address or domain *<input className="form-input" required pattern="(@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,}|[^\s@]+@[A-Za-z0-9\-]+(\.[A-Za-z0-9\-]+)*\.[A-Za-z]{2,})" title="Enter a domain like @justdial.com or a full address like leads@portal.com" maxLength={150} autoComplete="off" value={f.email_match} onChange={set('email_match')} placeholder="@justdial.com or leads@portal.com" /></label>}
           <label><input type="checkbox" checked={f.create_trip} onChange={set('create_trip')} /> Create a trip enquiry for each new lead</label>
           {src && <label><input type="checkbox" checked={f.enabled} onChange={set('enabled')} /> Enabled</label>}
           <div>
             <div style={lbl}>Their field names <small style={{ fontWeight: 400, color: 'var(--text-3)' }}>(optional — common names like "Mobile No" and "Customer Name" are understood already)</small></div>
             {f.map.map((m, i) => (
               <div key={i} style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                <input className="form-input" placeholder="Their field name" value={m.alias} onChange={e => setF(x => ({ ...x, map: x.map.map((r, j) => j === i ? { ...r, alias: e.target.value } : r) }))} />
-                <select className="form-select" value={m.field} onChange={e => setF(x => ({ ...x, map: x.map.map((r, j) => j === i ? { ...r, field: e.target.value } : r) }))}>{fields.map(k => <option key={k} value={k}>{k.replace('_', ' ')}</option>)}</select>
+                <input className="form-input" aria-label="Their field name" maxLength={80} placeholder="Their field name" value={m.alias} onChange={e => setF(x => ({ ...x, map: x.map.map((r, j) => j === i ? { ...r, alias: e.target.value } : r) }))} />
+                <select className="form-select" aria-label="Our field" value={m.field} onChange={e => setF(x => ({ ...x, map: x.map.map((r, j) => j === i ? { ...r, field: e.target.value } : r) }))}>{fields.map(k => <option key={k} value={k}>{k.replace('_', ' ')}</option>)}</select>
                 <button type="button" className="btn btn-sm btn-ghost" onClick={() => setF(x => ({ ...x, map: x.map.filter((_, j) => j !== i) }))}>✕</button>
               </div>))}
             <button type="button" className="btn btn-sm btn-ghost" style={{ marginTop: 6 }} onClick={() => setF(x => ({ ...x, map: [...x.map, { alias: '', field: fields[0] }] }))}>+ Add a field name</button>
@@ -93,7 +93,7 @@ export default function LeadSourcesPage() {
             <div><b>{s.name}</b> <small style={{ color: 'var(--text-3)' }}>{s.kind === 'email' ? `emails from ${s.email_match}` : 'webhook'} · {s.received_count} received{s.last_received_at ? ` · last ${s.last_received_at}` : ''}{!s.enabled ? ' · disabled' : ''}</small></div>
             <span style={{ display: 'flex', gap: 6 }}><button className="btn btn-sm btn-ghost" onClick={() => setEdit(s)}>Edit</button>{s.kind === 'webhook' && <button className="btn btn-sm btn-ghost" onClick={() => rotate(s)}>New URL</button>}<button className="btn btn-sm btn-ghost" onClick={() => remove(s)}>Delete</button></span>
           </div>
-          {s.kind === 'webhook' && <div style={{ display: 'flex', gap: 6, margin: '8px 0' }}><input className="form-input" readOnly value={url(s)} onFocus={e => e.target.select()} /><button className="btn btn-sm" onClick={() => copy(url(s))}>Copy</button></div>}
+          {s.kind === 'webhook' && <div style={{ display: 'flex', gap: 6, margin: '8px 0' }}><input className="form-input" aria-label={`Webhook URL for ${s.name}`} readOnly value={url(s)} onFocus={e => e.target.select()} /><button className="btn btn-sm" onClick={() => copy(url(s))}>Copy</button></div>}
           {s.kind === 'webhook' && <details style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 8 }}><summary>Test it</summary>
             <pre style={{ whiteSpace: 'pre-wrap', background: 'var(--bg-2, #f8fafc)', padding: 8, borderRadius: 6 }}>{`curl -X POST '${url(s)}' -H 'Content-Type: application/json' -d '{"name":"Test Traveller","mobile":"9876543210","destination":"Bali","adults":2}'`}</pre></details>}
           <Events id={s.id} />

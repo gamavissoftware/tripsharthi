@@ -33,11 +33,11 @@ function PayModal({ item, onClose, onDone }) {
           : <p style={{ color: 'var(--text-2)', marginTop: 0 }}>{item.booking_ref} · cost {inr(item.cost)} · paid {inr(item.paid)} · <b>outstanding {inr(item.outstanding)}</b></p>}
         <form onSubmit={submit} style={{ display: 'grid', gap: 8 }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            {fxc && <label style={{ fontSize: 12.5, fontWeight: 700 }}>Paid to supplier ({fxc})<input className="form-input" type="number" min="0" step="any" required value={f.fx_amount} onChange={set('fx_amount')} /></label>}
-            <label style={{ fontSize: 12.5, fontWeight: 700 }}>{fxc ? '₹ your bank debited' : 'Amount (₹)'}<input className="form-input" type="number" min="0.01" step="0.01" required value={f.amount_rs} onChange={set('amount_rs')} /></label>
-            <label style={{ fontSize: 12.5, fontWeight: 700 }}>Paid on<input className="form-input" type="date" max={today()} required value={f.paid_on} onChange={set('paid_on')} /></label>
+            {fxc && <label style={{ fontSize: 12.5, fontWeight: 700 }}>Paid to supplier ({fxc})<input className="form-input" type="number" inputMode="decimal" min="0.01" max={toMajor(item.fx.outstanding, fxc)} step="any" required value={f.fx_amount} onChange={set('fx_amount')} /></label>}
+            <label style={{ fontSize: 12.5, fontWeight: 700 }}>{fxc ? '₹ your bank debited' : 'Amount (₹)'}<input className="form-input" type="number" inputMode="decimal" min="0.01" max={!fxc && item.outstanding > 0 ? item.outstanding / 100 : undefined} step="0.01" required value={f.amount_rs} onChange={set('amount_rs')} /></label>
+            <label style={{ fontSize: 12.5, fontWeight: 700 }}>Paid on<input className="form-input" type="date" min="2000-01-01" max={today()} required value={f.paid_on} onChange={set('paid_on')} /></label>
             <label style={{ fontSize: 12.5, fontWeight: 700 }}>Mode<select className="form-select" value={f.mode} onChange={set('mode')}>{['bank', 'upi', 'cash', 'card', 'cheque', 'other'].map(m => <option key={m} value={m}>{m}</option>)}</select></label>
-            <label style={{ fontSize: 12.5, fontWeight: 700 }}>Reference / UTR<input className="form-input" value={f.reference} onChange={set('reference')} /></label>
+            <label style={{ fontSize: 12.5, fontWeight: 700 }}>Reference / UTR<input className="form-input" maxLength={100} autoComplete="off" value={f.reference} onChange={set('reference')} /></label>
           </div>
           {fxc && Number(f.fx_amount) > 0 && Number(f.amount_rs) > 0 && <small style={{ color: 'var(--text-2)' }}>That is ₹{(Number(f.amount_rs) / Number(f.fx_amount)).toFixed(4)} per {fxc}. The difference from the quoted rate is recorded as forex gain/loss once the supplier is fully paid.</small>}
           {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}

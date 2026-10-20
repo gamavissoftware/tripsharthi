@@ -83,22 +83,22 @@ function WidgetBuilder({ dashboardId, widget, options, onClose, onSaved }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)' }}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 440, padding: '1.5rem' }}>
         <h3 style={{ margin: '0 0 .5rem', fontWeight: 800, fontSize: '1.05rem' }}>{widget ? 'Edit' : 'Add'} widget</h3>
-        <label style={lbl}>Title</label>
-        <input style={sel} value={f.title} onChange={e => set('title', e.target.value)} placeholder="Auto from metric if blank" />
+        <label htmlFor="rw-title" style={lbl}>Title</label>
+        <input id="rw-title" maxLength={100} style={sel} value={f.title} onChange={e => set('title', e.target.value)} placeholder="Auto from metric if blank" />
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}><label style={lbl}>Entity</label>
-            <select style={sel} value={f.entity} onChange={e => set('entity', e.target.value)}>{entities.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
-          <div style={{ flex: 1 }}><label style={lbl}>Chart</label>
-            <select style={sel} value={f.type} onChange={e => set('type', e.target.value)}>{TYPES.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
+          <div style={{ flex: 1 }}><label htmlFor="rw-entity" style={lbl}>Entity</label>
+            <select id="rw-entity" style={sel} value={f.entity} onChange={e => set('entity', e.target.value)}>{entities.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
+          <div style={{ flex: 1 }}><label htmlFor="rw-type" style={lbl}>Chart</label>
+            <select id="rw-type" style={sel} value={f.type} onChange={e => set('type', e.target.value)}>{TYPES.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ flex: 1 }}><label style={lbl}>Metric</label>
-            <select style={sel} value={f.metric} onChange={e => set('metric', e.target.value)}>{ent.metrics.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
-          <div style={{ flex: 1 }}><label style={lbl}>Group by</label>
-            <select style={sel} value={f.dimension} onChange={e => set('dimension', e.target.value)}>{ent.dimensions.map(x => <option key={x} value={x}>{x === 'none' ? 'Total (KPI)' : labelize(x)}</option>)}</select></div>
+          <div style={{ flex: 1 }}><label htmlFor="rw-metric" style={lbl}>Metric</label>
+            <select id="rw-metric" style={sel} value={f.metric} onChange={e => set('metric', e.target.value)}>{ent.metrics.map(x => <option key={x} value={x}>{labelize(x)}</option>)}</select></div>
+          <div style={{ flex: 1 }}><label htmlFor="rw-dim" style={lbl}>Group by</label>
+            <select id="rw-dim" style={sel} value={f.dimension} onChange={e => set('dimension', e.target.value)}>{ent.dimensions.map(x => <option key={x} value={x}>{x === 'none' ? 'Total (KPI)' : labelize(x)}</option>)}</select></div>
         </div>
-        <label style={lbl}>Width</label>
-        <select style={sel} value={f.width} onChange={e => set('width', e.target.value)}>
+        <label htmlFor="rw-width" style={lbl}>Width</label>
+        <select id="rw-width" style={sel} value={f.width} onChange={e => set('width', e.target.value)}>
           <option value={3}>Quarter</option><option value={4}>Third</option><option value={6}>Half</option><option value={12}>Full</option>
         </select>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: '1.25rem' }}>

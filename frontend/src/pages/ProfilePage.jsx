@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { firstInvalid, shake } from '../lib/formFocus'
 import { Crown, Shield, Headphones, Eye, EyeOff, Check } from 'lucide-react'
 
 // ── Inject styles once ──────────────────────────────────────────────────────
@@ -32,7 +33,15 @@ if (typeof document !== 'undefined' && !document.getElementById('lp-prof-css')) 
   document.head.appendChild(el)
 }
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
+const digitCount = (v) => String(v || '').replace(/\D/g, '').length
+function summarise(formEl, errs) {
+  const keys = Object.keys(errs).filter(k => errs[k])
+  if (!keys.length) return
+  shake(formEl); setTimeout(() => firstInvalid(formEl), 0)
+  toast.warning(keys.length === 1 ? 'One thing needs fixing' : `${keys.length} things need fixing`, errs[keys[0]])
+}
 
 const ROLE_STYLE = {
   owner: { label: 'Owner', bg: 'linear-gradient(135deg,#e8f3fc,#bcdcf5)', color: '#074a8c', icon: <Crown size={13} strokeWidth={2} /> },
@@ -64,11 +73,13 @@ const STRENGTH = [
 ]
 
 // ── Password input with show/hide ───────────────────────────────────────────
-function PwInput({ value, onChange, placeholder, invalid, autoComplete }) {
+function PwInput({ id, value, onChange, placeholder, invalid, autoComplete }) {
   const [show, setShow] = useState(false)
   return (
     <div style={{ position: 'relative' }}>
       <input
+        id={id}
+        aria-invalid={invalid ? 'true' : undefined}
         type={show ? 'text' : 'password'}
         className={`lp-prof-input ${invalid ? 'invalid' : ''}`}
         value={value}
@@ -108,6 +119,8 @@ export default function ProfilePage() {
   const [confirmPw, setConfirmPw] = useState('')
   const [pwErrors, setPwErrors] = useState({})
   const [pwSaving, setPwSaving] = useState(false)
+  const profileForm = useRef(null)
+  const pwForm = useRef(null)
 
   useEffect(() => {
     api.get('/auth/me')
@@ -130,11 +143,13 @@ export default function ProfilePage() {
   async function handleProfileSave(e) {
     e.preventDefault()
     const errs = {}
-    if (!name.trim())  errs.name = 'Name is required.'
-    if (!email.trim()) errs.email = 'Email is required.'
-    else if (!EMAIL_RE.test(email)) errs.email = 'Enter a valid email address.'
+    if (name.trim().length < 2) errs.name = 'Enter your full name'
+    if (!email.trim()) errs.email = 'Email is required'
+    else if (!EMAIL_RE.test(email.trim())) errs.email = 'Enter a valid email address, like name@company.com'
+    if (phone.trim() && (digitCount(phone) < 10 || digitCount(phone) > 15)) errs.phone = 'Enter the full number with country code, e.g. +91 98765 43210'
+    if (waOptIn && !phone.trim()) errs.phone = 'Add your WhatsApp number, or untick the WhatsApp updates box'
     setPErrors(errs)
-    if (Object.keys(errs).length) return
+    if (Object.keys(errs).length) { summarise(profileForm.current, errs); return }
 
     setPSaving(true)
     try {
@@ -154,13 +169,14 @@ export default function ProfilePage() {
   async function handlePasswordChange(e) {
     e.preventDefault()
     const errs = {}
-    if (!curPw) errs.current_password = 'Current password is required.'
-    if (!newPw) errs.new_password = 'New password is required.'
-    else if (newPw.length < 8) errs.new_password = 'Must be at least 8 characters.'
-    if (!confirmPw) errs.confirm_password = 'Please confirm your new password.'
-    else if (newPw !== confirmPw) errs.confirm_password = 'Passwords do not match.'
+    if (!curPw) errs.current_password = 'Enter your current password'
+    if (!newPw) errs.new_password = 'Choose a new password'
+    else if (newPw.length < 8) errs.new_password = `Use at least 8 characters (you have ${newPw.length})`
+    else if (curPw && newPw === curPw) errs.new_password = 'Your new password must be different from the current one'
+    if (!confirmPw) errs.confirm_password = 'Type the new password again to confirm'
+    else if (newPw !== confirmPw) errs.confirm_password = 'The two passwords do not match'
     setPwErrors(errs)
-    if (Object.keys(errs).length) return
+    if (Object.keys(errs).length) { summarise(pwForm.current, errs); return }
 
     setPwSaving(true)
     try {
@@ -228,12 +244,15 @@ export default function ProfilePage() {
       </div>
 
       {/* Profile details */}
-      <form onSubmit={handleProfileSave} className="lp-prof-card">
+      <form onSubmit={handleProfileSave} className="lp-prof-card" noValidate ref={profileForm}>
         <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', marginBottom: '1.1rem' }}>Personal details</div>
 
         <div style={{ marginBottom: '1.1rem' }}>
-          <label className="lp-prof-label">Full name</label>
+          <label className="lp-prof-label" htmlFor="pf-name">Full name *</label>
           <input
+            id="pf-name"
+            aria-invalid={pErrors.name ? 'true' : undefined}
+            autoComplete="name"
             className={`lp-prof-input ${pErrors.name ? 'invalid' : ''}`}
             value={name}
             onChange={e => { setName(e.target.value); if (pErrors.name) setPErrors(x => ({ ...x, name: null })) }}
@@ -243,8 +262,13 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
-          <label className="lp-prof-label">Email address</label>
+          <label className="lp-prof-label" htmlFor="pf-email">Email address *</label>
           <input
+            id="pf-email"
+            aria-invalid={pErrors.email ? 'true' : undefined}
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
             type="email"
             className={`lp-prof-input ${pErrors.email ? 'invalid' : ''}`}
             value={email}
@@ -255,8 +279,11 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
-          <label className="lp-prof-label">WhatsApp number</label>
+          <label className="lp-prof-label" htmlFor="pf-phone">WhatsApp number</label>
           <input
+            id="pf-phone"
+            aria-invalid={pErrors.phone ? 'true' : undefined}
+            autoComplete="tel"
             type="tel"
             className={`lp-prof-input ${pErrors.phone ? 'invalid' : ''}`}
             value={phone}
@@ -289,13 +316,14 @@ export default function ProfilePage() {
       </form>
 
       {/* Change password */}
-      <form onSubmit={handlePasswordChange} className="lp-prof-card">
+      <form onSubmit={handlePasswordChange} className="lp-prof-card" noValidate ref={pwForm}>
         <div style={{ fontSize: 15, fontWeight: 800, color: '#111827', marginBottom: '.3rem' }}>Change password</div>
         <div style={{ fontSize: 12.5, color: '#9ca3af', marginBottom: '1.1rem' }}>Choose a strong password you don't use elsewhere.</div>
 
         <div style={{ marginBottom: '1.1rem' }}>
-          <label className="lp-prof-label">Current password</label>
+          <label className="lp-prof-label" htmlFor="pf-cur">Current password *</label>
           <PwInput
+            id="pf-cur"
             value={curPw}
             onChange={e => { setCurPw(e.target.value); if (pwErrors.current_password) setPwErrors(x => ({ ...x, current_password: null })) }}
             placeholder="Enter current password"
@@ -306,8 +334,9 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginBottom: '1.1rem' }}>
-          <label className="lp-prof-label">New password</label>
+          <label className="lp-prof-label" htmlFor="pf-new">New password *</label>
           <PwInput
+            id="pf-new"
             value={newPw}
             onChange={e => { setNewPw(e.target.value); if (pwErrors.new_password) setPwErrors(x => ({ ...x, new_password: null })) }}
             placeholder="At least 8 characters"
@@ -337,8 +366,9 @@ export default function ProfilePage() {
         </div>
 
         <div style={{ marginBottom: '1.25rem' }}>
-          <label className="lp-prof-label">Confirm new password</label>
+          <label className="lp-prof-label" htmlFor="pf-conf">Confirm new password *</label>
           <PwInput
+            id="pf-conf"
             value={confirmPw}
             onChange={e => { setConfirmPw(e.target.value); if (pwErrors.confirm_password) setPwErrors(x => ({ ...x, confirm_password: null })) }}
             placeholder="Repeat new password"

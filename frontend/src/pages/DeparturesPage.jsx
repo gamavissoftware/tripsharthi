@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { travel, inr } from '../api/travel'
 import { toast } from '../components/Toast'
 import { StatRow, StatTile } from '../components/StatTile'
@@ -23,36 +23,45 @@ function EditModal({ dep, onClose, onDone }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const set = (k) => (e) => setF(x => ({ ...x, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+  const formRef = useRef(null)
+  // cross-field rules go through the browser's own validity so they get the same red highlight, message and toast as the rest
+  useEffect(() => {
+    const fm = formRef.current; if (!fm) return
+    const rule = (name, msg) => { const el = fm.elements[name]; if (el) el.setCustomValidity(msg || '') }
+    rule('end_date', f.start_date && f.end_date && f.end_date < f.start_date ? 'The end date is before the start date' : '')
+    rule('min_pax', Number(f.min_pax) > Number(f.total_seats) ? `Minimum to operate cannot be more than the total seats (${f.total_seats})` : '')
+    rule('sell_cutoff', f.sell_cutoff && f.start_date && f.sell_cutoff > f.start_date ? 'Selling must stop on or before the start date' : '')
+  }, [f.start_date, f.end_date, f.min_pax, f.total_seats, f.sell_cutoff])
   async function submit(e) {
     e.preventDefault(); setBusy(true); setErr('')
     try { dep ? await travel.updateDeparture(dep.id, f) : await travel.createDeparture(f); toast.success('Saved'); onDone() } catch (er) { setErr(er.message) } finally { setBusy(false) }
   }
-  const num = (k, label, extra = {}) => <label style={lbl}>{label}<input className="form-input" type="number" step="any" min="0" value={f[k]} onChange={set(k)} {...extra} /></label>
+  const num = (k, label, extra = {}) => <label style={lbl}>{label}<input name={k} className="form-input" type="number" inputMode="decimal" step="any" min="0" value={f[k]} onChange={set(k)} {...extra} /></label>
   return (
     <Modal onClose={onClose} wide>
       <h3 style={{ marginTop: 0 }}>{dep ? `Edit ${dep.code}` : 'New group departure'}</h3>
-      <form onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
+      <form ref={formRef} onSubmit={submit} style={{ display: 'grid', gap: 10 }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 8 }}>
-          <label style={lbl}>Code *<input className="form-input" required disabled={!!dep} value={f.code} onChange={set('code')} placeholder="BALI-JAN27" /></label>
-          <label style={lbl}>Title *<input className="form-input" required value={f.title} onChange={set('title')} placeholder="Bali Group Tour — 6N/7D" /></label>
+          <label style={lbl}>Code *<input name="code" className="form-input" required disabled={!!dep} pattern="[A-Za-z0-9_\-]{2,30}" title="Use 2 to 30 letters, digits, hyphens or underscores, like BALI-JAN27" maxLength={30} value={f.code} onChange={set('code')} placeholder="BALI-JAN27" /></label>
+          <label style={lbl}>Title *<input name="title" className="form-input" required minLength={3} maxLength={160} value={f.title} onChange={set('title')} placeholder="Bali Group Tour — 6N/7D" /></label>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-          <label style={lbl}>Starts *<input className="form-input" type="date" required value={f.start_date} onChange={set('start_date')} /></label>
-          <label style={lbl}>Ends *<input className="form-input" type="date" required value={f.end_date} onChange={set('end_date')} /></label>
-          {num('total_seats', 'Total seats *', { min: 1, required: true })}{num('min_pax', 'Min. to operate', { min: 0 })}
+          <label style={lbl}>Starts *<input name="start_date" className="form-input" type="date" required value={f.start_date} onChange={set('start_date')} /></label>
+          <label style={lbl}>Ends *<input name="end_date" className="form-input" type="date" required min={f.start_date || undefined} value={f.end_date} onChange={set('end_date')} /></label>
+          {num('total_seats', 'Total seats *', { min: 1, max: 500, step: 1, required: true })}{num('min_pax', 'Min. to operate', { min: 0, step: 1 })}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-          {num('price_pax_rs', 'Price / person ₹ (before GST) *', { required: true })}{num('cost_pax_rs', 'Your cost / person ₹')}
-          {num('single_supplement_rs', 'Single supplement ₹')}{num('single_supplement_cost_rs', 'Single suppl. cost ₹')}
+          {num('price_pax_rs', 'Price / person ₹ (before GST) *', { required: true, min: 1, step: 0.01 })}{num('cost_pax_rs', 'Your cost / person ₹', { step: 0.01 })}
+          {num('single_supplement_rs', 'Single supplement ₹', { step: 0.01 })}{num('single_supplement_cost_rs', 'Single suppl. cost ₹', { step: 0.01 })}
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
-          {num('child_price_pct', 'Child price % of adult', { max: 100 })}
+          {num('child_price_pct', 'Child price % of adult', { max: 100, required: true })}
           <label style={lbl}>GST<select className="form-select" value={f.gst_rate} onChange={set('gst_rate')}>{[0, 5, 12, 18].map(r => <option key={r} value={r}>{r}%</option>)}</select></label>
-          <label style={lbl}>Stop selling on<input className="form-input" type="date" value={f.sell_cutoff} onChange={set('sell_cutoff')} /></label>
+          <label style={lbl}>Stop selling on<input name="sell_cutoff" className="form-input" type="date" value={f.sell_cutoff} onChange={set('sell_cutoff')} /></label>
           <label style={{ ...lbl, alignSelf: 'end' }}><input type="checkbox" checked={f.is_international} onChange={set('is_international')} /> International (TCS applies)</label>
         </div>
-        <label style={lbl}>Inclusions<textarea className="form-input" rows={2} value={f.inclusions} onChange={set('inclusions')} /></label>
-        <label style={lbl}>Exclusions<textarea className="form-input" rows={2} value={f.exclusions} onChange={set('exclusions')} /></label>
+        <label style={lbl}>Inclusions<textarea className="form-input" rows={2} maxLength={3000} value={f.inclusions} onChange={set('inclusions')} /></label>
+        <label style={lbl}>Exclusions<textarea className="form-input" rows={2} maxLength={3000} value={f.exclusions} onChange={set('exclusions')} /></label>
         {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button></div>
       </form>

@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { travel, inr, TRIP_STATUS } from '../../api/travel'
 import { toast } from '../Toast'
+import Field from '../FormField'
+import { firstInvalid, shake } from '../../lib/formFocus'
 import { ActivityChip, ActivityModal } from './TripActivities'
 import './TripBoard.css'
 
@@ -34,8 +36,8 @@ function LostModal({ trip, onCancel, onConfirm }) {
         <div className="modal-body">
           <p style={{ marginBottom: 10 }}>{trip.title}</p>
           <div className="form-group">
-            <label className="form-label">Why was this trip lost?</label>
-            <input className="form-input" autoFocus value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. booked with another agent, budget too low" />
+            <label className="form-label" htmlFor="lost-reason">Why was this trip lost?</label>
+            <input id="lost-reason" className="form-input" autoFocus maxLength={200} value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. booked with another agent, budget too low" />
           </div>
         </div>
         <div className="modal-footer">
@@ -58,6 +60,8 @@ function WonModal({ trip, onCancel, onBooked }) {
   const [ack, setAck] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [errs, setErrs] = useState({})
+  const boxRef = useRef(null)
 
   useEffect(() => {
     let alive = true
@@ -78,7 +82,24 @@ function WonModal({ trip, onCancel, onBooked }) {
   const rest = total - dep
   const n = Math.max(1, Number(inst) || 1)
 
+  function check(d = deposit, i = inst) {
+    const e = {}
+    if (d === '' || !Number.isFinite(Number(d))) e.deposit = 'Enter the booking amount as a percentage, like 30'
+    else if (Number(d) < 0 || Number(d) > 100) e.deposit = 'The booking amount must be between 0 and 100 percent'
+    if (i === '' || !Number.isFinite(Number(i))) e.inst = 'Enter how many instalments the balance is split into'
+    else if (!Number.isInteger(Number(i)) || Number(i) < 1 || Number(i) > 12) e.inst = 'Use a whole number from 1 to 12'
+    return e
+  }
+  const edit = (k, v) => { if (k === 'deposit') setDeposit(v); else setInst(v); setErrs(o => { if (!o[k]) return o; const n = check(k === 'deposit' ? v : deposit, k === 'inst' ? v : inst); const c = { ...o }; if (n[k]) c[k] = n[k]; else delete c[k]; return c }) }
+
   async function create() {
+    const bad = check()
+    if (Object.keys(bad).length) {
+      setErrs(bad); const n = Object.keys(bad).length
+      setTimeout(() => { firstInvalid(boxRef.current); shake(boxRef.current) }, 0)
+      toast.warning(n === 1 ? 'One thing needs fixing' : `${n} things need fixing`, Object.values(bad)[0])
+      return
+    }
     setBusy(true); setErr('')
     try {
       const b = await travel.createBooking({ itinerary_id: pick, deposit_pct: Number(deposit) || 0, instalments: n })
@@ -89,7 +110,7 @@ function WonModal({ trip, onCancel, onBooked }) {
 
   return (
     <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal" style={{ width: 520 }} onClick={e => e.stopPropagation()}>
+      <div className="modal" ref={boxRef} style={{ width: 520 }} onClick={e => e.stopPropagation()}>
         <div className="modal-header">Mark as won — create booking</div>
         <div className="modal-body">
           <p style={{ marginBottom: 10, fontWeight: 500 }}>{trip.title}</p>
@@ -99,8 +120,8 @@ function WonModal({ trip, onCancel, onBooked }) {
           )}
           {its?.length > 0 && (<>
             <div className="form-group">
-              <label className="form-label">Quote to book</label>
-              <select className="form-select" value={pick ?? ''} onChange={e => { setPick(Number(e.target.value)); setAck(false) }}>
+              <label className="form-label" htmlFor="won-quote">Quote to book</label>
+              <select id="won-quote" className="form-select" value={pick ?? ''} onChange={e => { setPick(Number(e.target.value)); setAck(false) }}>
                 {its.map(i => <option key={i.id} value={i.id}>v{i.version} · {i.status} · {inr(Number(i.grand_total) || 0)}</option>)}
               </select>
             </div>
@@ -111,8 +132,8 @@ function WonModal({ trip, onCancel, onBooked }) {
               </label>
             )}
             <div className="form-grid-2" style={{ marginTop: 10 }}>
-              <div className="form-group"><label className="form-label">Booking amount (%)</label><input className="form-input" type="number" min="0" max="100" value={deposit} onChange={e => setDeposit(e.target.value)} /></div>
-              <div className="form-group"><label className="form-label">Balance in … instalments</label><input className="form-input" type="number" min="1" max="12" value={inst} onChange={e => setInst(e.target.value)} /></div>
+              <Field label="Booking amount (%)" required error={errs.deposit} style={{ marginBottom: 12 }}><input className="form-input" type="number" min="0" max="100" step="any" inputMode="decimal" value={deposit} onChange={e => edit('deposit', e.target.value)} /></Field>
+              <Field label="Balance in … instalments" required error={errs.inst} style={{ marginBottom: 12 }}><input className="form-input" type="number" min="1" max="12" step="1" inputMode="numeric" value={inst} onChange={e => edit('inst', e.target.value)} /></Field>
             </div>
             <p className="text-muted" style={{ marginTop: 8 }}>
               {total ? <>Total {inr(total)}: {inr(dep)} today{rest > 0 ? <>, then {inr(Math.floor(rest / n))} × {n} (last one takes the rounding), the balance due 15 days before travel</> : null}.</> : 'This quote has no price yet.'}

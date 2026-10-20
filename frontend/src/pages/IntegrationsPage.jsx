@@ -244,23 +244,23 @@ function ConnectModal({ onClose, onConnected }) {
           {err && <div className="field-error" style={{ marginBottom:'1rem', fontSize:'.875rem' }}>{err}</div>}
 
           <div className="form-group" style={{ marginBottom:'1.25rem' }}>
-            <label className="form-label" style={{ fontWeight:700 }}>Facebook Page ID *</label>
-            <input className="form-input" value={form.page_id} onChange={e=>setForm(p=>({...p,page_id:e.target.value}))}
+            <label className="form-label" htmlFor="fb-pid" style={{ fontWeight:700 }}>Facebook Page ID *</label>
+            <input id="fb-pid" className="form-input" inputMode="numeric" pattern="[0-9]{5,25}" title="Digits only, like 123456789012345" autoComplete="off" value={form.page_id} onChange={e=>setForm(p=>({...p,page_id:e.target.value}))}
               placeholder="e.g. 123456789012345" required autoFocus />
             <div className="field-hint">Find it in Facebook Page Settings → About</div>
           </div>
 
           <div className="form-group" style={{ marginBottom:'1.25rem' }}>
-            <label className="form-label" style={{ fontWeight:700 }}>Page Access Token *</label>
-            <input className="form-input" type="password" value={form.page_access_token}
+            <label className="form-label" htmlFor="fb-tok" style={{ fontWeight:700 }}>Page Access Token *</label>
+            <input id="fb-tok" className="form-input" type="password" minLength={20} autoComplete="new-password" value={form.page_access_token}
               onChange={e=>setForm(p=>({...p,page_access_token:e.target.value}))}
               placeholder="EAAxxxxxxxxxxxxx" required />
             <div className="field-hint">From Meta for Developers → Your App → Access Tokens</div>
           </div>
 
           <div className="form-group" style={{ marginBottom:'1.5rem' }}>
-            <label className="form-label" style={{ fontWeight:700 }}>Default Country Code <span style={{ fontWeight:400, color:'var(--text-3)' }}>(optional)</span></label>
-            <input className="form-input" value={form.default_country_code}
+            <label className="form-label" htmlFor="fb-cc" style={{ fontWeight:700 }}>Default Country Code <span style={{ fontWeight:400, color:'var(--text-3)' }}>(optional)</span></label>
+            <input id="fb-cc" className="form-input" inputMode="tel" pattern="\+?[0-9]{1,4}" title="Digits only, like +91 or 91" maxLength={5} value={form.default_country_code}
               onChange={e=>setForm(p=>({...p,default_country_code:e.target.value}))}
               placeholder="+91" style={{ maxWidth:120 }} />
             <div className="field-hint">Applied to phone numbers without country code</div>

@@ -45,7 +45,8 @@ function LiveChat() {
   useEffect(() => { box.current?.scrollTo({ top: box.current.scrollHeight }) }, [thread?.messages?.length])
 
   async function send(e) {
-    e.preventDefault(); if (!text.trim() || busy) return
+    e.preventDefault(); if (busy) return
+    if (!text.trim()) { toast.warning('One thing needs fixing', 'Type a reply first'); return }
     setBusy(true)
     try {
       await admin.chatReply(sel, text.trim()); setText('')
@@ -91,7 +92,7 @@ function LiveChat() {
                 </div>))}
           </div>
           {s.status === 'open'
-            ? <form onSubmit={send} className="inbox-reply"><input className="form-input" style={{ flex: 1 }} placeholder="Type your reply…" value={text} onChange={e => setText(e.target.value)} autoFocus /><button className="btn btn-primary" disabled={busy || !text.trim()}>Send</button></form>
+            ? <form onSubmit={send} className="inbox-reply"><input className="form-input" style={{ flex: 1 }} placeholder="Type your reply…" aria-label="Reply" required maxLength={1000} value={text} onChange={e => setText(e.target.value)} autoFocus /><button className="btn btn-primary" disabled={busy}>Send</button></form>
             : <p style={{ padding: 12, color: 'var(--text-3)', margin: 0 }}>This chat is closed.</p>}
         </>}
       </div>

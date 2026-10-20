@@ -22,8 +22,8 @@ function FileForm({ period, type, onDone, onClose }) {
   return (
     <form onSubmit={submit} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end', background: 'var(--bg-2, #f8fafc)', padding: 10, borderRadius: 8, marginTop: 8 }}>
       <label style={lbl}>Filed on<input className="form-input" type="date" required max={new Date().toISOString().slice(0, 10)} value={f.filed_on} onChange={set('filed_on')} /></label>
-      <label style={lbl}>ARN (optional)<input className="form-input" maxLength={15} value={f.arn} onChange={set('arn')} placeholder="AA2910251234567" style={{ width: 170 }} /></label>
-      {type === 'GSTR3B' && <label style={lbl}>Tax paid in cash ₹ (optional)<input className="form-input" type="number" min="0" step="0.01" value={f.tax_paid_rs} onChange={set('tax_paid_rs')} style={{ width: 150 }} /></label>}
+      <label style={lbl}>ARN (optional)<input className="form-input" maxLength={15} pattern="[A-Za-z0-9]{15}" title="An ARN has 15 letters and digits, like AA2910251234567" autoComplete="off" value={f.arn} onChange={e => setF(x => ({ ...x, arn: e.target.value.toUpperCase().replace(/\s/g, '') }))} placeholder="AA2910251234567" style={{ width: 170 }} /></label>
+      {type === 'GSTR3B' && <label style={lbl}>Tax paid in cash ₹ (optional)<input className="form-input" type="number" inputMode="decimal" min="0" step="0.01" value={f.tax_paid_rs} onChange={set('tax_paid_rs')} style={{ width: 150 }} /></label>}
       <button className="btn btn-primary btn-sm" disabled={busy}>Save</button><button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
     </form>)
 }
@@ -60,7 +60,7 @@ export function Gstr3bTab({ period, download, busy }) {
   }
   const o = d.outward, p = d.payment
   const H = ['igst', 'cgst', 'sgst']
-  const amt = (name, k) => <label style={lbl}>{name}<input className="form-input" type="number" min="0" step="0.01" value={form[k]} onChange={set(k)} /></label>
+  const amt = (name, k) => <label style={lbl}>{name}<input className="form-input" type="number" inputMode="decimal" required min="0" step="0.01" title="Enter 0 if there is none" value={form[k]} onChange={set(k)} /></label>
 
   return (
     <div style={{ display: 'grid', gap: 14 }}>
@@ -150,7 +150,7 @@ export function FilingsTab() {
     <div className="card card-body">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
         <h3 style={{ margin: 0 }}>Filing tracker</h3>
-        <select className="form-select" style={{ width: 'auto' }} value={fy} onChange={e => setFy(Number(e.target.value))}>{[curFy() + 0, curFy() - 1, curFy() - 2].map(y => <option key={y} value={y}>FY {y}-{String(y + 1).slice(2)}</option>)}</select>
+        <select className="form-select" aria-label="Financial year" style={{ width: 'auto' }} value={fy} onChange={e => setFy(Number(e.target.value))}>{[curFy() + 0, curFy() - 1, curFy() - 2].map(y => <option key={y} value={y}>FY {y}-{String(y + 1).slice(2)}</option>)}</select>
       </div>
       <p style={{ color: 'var(--text-2)', fontSize: 13.5 }}>Monthly filers: GSTR-1 is due on the 11th and GSTR-3B on the 20th of the next month. You file on the GST portal; mark it here so TripSarthi can remind you (owners and admins are alerted 3 days before and every day it is late). Quarterly (QRMP) due dates are not modelled.</p>
       {err && <div style={{ background: '#fee2e2', padding: 10, borderRadius: 8 }}>{err}</div>}

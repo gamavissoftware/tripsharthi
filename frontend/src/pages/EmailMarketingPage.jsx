@@ -277,7 +277,7 @@ function SuppressionsTab({ onChange }) {
 
         {adding && (
           <form onSubmit={add} className="mb-4">
-            <textarea className="form-input w-full" rows={3} value={text} onChange={e => setText(e.target.value)}
+            <textarea className="form-input w-full" rows={3} required aria-label="Email addresses" value={text} onChange={e => setText(e.target.value)}
                       placeholder="Paste addresses — one per line, or separated by commas" />
             <div className="flex gap-2 mt-2">
               <button className="btn btn-primary btn-sm" disabled={!text.trim()}>Suppress</button>
@@ -391,42 +391,42 @@ function SettingsTab({ onSaved }) {
           </div>
 
           <div className="form-grid-2">
-            <div className="form-group"><label className="form-label">SMTP host</label><input className="form-input" value={cfg.host} onChange={set('host')} required placeholder="smtp.example.com" /></div>
+            <div className="form-group"><label className="form-label" htmlFor="sm-host">SMTP host *</label><input id="sm-host" className="form-input" value={cfg.host} onChange={set('host')} required pattern="[A-Za-z0-9]([A-Za-z0-9.\-]*[A-Za-z0-9])?" title="Enter the server name only, like smtp.gmail.com (no https:// or spaces)" autoComplete="off" placeholder="smtp.example.com" /></div>
             <div className="form-grid-2">
-              <div className="form-group"><label className="form-label">Port</label><input className="form-input" type="number" value={cfg.port} onChange={set('port')} required /></div>
-              <div className="form-group"><label className="form-label">Security</label>
-                <select className="form-select" value={cfg.crypto} onChange={set('crypto')}>
+              <div className="form-group"><label className="form-label" htmlFor="sm-port">Port *</label><input id="sm-port" className="form-input" type="number" min={1} max={65535} step={1} inputMode="numeric" value={cfg.port} onChange={set('port')} required /></div>
+              <div className="form-group"><label className="form-label" htmlFor="sm-sec">Security</label>
+                <select id="sm-sec" className="form-select" value={cfg.crypto} onChange={set('crypto')}>
                   <option value="tls">STARTTLS (587)</option><option value="ssl">SSL (465)</option><option value="">None</option>
                 </select>
               </div>
             </div>
-            <div className="form-group"><label className="form-label">Username</label><input className="form-input" value={cfg.username} onChange={set('username')} autoComplete="off" /></div>
-            <div className="form-group"><label className="form-label">Password / app password</label>
-              <input className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password"
+            <div className="form-group"><label className="form-label" htmlFor="sm-user">Username</label><input id="sm-user" className="form-input" value={cfg.username} onChange={set('username')} autoComplete="off" /></div>
+            <div className="form-group"><label className="form-label" htmlFor="sm-pass">Password / app password</label>
+              <input id="sm-pass" className="form-input" type="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password"
                      placeholder={cfg.has_password ? '•••••••• (saved — leave blank to keep)' : ''} />
             </div>
-            <div className="form-group"><label className="form-label">From email</label><input className="form-input" type="email" value={cfg.from_email} onChange={set('from_email')} required placeholder="news@yourdomain.com" /></div>
-            <div className="form-group"><label className="form-label">From name</label><input className="form-input" value={cfg.from_name} onChange={set('from_name')} placeholder="Your Company" /></div>
-            <div className="form-group"><label className="form-label">Send rate (emails per minute)</label>
-              <input className="form-input" type="number" min={1} max={500} value={cfg.rate_per_minute} onChange={set('rate_per_minute')} />
+            <div className="form-group"><label className="form-label" htmlFor="sm-from">From email *</label><input id="sm-from" className="form-input" type="email" autoComplete="off" value={cfg.from_email} onChange={set('from_email')} required placeholder="news@yourdomain.com" /></div>
+            <div className="form-group"><label className="form-label" htmlFor="sm-fname">From name</label><input id="sm-fname" className="form-input" maxLength={100} value={cfg.from_name} onChange={set('from_name')} placeholder="Your Company" /></div>
+            <div className="form-group"><label className="form-label" htmlFor="sm-rate">Send rate (emails per minute)</label>
+              <input id="sm-rate" className="form-input" type="number" min={1} max={500} step={1} required value={cfg.rate_per_minute} onChange={set('rate_per_minute')} />
               <div className="form-hint">How fast a campaign goes out.</div>
             </div>
-            <div className="form-group"><label className="form-label">Daily limit (emails per 24 hours)</label>
-              <input className="form-input" type="number" min={0} value={cfg.daily_limit} onChange={set('daily_limit')} />
+            <div className="form-group"><label className="form-label" htmlFor="sm-daily">Daily limit (emails per 24 hours)</label>
+              <input id="sm-daily" className="form-input" type="number" min={0} step={1} required value={cfg.daily_limit} onChange={set('daily_limit')} />
               <div className="form-hint">0 = no limit. Gmail allows ~500/day, Workspace ~2,000. Big campaigns pause at the limit and carry on automatically.</div>
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Send me a copy of every email (optional)</label>
-            <input className="form-input" type="email" value={cfg.copy_to ?? ''} onChange={set('copy_to')} placeholder="you@yourdomain.com" />
+            <label className="form-label" htmlFor="sm-copy">Send me a copy of every email (optional)</label>
+            <input id="sm-copy" className="form-input" type="email" value={cfg.copy_to ?? ''} onChange={set('copy_to')} placeholder="you@yourdomain.com" />
             <div className="form-hint">
               Each copy arrives separately as "[Copy → recipient] subject", so opening it never counts as the customer's open.
               Copies are sent through the same account and count against the daily limit — each recipient then uses two.
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Reply alerts &amp; daily report to (optional)</label>
-            <input className="form-input" type="email" value={cfg.notify_to ?? ''} onChange={set('notify_to')} placeholder="you@yourdomain.com" />
+            <label className="form-label" htmlFor="sm-notify">Reply alerts &amp; daily report to (optional)</label>
+            <input id="sm-notify" className="form-input" type="email" value={cfg.notify_to ?? ''} onChange={set('notify_to')} placeholder="you@yourdomain.com" />
             <div className="form-hint">
               Gets an alert the moment a customer replies to a campaign, plus a report every morning at 9:00 IST — who opened, clicked and replied.
               {' '}Reply tracking reads your reply-to mailbox:{' '}
@@ -440,8 +440,8 @@ function SettingsTab({ onSaved }) {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">Footer — company name and address</label>
-            <textarea className="form-input w-full" rows={2} value={cfg.footer_text} onChange={set('footer_text')} placeholder="Acme Pvt Ltd, 12 MG Road, Gurugram 122001" />
+            <label className="form-label" htmlFor="sm-footer">Footer — company name and address</label>
+            <textarea id="sm-footer" className="form-input w-full" rows={2} maxLength={500} value={cfg.footer_text} onChange={set('footer_text')} placeholder="Acme Pvt Ltd, 12 MG Road, Gurugram 122001" />
             <div className="form-hint">Shown above the unsubscribe link in every campaign. A physical address is required by anti-spam laws in many countries.</div>
           </div>
           <button className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save settings'}</button>

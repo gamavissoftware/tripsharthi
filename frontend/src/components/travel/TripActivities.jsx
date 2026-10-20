@@ -52,7 +52,7 @@ export function ActivityModal({ trip, onClose, onChanged }) {
 
   async function add(e) {
     e.preventDefault()
-    if (!f.title.trim()) { setErr('Give the activity a title.'); return }
+    if (!f.title.trim()) { setErr('Give the activity a title.'); return }   // safety net: the input is also `required`
     setSaving(true); setErr('')
     try {
       await crm.createTask({ title: f.title.trim(), type: f.type, priority: f.priority, due_at: f.due_at ? f.due_at.replace('T', ' ') + ':00' : null, related_type: 'deal', related_id: Number(trip.deal_id) })
@@ -88,10 +88,10 @@ export function ActivityModal({ trip, onClose, onChanged }) {
             <div className="tact-types">
               {Object.entries(TYPES).map(([k, v]) => <button key={k} type="button" className={'btn btn-sm ' + (f.type === k ? 'btn-primary' : 'btn-ghost')} onClick={() => setF(s => ({ ...s, type: k }))}><v.icon size={13} /> {v.label}</button>)}
             </div>
-            <input className="form-input" style={{ marginTop: 8 }} autoFocus placeholder="e.g. Send revised quote" value={f.title} onChange={e => setF(s => ({ ...s, title: e.target.value }))} />
+            <input className="form-input" aria-label="Activity title" required maxLength={200} style={{ marginTop: 8 }} autoFocus placeholder="e.g. Send revised quote" value={f.title} onChange={e => setF(s => ({ ...s, title: e.target.value }))} />
             <div className="form-grid-2" style={{ marginTop: 8 }}>
-              <input className="form-input" type="datetime-local" value={f.due_at} onChange={e => setF(s => ({ ...s, due_at: e.target.value }))} />
-              <select className="form-select" value={f.priority} onChange={e => setF(s => ({ ...s, priority: e.target.value }))}>
+              <input className="form-input" aria-label="Due date and time" type="datetime-local" value={f.due_at} onChange={e => setF(s => ({ ...s, due_at: e.target.value }))} />
+              <select className="form-select" aria-label="Priority" value={f.priority} onChange={e => setF(s => ({ ...s, priority: e.target.value }))}>
                 <option value="low">Low priority</option><option value="medium">Medium priority</option><option value="high">High priority</option>
               </select>
             </div>

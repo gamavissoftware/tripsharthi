@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { MessageCircle, Zap, Loader, X } from 'lucide-react'
 import { contacts as contactsApi } from '../api/contacts'
@@ -12,6 +12,7 @@ import AiScriptPanel from '../components/crm/AiScriptPanel'
 import EmailPanel from '../components/crm/EmailPanel'
 import { TierBadge } from '../components/CrmListView'
 import LoadFailed from '../components/LoadFailed'
+import { firstInvalid, shake } from '../lib/formFocus'
 
 const SCORE_LABELS = { lifecycle: 'Lifecycle stage', source: 'Source quality', email: 'Has email', account: 'Has account', deal: 'Linked deal value', engagement: 'WhatsApp engagement', tasks: 'Task completion', decay: 'Recency decay' }
 
@@ -84,11 +85,13 @@ function validate(f) {
   const hasEmail = !!f.email?.trim()
   // A contact needs at least one identity: WhatsApp number or email.
   if (!hasWa && !hasEmail) {
-    e.wa_number = 'Provide a WhatsApp number or an email'
-  } else if (hasWa && !/^\+?[1-9]\d{7,14}$/.test(f.wa_number.replace(/\s/g, ''))) {
-    e.wa_number = 'Enter a valid number with country code (e.g. +919999900000)'
+    e.wa_number = 'Add a WhatsApp number or an email so we can reach this person'
+  } else if (hasWa && !/^\+?[1-9]\d{7,14}$/.test(f.wa_number.replace(/[\s-]/g, ''))) {
+    e.wa_number = 'Use 8 to 15 digits with the country code, like +919999900000'
   }
-  if (hasEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Enter a valid email address'
+  if (hasEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) e.email = 'Enter a valid email address, like name@company.com'
+  if (f.phone_secondary?.trim() && !/^\+?[1-9]\d{7,14}$/.test(f.phone_secondary.replace(/[\s-]/g, ''))) e.phone_secondary = 'Use 8 to 15 digits with the country code, like +919999900000'
+  if (f.budget_amount !== '' && f.budget_amount != null && Number(f.budget_amount) < 0) e.budget_amount = 'Budget cannot be negative'
   return e
 }
 
@@ -130,6 +133,7 @@ export default function ContactDetailPage() {
   const [agents, setAgents] = useState([])
   const [accountList, setAccountList] = useState([])
   const [errors, setErrors]   = useState({})
+  const formRef = useRef(null)
   const [saving, setSaving]   = useState(false)
   const [loading, setLoading] = useState(!isNew)
   const [loadErr, setLoadErr] = useState('')
@@ -219,7 +223,12 @@ export default function ContactDetailPage() {
     e.preventDefault()
     const errs = validate(form)
     setErrors(errs)
-    if (Object.keys(errs).length > 0) { toast.error('Please fix the highlighted fields'); return }
+    const n = Object.keys(errs).length
+    if (n > 0) {
+      toast.warning(n === 1 ? 'One thing needs fixing' : `${n} things need fixing`, Object.values(errs)[0])
+      setTimeout(() => { firstInvalid(formRef.current); shake(formRef.current) }, 0)
+      return
+    }
     setSaving(true)
     try {
       if (isNew) {
@@ -377,22 +386,22 @@ export default function ContactDetailPage() {
 
       {/* Edit form */}
       <div className="lp-stack-mobile" style={{ display: 'grid', gridTemplateColumns: !isNew && contact ? 'minmax(0,1.7fr) minmax(0,1fr)' : '1fr', gap: 16, alignItems: 'start' }}>
-      <form onSubmit={save} className="lp-cd-card">
+      <form onSubmit={save} noValidate ref={formRef} className="lp-cd-card">
         <SectionTitle>{isNew ? 'New contact' : 'Edit contact'}</SectionTitle>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '1rem', marginBottom: '1.1rem' }}>
           <div>
-            <label className="lp-cd-label">WhatsApp number *</label>
-            <input className={`lp-cd-input ${errors.wa_number ? 'invalid' : ''}`} value={form.wa_number} onChange={e => { setForm(f => ({ ...f, wa_number: e.target.value })); if (errors.wa_number) setErrors(x => ({ ...x, wa_number: '' })) }} placeholder="+919999900000" />
-            {errors.wa_number && <div className="lp-cd-err">{errors.wa_number}</div>}
+            <label className="lp-cd-label" htmlFor="cd-wa">WhatsApp number *</label>
+            <input id="cd-wa" type="tel" inputMode="tel" autoComplete="off" aria-invalid={errors.wa_number ? 'true' : undefined} className={`lp-cd-input ${errors.wa_number ? 'invalid' : ''}`} value={form.wa_number} onChange={e => { setForm(f => ({ ...f, wa_number: e.target.value })); if (errors.wa_number) setErrors(x => ({ ...x, wa_number: '' })) }} placeholder="+919999900000" />
+            {errors.wa_number && <div className="lp-cd-err" role="alert">{errors.wa_number}</div>}
           </div>
           <div>
-            <label className="lp-cd-label">Full name</label>
-            <input className="lp-cd-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Priya Mehta" />
+            <label className="lp-cd-label" htmlFor="cd-name">Full name</label>
+            <input id="cd-name" maxLength={150} className="lp-cd-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Priya Mehta" />
           </div>
           <div>
-            <label className="lp-cd-label">Email</label>
-            <input type="email" className={`lp-cd-input ${errors.email ? 'invalid' : ''}`} value={form.email} onChange={e => { setForm(f => ({ ...f, email: e.target.value })); if (errors.email) setErrors(x => ({ ...x, email: '' })) }} placeholder="email@example.com" />
-            {errors.email && <div className="lp-cd-err">{errors.email}</div>}
+            <label className="lp-cd-label" htmlFor="cd-email">Email</label>
+            <input id="cd-email" type="email" inputMode="email" autoComplete="off" maxLength={190} aria-invalid={errors.email ? 'true' : undefined} className={`lp-cd-input ${errors.email ? 'invalid' : ''}`} value={form.email} onChange={e => { setForm(f => ({ ...f, email: e.target.value })); if (errors.email) setErrors(x => ({ ...x, email: '' })) }} placeholder="email@example.com" />
+            {errors.email && <div className="lp-cd-err" role="alert">{errors.email}</div>}
           </div>
           <div>
             <label className="lp-cd-label">Language</label>
@@ -437,8 +446,9 @@ export default function ContactDetailPage() {
             <input className="lp-cd-input" value={form.job_title ?? ''} onChange={e => setForm(f => ({ ...f, job_title: e.target.value }))} placeholder="e.g. Head of Ops" />
           </div>
           <div>
-            <label className="lp-cd-label">Alternate mobile</label>
-            <input className="lp-cd-input" value={form.phone_secondary ?? ''} onChange={e => setForm(f => ({ ...f, phone_secondary: e.target.value }))} placeholder="Optional secondary phone" />
+            <label className="lp-cd-label" htmlFor="cd-alt">Alternate mobile</label>
+            <input id="cd-alt" type="tel" inputMode="tel" aria-invalid={errors.phone_secondary ? 'true' : undefined} className={`lp-cd-input ${errors.phone_secondary ? 'invalid' : ''}`} value={form.phone_secondary ?? ''} onChange={e => { setForm(f => ({ ...f, phone_secondary: e.target.value })); if (errors.phone_secondary) setErrors(x => ({ ...x, phone_secondary: '' })) }} placeholder="Optional secondary phone" />
+            {errors.phone_secondary && <div className="lp-cd-err" role="alert">{errors.phone_secondary}</div>}
           </div>
         </div>
 
@@ -479,8 +489,9 @@ export default function ContactDetailPage() {
               <input className="lp-cd-input" value={form.requirement_type ?? ''} onChange={e => setForm(f => ({ ...f, requirement_type: e.target.value }))} placeholder="e.g. CRM migration" />
             </div>
             <div>
-              <label className="lp-cd-label">Budget</label>
-              <input type="number" className="lp-cd-input" value={form.budget_amount ?? ''} onChange={e => setForm(f => ({ ...f, budget_amount: e.target.value }))} placeholder="Available funds" />
+              <label className="lp-cd-label" htmlFor="cd-budget">Budget</label>
+              <input id="cd-budget" type="number" min="0" inputMode="decimal" aria-invalid={errors.budget_amount ? 'true' : undefined} className={`lp-cd-input ${errors.budget_amount ? 'invalid' : ''}`} value={form.budget_amount ?? ''} onChange={e => { setForm(f => ({ ...f, budget_amount: e.target.value })); if (errors.budget_amount) setErrors(x => ({ ...x, budget_amount: '' })) }} placeholder="Available funds" />
+              {errors.budget_amount && <div className="lp-cd-err" role="alert">{errors.budget_amount}</div>}
             </div>
             <div>
               <label className="lp-cd-label">Timeline</label>

@@ -150,6 +150,18 @@ class EmailService
         }
     }
 
+    /**
+     * Run a mail send AFTER the HTTP answer has gone out, so a slow or down mail server never makes sign-up / "forgot password" hang
+     * (and the response time no longer reveals whether an address has an account). A failure is logged, never shown to the visitor.
+     */
+    public static function afterResponse(callable $send): void
+    {
+        register_shutdown_function(static function () use ($send): void {
+            if (function_exists('fastcgi_finish_request')) { @fastcgi_finish_request(); }
+            try { $send(); } catch (\Throwable $e) { log_message('error', 'deferred e-mail failed: ' . $e->getMessage()); }
+        });
+    }
+
     /** Welcome e-mail for a newly registered workspace owner. */
     public static function sendWelcome(string $to, string $name, string $appUrl): bool
     {

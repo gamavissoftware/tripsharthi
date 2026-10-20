@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState, useCallback } from 'react'
+import { Fragment, cloneElement, isValidElement, useEffect, useMemo, useState, useCallback } from 'react'
 import { Ticket, Percent, Gift, TrendingDown, Copy, Search } from 'lucide-react'
 import { admin } from '../../api/admin'
 import { inr } from '../../api/travel'
@@ -45,7 +45,9 @@ function PricePreview({ summary, plans, cycle, type, valueRs, percent }) {
 }
 
 function Field({ label, hint, children, style }) {
-  return <div className="form-group" style={{ margin: 0, ...style }}><label className="form-label">{label}</label>{children}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div>
+  const control = isValidElement(children) && ['input', 'select', 'textarea'].includes(children.type)
+  const id = 'of-' + String(label).replace(/\W+/g, '')
+  return <div className="form-group" style={{ margin: 0, ...style }}><label className="form-label" htmlFor={control ? id : undefined}>{label}{control && children.props.required ? ' *' : ''}</label>{control ? cloneElement(children, { id }) : children}{hint && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>{hint}</div>}</div>
 }
 
 function PlanPicker({ value, onChange, disabled }) {
@@ -87,17 +89,17 @@ function CouponForm({ initial, partners, summary, onSaved, onCancel }) {
     <form onSubmit={save} className="card card-body" style={{ marginBottom: 14, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))' }}>
       <div style={{ gridColumn: '1/-1', fontWeight: 700 }}>{editing ? `Edit ${initial.code}` : 'New coupon code'}</div>
       {locked && <div style={{ gridColumn: '1/-1', fontSize: 13, color: 'var(--warning)' }}>This code has already been used, so its discount rules are locked (customers were promised them). You can still change the description, dates, total uses and switch it off.</div>}
-      {!editing && <Field label="Code" hint="3-30 letters, numbers, - or _. Customers type it at checkout (not case-sensitive)."><div style={{ display: 'flex', gap: 6 }}><input className="form-input" value={f.code} onChange={e => set('code', e.target.value.toUpperCase())} required placeholder="DIWALI25" /><button type="button" className="btn btn-ghost btn-sm" onClick={() => set('code', randomCode())}>Generate</button></div></Field>}
-      <Field label="Description (internal)"><input className="form-input" value={f.description} onChange={e => set('description', e.target.value)} placeholder="Diwali newsletter offer" /></Field>
+      {!editing && <Field label="Code" hint="3-30 letters, numbers, - or _. Customers type it at checkout (not case-sensitive)."><div style={{ display: 'flex', gap: 6 }}><input className="form-input" value={f.code} onChange={e => set('code', e.target.value.toUpperCase())} required minLength={3} maxLength={30} pattern="[A-Za-z0-9_\-]{3,30}" title="3 to 30 letters, numbers, - or _ (no spaces)" autoCapitalize="characters" spellCheck={false} placeholder="DIWALI25" aria-label="Code" /><button type="button" className="btn btn-ghost btn-sm" onClick={() => set('code', randomCode())}>Generate</button></div></Field>}
+      <Field label="Description (internal)"><input className="form-input" maxLength={200} value={f.description} onChange={e => set('description', e.target.value)} placeholder="Diwali newsletter offer" /></Field>
       <Field label="Discount type"><select className="form-select" disabled={locked} value={f.type} onChange={e => set('type', e.target.value)}><option value="percent">Percent off</option><option value="flat">Flat ₹ off</option></select></Field>
       {f.type === 'percent'
-        ? <Field label="Percent off" hint="1-90. A fully free period is a grant (Free days tab)."><input className="form-input" type="number" min="1" max="90" disabled={locked} value={f.value} onChange={e => set('value', e.target.value)} required /></Field>
+        ? <Field label="Percent off" hint="1-90. A fully free period is a grant (Free days tab)."><input className="form-input" type="number" min="1" max="90" step="1" disabled={locked} value={f.value} onChange={e => set('value', e.target.value)} required /></Field>
         : <Field label="Amount off (₹)"><input className="form-input" type="number" min="1" step="1" disabled={locked} value={f.value_rs} onChange={e => set('value_rs', e.target.value)} required /></Field>}
       <Field label="Applies to plans"><PlanPicker value={f.plans} disabled={locked} onChange={v => set('plans', v)} /></Field>
       <Field label="Billing cycle"><select className="form-select" disabled={locked} value={f.cycle} onChange={e => set('cycle', e.target.value)}><option value="any">Monthly or annual</option><option value="monthly">Monthly only</option><option value="annual">Annual only</option></select></Field>
       <Field label="How many payments" hint="1 = first payment only. Later payments are discounted automatically."><select className="form-select" disabled={locked} value={f.duration_periods} onChange={e => set('duration_periods', e.target.value)}><option value={1}>First payment only</option><option value={3}>First 3 payments</option><option value={6}>First 6 payments</option><option value={12}>First 12 payments</option><option value={0}>Every renewal</option></select></Field>
-      <Field label="Total customers (optional)" hint="Empty = unlimited."><input className="form-input" type="number" min="1" value={f.max_redemptions} onChange={e => set('max_redemptions', e.target.value)} /></Field>
-      <Field label="Uses per customer" hint="For one-payment codes. Multi-payment codes run once per customer."><input className="form-input" type="number" min="1" disabled={locked} value={f.max_per_tenant} onChange={e => set('max_per_tenant', e.target.value)} /></Field>
+      <Field label="Total customers (optional)" hint="Empty = unlimited."><input className="form-input" type="number" min="1" step="1" inputMode="numeric" value={f.max_redemptions} onChange={e => set('max_redemptions', e.target.value)} /></Field>
+      <Field label="Uses per customer" hint="For one-payment codes. Multi-payment codes run once per customer."><input className="form-input" type="number" min="1" step="1" inputMode="numeric" disabled={locked} value={f.max_per_tenant} onChange={e => set('max_per_tenant', e.target.value)} /></Field>
       <Field label="Valid from (optional)"><input className="form-input" type="date" value={f.starts_at} onChange={e => set('starts_at', e.target.value)} /></Field>
       <Field label="Expires on (optional)" hint="Valid through the end of that day."><input className="form-input" type="date" value={f.expires_at} onChange={e => set('expires_at', e.target.value)} /></Field>
       <Field label="Partner (optional)" hint="A partner's code: a brand-new customer who pays with it is attributed to them and earns them commission."><select className="form-select" disabled={locked} value={f.partner_id} onChange={e => set('partner_id', e.target.value)}><option value="">— none —</option>{(partners || []).map(p => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}</select></Field>
@@ -198,9 +200,9 @@ function PromoForm({ initial, summary, onSaved, onCancel }) {
   return (
     <form onSubmit={save} className="card card-body" style={{ marginBottom: 14, display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))' }}>
       <div style={{ gridColumn: '1/-1', fontWeight: 700 }}>{editing ? `Edit ${initial.name}` : 'New plan promotion'}</div>
-      <Field label="Name (internal)"><input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required placeholder="Festive season 2026" /></Field>
+      <Field label="Name (internal)"><input className="form-input" value={f.name} onChange={e => set('name', e.target.value)} required minLength={2} maxLength={100} placeholder="Festive season 2026" /></Field>
       <Field label="Label customers see" hint="Shown next to the price, e.g. “Festive 15% off”."><input className="form-input" value={f.badge} onChange={e => set('badge', e.target.value)} maxLength={40} /></Field>
-      <Field label="Percent off" hint="1-90"><input className="form-input" type="number" min="1" max="90" value={f.percent} onChange={e => set('percent', e.target.value)} required /></Field>
+      <Field label="Percent off" hint="1-90"><input className="form-input" type="number" min="1" max="90" step="1" value={f.percent} onChange={e => set('percent', e.target.value)} required /></Field>
       <Field label="Plans"><PlanPicker value={f.plans} onChange={v => set('plans', v)} /></Field>
       <Field label="Billing cycle"><select className="form-select" value={f.cycle} onChange={e => set('cycle', e.target.value)}><option value="any">Monthly or annual</option><option value="monthly">Monthly only</option><option value="annual">Annual only</option></select></Field>
       <Field label="Starts"><input className="form-input" type="date" value={f.starts_at} onChange={e => set('starts_at', e.target.value)} required /></Field>
@@ -264,7 +266,7 @@ function GrantsTab({ onChanged }) {
     return () => clearTimeout(t)
   }, [q])
   async function save(e) {
-    e.preventDefault(); if (!cust) { toast.error('Choose a customer first'); return }
+    e.preventDefault(); if (!cust) { toast.warning('One thing needs fixing', 'Search for a customer and pick one from the list'); document.getElementById('of-Customer')?.focus(); return }
     setBusy(true)
     try { await admin.grant({ tenant_id: cust.id, kind: f.kind, plan: f.kind === 'trial' ? f.plan : '', days: Number(f.days), reason: f.reason }); toast.success(f.kind === 'trial' ? 'Trial started' : 'Period extended', `${cust.name} · ${f.days} days`); onChanged(); setF({ ...f, reason: '' }); setCust(null); setQ(''); setFound([]); load() }
     catch (err) { toast.error('Not granted', err.message) } finally { setBusy(false) }
@@ -276,14 +278,14 @@ function GrantsTab({ onChanged }) {
         <Field label="Customer" hint={cust ? 'Selected' : 'Search by name or email (2+ letters)'} style={{ position: 'relative' }}>
           {cust
             ? <div style={{ display: 'flex', gap: 8, alignItems: 'center', paddingTop: 6 }}><b>{cust.name}</b><Pill color={PLAN_COLOR[cust.plan]}>{cust.plan}</Pill><button type="button" className="btn btn-ghost btn-sm" onClick={() => { setCust(null); setQ('') }}>Change</button></div>
-            : <><input className="form-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Sunrise Tours" />
+            : <><input id="of-Customer" className="form-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Sunrise Tours" autoComplete="off" />
               {found.length > 0 && <div className="card" style={{ position: 'absolute', zIndex: 5, left: 0, right: 0, top: '100%', maxHeight: 220, overflow: 'auto' }}>{found.slice(0, 8).map(t => <button type="button" key={t.id} onClick={() => { setCust(t); setFound([]) }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'none', border: 0, borderBottom: '1px solid var(--border)', cursor: 'pointer' }}><b>{t.name}</b> <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{t.owner_email} · {t.plan}</span></button>)}</div>}</>}
         </Field>
         <Field label="What to give" hint={f.kind === 'trial' ? 'For a customer with no running plan.' : 'Adds days to their running paid period.'}>
           <select className="form-select" value={f.kind} onChange={e => setF({ ...f, kind: e.target.value })}><option value="trial">Free trial of a plan</option><option value="extension">Extend their current plan</option></select>
         </Field>
         {f.kind === 'trial' && <Field label="Plan"><select className="form-select" value={f.plan} onChange={e => setF({ ...f, plan: e.target.value })}>{PLANS.map(p => <option key={p}>{p}</option>)}</select></Field>}
-        <Field label="Days" hint="1-365"><input className="form-input" type="number" min="1" max="365" value={f.days} onChange={e => setF({ ...f, days: e.target.value })} required /></Field>
+        <Field label="Days" hint="1-365"><input className="form-input" type="number" min="1" max="365" step="1" inputMode="numeric" value={f.days} onChange={e => setF({ ...f, days: e.target.value })} required /></Field>
         <Field label="Reason (kept in the audit log)" style={{ gridColumn: '1/-1' }}><input className="form-input" value={f.reason} onChange={e => setF({ ...f, reason: e.target.value })} required minLength={5} maxLength={300} placeholder="Demo for Sunrise Tours / goodwill after the 8 Oct outage" /></Field>
         <div style={{ gridColumn: '1/-1' }}><button className="btn btn-primary" disabled={busy || !cust}>{busy ? 'Saving…' : 'Grant'}</button></div>
       </form>

@@ -80,7 +80,7 @@ export default function AiPage() {
       </div>
 
       {/* Key config */}
-      <div className="card" style={{ padding: '1.25rem' }}>
+      <form className="card" style={{ padding: '1.25rem' }} onSubmit={e => { e.preventDefault(); save() }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ fontWeight: 700 }}>Anthropic key</span>
           {cfg?.has_tenant_key
@@ -94,8 +94,8 @@ export default function AiPage() {
         </p>
 
         <div style={{ display: 'grid', gap: 10, maxWidth: 460 }}>
-          <label style={lbl}>API key
-            <input className="form-input" type="password" value={form.api_key}
+          <label style={lbl}>API key *
+            <input className="form-input" type="password" required minLength={20} autoComplete="new-password" title="Paste the full key from your Anthropic console" value={form.api_key}
               onChange={e => setForm(f => ({ ...f, api_key: e.target.value }))}
               placeholder={cfg?.has_tenant_key ? '•••••• (unchanged)' : 'sk-ant-...'} />
           </label>
@@ -105,15 +105,15 @@ export default function AiPage() {
               placeholder="claude-3-5-haiku-latest" />
           </label>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-primary" style={{ width: 'fit-content' }} onClick={save} disabled={saving}>
+            <button type="submit" className="btn btn-primary" style={{ width: 'fit-content' }} disabled={saving}>
               {saving ? 'Saving…' : 'Save key'}
             </button>
             {cfg?.has_tenant_key && (
-              <button className="btn btn-ghost" style={{ color: '#dc2626' }} onClick={disconnect}>Remove key</button>
+              <button type="button" className="btn btn-ghost" style={{ color: '#dc2626' }} onClick={disconnect}>Remove key</button>
             )}
           </div>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

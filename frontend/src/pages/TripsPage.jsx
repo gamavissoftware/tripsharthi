@@ -44,7 +44,7 @@ function NewTripModal({ onClose, onCreated }) {
 
   async function save(e) {
     e.preventDefault()
-    if (!f.destination_text.trim()) { toast.error('Destination is required'); return }
+    if (!f.destination_text.trim()) { toast.warning('One thing needs fixing', 'Destination is required'); return }
     setSaving(true)
     try {
       let contactId
@@ -75,21 +75,21 @@ function NewTripModal({ onClose, onCreated }) {
           <button type="button" className="btn btn-sm btn-primary" style={{ marginTop: 8 }} disabled={parsing || !paste.trim()} onClick={aiFill}>{parsing ? 'Reading…' : 'Fill with AI'}</button>
         </div>
         <div style={two}>
-          <div className="form-group"><label className="form-label">Customer name</label><input className="form-input" value={f.cust_name} onChange={set('cust_name')} /></div>
-          <div className="form-group"><label className="form-label">WhatsApp / mobile</label><input className="form-input" value={f.cust_mobile} onChange={set('cust_mobile')} placeholder="+91…" /></div>
-          <div className="form-group"><label className="form-label">Destination *</label><input className="form-input" value={f.destination_text} onChange={set('destination_text')} autoFocus /></div>
-          <div className="form-group"><label className="form-label">Trip type</label><select className="form-select" value={f.trip_type} onChange={set('trip_type')}>{TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
-          <div className="form-group"><label className="form-label">Travelling from</label><input className="form-input" value={f.origin_city} onChange={set('origin_city')} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-name">Customer name</label><input id="nt-name" className="form-input" value={f.cust_name} onChange={set('cust_name')} maxLength={120} autoComplete="off" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-mobile">WhatsApp / mobile</label><input id="nt-mobile" className="form-input" type="tel" inputMode="tel" autoComplete="off" pattern="[+0-9 ()\-]{8,20}" title="Enter a mobile number with 8 to 15 digits, like +91 98765 43210" value={f.cust_mobile} onChange={set('cust_mobile')} placeholder="+91…" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-dest">Destination *</label><input id="nt-dest" className="form-input" value={f.destination_text} onChange={set('destination_text')} autoFocus required maxLength={160} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-type">Trip type</label><select id="nt-type" className="form-select" value={f.trip_type} onChange={set('trip_type')}>{TYPES.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}</select></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-from">Travelling from</label><input id="nt-from" className="form-input" value={f.origin_city} onChange={set('origin_city')} maxLength={120} /></div>
           <div className="form-group" style={{ alignSelf: 'end' }}><label style={{ display: 'flex', gap: 8, alignItems: 'center' }}><input type="checkbox" checked={f.is_international} onChange={set('is_international')} /> International (TCS applies)</label></div>
-          <div className="form-group"><label className="form-label">Start date</label><input className="form-input" type="date" value={f.start_date} onChange={set('start_date')} /></div>
-          <div className="form-group"><label className="form-label">End date</label><input className="form-input" type="date" value={f.end_date} onChange={set('end_date')} /></div>
-          <div className="form-group"><label className="form-label">Adults / Children</label>
-            <div style={{ display: 'flex', gap: 8 }}><input className="form-input" type="number" min="1" value={f.adults} onChange={set('adults')} /><input className="form-input" type="number" min="0" value={f.children} onChange={set('children')} /></div></div>
-          <div className="form-group"><label className="form-label">Nights</label><input className="form-input" type="number" min="1" value={f.nights} onChange={set('nights')} placeholder="auto from dates" /></div>
-          <div className="form-group"><label className="form-label">Total budget (₹)</label><input className="form-input" type="number" value={f.budget_rs} onChange={set('budget_rs')} /></div>
-          <div className="form-group"><label className="form-label">Hotel category</label><select className="form-select" value={f.hotel_category} onChange={set('hotel_category')}>{['any', 'budget', '3_star', '4_star', '5_star', 'luxury'].map(h => <option key={h} value={h}>{h.replace('_', ' ')}</option>)}</select></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-start">Start date</label><input id="nt-start" className="form-input" type="date" value={f.start_date} onChange={set('start_date')} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-end">End date</label><input id="nt-end" className="form-input" type="date" min={f.start_date || undefined} title="The end date cannot be before the start date" value={f.end_date} onChange={set('end_date')} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-adults">Adults / Children</label>
+            <div style={{ display: 'flex', gap: 8 }}><input id="nt-adults" className="form-input" type="number" min="1" max="500" step="1" required value={f.adults} onChange={set('adults')} /><input aria-label="Children" className="form-input" type="number" min="0" max="500" step="1" required value={f.children} onChange={set('children')} /></div></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-nights">Nights</label><input id="nt-nights" className="form-input" type="number" min="1" max="365" step="1" value={f.nights} onChange={set('nights')} placeholder="auto from dates" /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-budget">Total budget (₹)</label><input id="nt-budget" className="form-input" type="number" min="1" step="any" inputMode="decimal" value={f.budget_rs} onChange={set('budget_rs')} /></div>
+          <div className="form-group"><label className="form-label" htmlFor="nt-hotel">Hotel category</label><select id="nt-hotel" className="form-select" value={f.hotel_category} onChange={set('hotel_category')}>{['any', 'budget', '3_star', '4_star', '5_star', 'luxury'].map(h => <option key={h} value={h}>{h.replace('_', ' ')}</option>)}</select></div>
         </div>
-        <div className="form-group"><label className="form-label">Special requirements</label><textarea className="form-input" rows={2} value={f.requirements} onChange={set('requirements')} /></div>
+        <div className="form-group"><label className="form-label" htmlFor="nt-req">Special requirements</label><textarea id="nt-req" className="form-input" rows={2} maxLength={2000} value={f.requirements} onChange={set('requirements')} /></div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn btn-primary" disabled={saving}>{saving ? 'Creating…' : 'Create enquiry'}</button>

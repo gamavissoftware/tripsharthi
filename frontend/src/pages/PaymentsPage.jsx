@@ -67,7 +67,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Config card */}
-      <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>
+      <form className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }} onSubmit={e => { e.preventDefault(); saveConfig() }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ fontWeight: 700 }}>Razorpay connection</span>
           {config?.connected
@@ -76,16 +76,16 @@ export default function PaymentsPage() {
         </div>
 
         <div style={{ display: 'grid', gap: 10, maxWidth: 460 }}>
-          <label style={lbl}>Key ID
-            <input className="form-input" value={form.key_id} onChange={e => setForm(f => ({ ...f, key_id: e.target.value }))} placeholder="rzp_live_xxxxxxxx" />
+          <label style={lbl}>Key ID *
+            <input className="form-input" required pattern="rzp_(live|test)_[A-Za-z0-9]+" title="Starts with rzp_live_ or rzp_test_, copied from the Razorpay dashboard" autoComplete="off" value={form.key_id} onChange={e => setForm(f => ({ ...f, key_id: e.target.value }))} placeholder="rzp_live_xxxxxxxx" />
           </label>
-          <label style={lbl}>Key Secret
-            <input className="form-input" type="password" value={form.key_secret} onChange={e => setForm(f => ({ ...f, key_secret: e.target.value }))} placeholder={config?.connected ? '•••••• (unchanged)' : 'Key secret'} />
+          <label style={lbl}>Key Secret *
+            <input className="form-input" type="password" required minLength={8} autoComplete="new-password" value={form.key_secret} onChange={e => setForm(f => ({ ...f, key_secret: e.target.value }))} placeholder={config?.connected ? '•••••• (unchanged)' : 'Key secret'} />
           </label>
           <label style={lbl}>Webhook Secret <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(optional but recommended)</span>
-            <input className="form-input" type="password" value={form.webhook_secret} onChange={e => setForm(f => ({ ...f, webhook_secret: e.target.value }))} placeholder={config?.has_webhook_secret ? '•••••• (unchanged)' : 'Webhook secret'} />
+            <input className="form-input" type="password" autoComplete="new-password" value={form.webhook_secret} onChange={e => setForm(f => ({ ...f, webhook_secret: e.target.value }))} placeholder={config?.has_webhook_secret ? '•••••• (unchanged)' : 'Webhook secret'} />
           </label>
-          <button className="btn btn-primary" style={{ width: 'fit-content' }} onClick={saveConfig} disabled={saving}>
+          <button type="submit" className="btn btn-primary" style={{ width: 'fit-content' }} disabled={saving}>
             {saving ? 'Saving…' : 'Save connection'}
           </button>
         </div>
@@ -94,7 +94,7 @@ export default function PaymentsPage() {
           In your Razorpay dashboard, add a webhook for <strong>payment_link.paid / cancelled / expired</strong> pointing to:
           <div style={{ fontFamily: 'monospace', marginTop: 4, color: '#374151', overflowWrap: 'anywhere' }}>{webhookUrl}</div>
         </div>
-      </div>
+      </form>
 
       {/* Recent links */}
       <div className="card" style={{ overflow: 'hidden' }}>

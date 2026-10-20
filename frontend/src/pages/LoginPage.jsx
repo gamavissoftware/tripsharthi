@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { api, saveToken } from '../api/client'
 import AuthBrandPanel from '../components/AuthBrandPanel'
+import { toast } from '../components/Toast'
 
 export default function LoginPage({ onLogin, onShowRegister, onShowForgot }) {
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [error, setError]       = useState(null)
   const [loading, setLoading]   = useState(false)
+  const [show, setShow]         = useState(false)
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -17,7 +19,11 @@ export default function LoginPage({ onLogin, onShowRegister, onShowForgot }) {
       saveToken(data.token)
       onLogin?.(data.user)
     } catch (err) {
-      setError(err.message ?? 'Login failed. Check your credentials.')
+      if (err.status === 429) setError('Too many sign-in attempts. Please wait a few minutes and try again.')
+      else if (!err.status) setError('Cannot reach TripSarthi. Check your internet connection and try again.')
+      else if (err.status === 403) setError(err.message || 'This workspace is not active. Please contact support.')
+      else setError(err.message ?? 'Login failed. Check your credentials.')
+      toast.error('Could not sign you in', err.status === 401 || err.status === 422 ? 'Check your email and password and try again.' : undefined)
     } finally {
       setLoading(false)
     }
@@ -55,17 +61,18 @@ export default function LoginPage({ onLogin, onShowRegister, onShowForgot }) {
               <label className="form-label" htmlFor="password">Password</label>
               <input
                 id="password"
-                type="password"
+                type={show ? 'text' : 'password'}
                 className="form-input"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="Your password"
                 required
                 autoComplete="current-password"
               />
             </div>
 
-            {error && <div className="form-error">{error}</div>}
+            <button type="button" onClick={() => setShow(v => !v)} aria-pressed={show} style={{ alignSelf: 'flex-start', marginTop: -6, background: 'none', border: 'none', padding: 0, color: '#0a6cc4', cursor: 'pointer', fontSize: 12.5 }}>{show ? 'Hide password' : 'Show password'}</button>
+            {error && <div className="form-error" role="alert">{error}</div>}
 
             <button
               type="submit"

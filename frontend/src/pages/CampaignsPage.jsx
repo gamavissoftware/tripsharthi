@@ -8,6 +8,7 @@ import { campaigns as campaignsApi } from '../api/campaigns'
 import { segments as segmentsApi } from '../api/segments'
 import { api } from '../api/client'
 import { toast } from '../components/Toast'
+import { shake } from '../lib/formFocus'
 import { StatRow, StatTile } from '../components/StatTile'
 
 // ── Inject keyframes once ─────────────────────────────────────────────────
@@ -490,6 +491,8 @@ function CampaignWizard({ onDone, onCancel }) {
   const [abEnabled, setAbEnabled]   = useState(false)
   const [variantTpl, setVariantTpl] = useState(null)
   const [abSplit, setAbSplit]       = useState(50)
+  const [errs, setErrs]         = useState({})   // set when Next is pressed with something missing; each message hides itself once fixed
+  const boxRef = useRef(null)
 
   useEffect(() => {
     api.get('/templates?meta_status=approved')
@@ -543,13 +546,34 @@ function CampaignWizard({ onDone, onCancel }) {
     return '—'
   }
 
-  function step1Valid() { return name.trim().length > 0 && selectedTpl != null }
   function step2Valid() {
     if (audienceType === 'status')  return statusSel.length > 0
     if (audienceType === 'tag')      return Boolean(selectedTag)
     if (audienceType === 'category') return Boolean(selectedCategory)
     if (audienceType === 'segment')  return Boolean(selectedSegmentId)
     return true
+  }
+  const audMsg = { status: 'Tick at least one contact status', tag: 'Choose a tag', category: 'Choose a category', segment: 'Choose a segment' }[audienceType]
+  const nameErr = errs.name && !name.trim() ? errs.name : ''
+  const tplErr  = errs.tpl && !selectedTpl ? errs.tpl : ''
+  const audErr  = errs.aud && !step2Valid() ? errs.aud : ''
+
+  function complain(list) {
+    toast.warning(list.length === 1 ? 'One thing needs fixing' : `${list.length} things need fixing`, list[0])
+    shake(boxRef.current)
+  }
+  function next1() {
+    const e = {}
+    if (!name.trim()) e.name = 'Campaign name is required, e.g. "June promo blast"'
+    if (!selectedTpl) e.tpl = 'Choose an approved template to send'
+    setErrs(e)
+    const list = Object.values(e)
+    if (list.length) { complain(list); if (e.name) document.getElementById('cw-name')?.focus(); return }
+    setStep(2)
+  }
+  function next2() {
+    if (!step2Valid()) { setErrs({ aud: audMsg }); complain([audMsg]); return }
+    setErrs({}); setStep(3)
   }
 
   function handleSegmentChange(e) {
@@ -592,7 +616,7 @@ function CampaignWizard({ onDone, onCancel }) {
         zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
       }}
     >
-      <div style={{
+      <div ref={boxRef} style={{
         background: '#fff', borderRadius: 16,
         maxWidth: 600, width: '100%', maxHeight: '90vh',
         overflow: 'auto', padding: '2rem',
@@ -614,14 +638,18 @@ function CampaignWizard({ onDone, onCancel }) {
         {step === 1 && (
           <div>
             <div style={{ marginBottom: '1.25rem' }}>
-              <label style={labelStyle}>Campaign Name <span style={{ color: '#dc2626' }}>*</span></label>
+              <label htmlFor="cw-name" style={labelStyle}>Campaign Name <span style={{ color: '#dc2626' }}>*</span></label>
               <input
-                style={inputStyle(name.trim().length > 0)}
+                id="cw-name"
+                maxLength={120}
+                aria-invalid={nameErr ? 'true' : undefined}
+                style={nameErr ? { ...inputStyle(false), borderColor: '#dc2626', background: '#fef2f2' } : inputStyle(name.trim().length > 0)}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="e.g. June Promo Blast"
                 autoFocus
               />
+              {nameErr && <div role="alert" style={{ color: '#dc2626', fontSize: 12.5, marginTop: 4 }}>{nameErr}</div>}
             </div>
 
             <div>
@@ -703,12 +731,12 @@ function CampaignWizard({ onDone, onCancel }) {
               </div>
             )}
 
+            {tplErr && <div role="alert" style={{ color: '#dc2626', fontSize: 12.5, marginTop: 8 }}>{tplErr}</div>}
             <div style={{ display: 'flex', gap: 10, marginTop: '1.75rem', justifyContent: 'flex-end' }}>
               <button style={btnGhost} onClick={onCancel}>Cancel</button>
               <button
-                style={{ ...btnPrimary, opacity: step1Valid() ? 1 : .45, cursor: step1Valid() ? 'pointer' : 'default' }}
-                disabled={!step1Valid()}
-                onClick={() => setStep(2)}
+                style={btnPrimary}
+                onClick={next1}
               >
                 Next →
               </button>
@@ -834,12 +862,12 @@ function CampaignWizard({ onDone, onCancel }) {
               Estimated reach: <strong style={{ color: '#1d4ed8' }}>{audienceDisplay()}</strong>
             </div>
 
+            {audErr && <div role="alert" style={{ color: '#dc2626', fontSize: 12.5, marginTop: 8 }}>{audErr}</div>}
             <div style={{ display: 'flex', gap: 10, marginTop: '1.75rem', justifyContent: 'flex-end' }}>
               <button style={btnGhost} onClick={() => setStep(1)}>← Back</button>
               <button
-                style={{ ...btnPrimary, opacity: step2Valid() ? 1 : .45, cursor: step2Valid() ? 'pointer' : 'default' }}
-                disabled={!step2Valid()}
-                onClick={() => setStep(3)}
+                style={btnPrimary}
+                onClick={next2}
               >
                 Next →
               </button>
@@ -1039,37 +1067,39 @@ function ScheduleModal({ campaign, onSave, onCancel }) {
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20,
     }}>
-      <div style={{ background: '#fff', borderRadius: 16, maxWidth: 440, width: '100%', padding: '1.75rem', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+      <form onSubmit={e => { e.preventDefault(); handleSave() }} style={{ background: '#fff', borderRadius: 16, maxWidth: 440, width: '100%', padding: '1.75rem', boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
           <h2 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: '#111827' }}>Schedule Campaign</h2>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: '#9ca3af' }} aria-label="Close"><X size={18} strokeWidth={2} /></button>
+          <button type="button" onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', color: '#9ca3af' }} aria-label="Close"><X size={18} strokeWidth={2} /></button>
         </div>
 
         <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
           “{campaign.name}” will be queued automatically at the selected time.
         </div>
 
-        <label style={labelStyle}>Send at</label>
+        <label htmlFor="sc-when" style={labelStyle}>Send at *</label>
         <input
+          id="sc-when"
           type="datetime-local"
+          required
           value={when}
           min={minLocal}
           onChange={e => setWhen(e.target.value)}
           style={{ ...selectStyle, marginBottom: 16 }}
         />
 
-        <label style={labelStyle}>Timezone</label>
-        <select value={tz} onChange={e => setTz(e.target.value)} style={{ ...selectStyle, marginBottom: 4 }}>
+        <label htmlFor="sc-tz" style={labelStyle}>Timezone</label>
+        <select id="sc-tz" value={tz} onChange={e => setTz(e.target.value)} style={{ ...selectStyle, marginBottom: 4 }}>
           {tzOptions.map(z => <option key={z} value={z}>{z}</option>)}
         </select>
 
         <div style={{ display: 'flex', gap: 10, marginTop: '1.5rem', justifyContent: 'flex-end' }}>
-          <button style={btnGhost} disabled={saving} onClick={onCancel}>Cancel</button>
-          <button style={{ ...btnPrimary, background: saving ? '#6b7280' : '#074a8c', minWidth: 130 }} disabled={saving} onClick={handleSave}>
+          <button type="button" style={btnGhost} disabled={saving} onClick={onCancel}>Cancel</button>
+          <button type="submit" style={{ ...btnPrimary, background: saving ? '#6b7280' : '#074a8c', minWidth: 130 }} disabled={saving}>
             {saving ? 'Scheduling…' : 'Schedule'}
           </button>
         </div>
-      </div>
+      </form>
     </div>
   )
 }

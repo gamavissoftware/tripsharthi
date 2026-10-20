@@ -408,8 +408,8 @@ export default function SocialPage() {
           <form onSubmit={e => handleSchedule(e, false)} className="flex flex-col gap-3">
             <div className="form-grid-2">
               <div className="form-group">
-                <label className="form-label">Page</label>
-                <select className="form-select" value={accountId} onChange={e => setAccountId(e.target.value)}>
+                <label className="form-label" htmlFor="social-page">Page *</label>
+                <select id="social-page" className="form-select" required value={accountId} onChange={e => setAccountId(e.target.value)}>
                   <option value="">Select a connected page…</option>
                   {accounts.map(a => <option key={a.id} value={a.id}>{a.page_name}</option>)}
                 </select>
@@ -437,13 +437,13 @@ export default function SocialPage() {
 
             <div className="form-group">
               <div className="flex items-center justify-between" style={{ marginBottom: '.35rem' }}>
-                <label className="form-label" style={{ margin: 0 }}>Message</label>
+                <label className="form-label" htmlFor="social-message" style={{ margin: 0 }}>Message *</label>
                 <span className="text-muted" style={{ fontSize: '.73rem' }}>
                   {message.length}{limit ? ` / ${limit}` : ''} characters
                 </span>
               </div>
 
-              <textarea id="social-message" className="form-input" rows={6} value={message}
+              <textarea id="social-message" className="form-input" rows={6} required value={message}
                         onChange={e => setMessage(e.target.value)}
                         placeholder="What do you want to share?" />
 
@@ -522,7 +522,7 @@ export default function SocialPage() {
                        disabled={uploading}
                        onChange={e => handleUpload(e.target.files?.[0])} />
               ) : (
-                <input className="form-input" type="url" value={imageUrl}
+                <input className="form-input" type="url" pattern="https://.+" title="Enter a public web address starting with https://" aria-label="Image link" value={imageUrl}
                        onChange={e => setImageUrl(e.target.value)}
                        placeholder="https://…/image.jpg — must be publicly reachable" />
               )}
@@ -546,8 +546,8 @@ export default function SocialPage() {
             </div>
 
             <div className="form-group">
-              <label className="form-label">Schedule for</label>
-              <input className="form-input" type="datetime-local" value={when}
+              <label className="form-label" htmlFor="social-when">Schedule for *</label>
+              <input id="social-when" name="social-when" className="form-input" type="datetime-local" required value={when}
                      onChange={e => setWhen(e.target.value)} />
             </div>
 
@@ -556,7 +556,7 @@ export default function SocialPage() {
                 <CalendarClock size={15} strokeWidth={2} /> Schedule
               </button>
               <button type="button" className="btn btn-ghost" disabled={saving || !accounts.length || igBlocked}
-                      onClick={e => handleSchedule(e, true)}>
+                      onClick={e => { const f = e.currentTarget.form; const w = f?.elements['social-when']; if (w) w.required = false; const ok = !f || f.reportValidity(); if (w) w.required = true; if (ok) handleSchedule(e, true) }}>
                 <Send size={15} strokeWidth={2} /> Post now
               </button>
             </div>
@@ -719,13 +719,13 @@ export default function SocialPage() {
             <form onSubmit={handleConnect}>
               <div className="modal-body flex flex-col gap-3">
                 <div className="form-group">
-                  <label className="form-label">Page ID</label>
-                  <input className="form-input" value={pageId} onChange={e => setPageId(e.target.value)}
+                  <label className="form-label" htmlFor="soc-pid">Page ID *</label>
+                  <input id="soc-pid" className="form-input" inputMode="numeric" pattern="[0-9]{5,25}" title="Digits only, like 104291234567890" autoComplete="off" value={pageId} onChange={e => setPageId(e.target.value)}
                          placeholder="e.g. 104291234567890" required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Page Access Token</label>
-                  <input className="form-input" type="password" value={pageToken} onChange={e => setPageToken(e.target.value)}
+                  <label className="form-label" htmlFor="soc-tok">Page Access Token *</label>
+                  <input id="soc-tok" className="form-input" type="password" minLength={20} autoComplete="new-password" value={pageToken} onChange={e => setPageToken(e.target.value)}
                          placeholder="EAAG…" required />
                   <div className="form-hint">
                     <Link2 size={11} strokeWidth={2} style={{ verticalAlign: '-1.5px' }} /> Get one in Meta Business Suite →

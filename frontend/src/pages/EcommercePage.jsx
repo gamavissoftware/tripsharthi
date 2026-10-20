@@ -48,27 +48,27 @@ function PlatformCard({ p }) {
   }
 
   return (
-    <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>
+    <form className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }} onSubmit={e => { e.preventDefault(); connect() }}>
       <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', color: 'var(--text-3)' }}>{p.icon}</span>
         <span style={{ fontWeight: 700, fontSize: 16 }}>{p.name}</span>
         {state?.connected
           ? <span style={{ fontSize: 12, fontWeight: 700, color: '#15803d', background: '#f0fdf4', borderRadius: 999, padding: '2px 10px' }}>Connected</span>
           : <span style={{ fontSize: 12, fontWeight: 700, color: '#b45309', background: '#fffbeb', borderRadius: 999, padding: '2px 10px' }}>Not connected</span>}
-        {state?.connected && <button className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto', color: '#dc2626' }} onClick={disconnect} disabled={busy}>Disconnect</button>}
+        {state?.connected && <button className="btn btn-ghost btn-sm" type="button" style={{ marginLeft: 'auto', color: '#dc2626' }} onClick={disconnect} disabled={busy}>Disconnect</button>}
       </div>
 
       <div style={{ display: 'grid', gap: 10, maxWidth: 460 }}>
-        <label style={lbl}>{p.storeLabel}
-          <input className="form-input" value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))} placeholder={p.storePlaceholder} />
+        <label style={lbl}>{p.storeLabel} *
+          <input className="form-input" required autoComplete="off" {...(p.key === 'woocommerce' ? { type: 'url', pattern: 'https?://.+', title: 'Enter the full store address, like https://yourstore.com' } : { pattern: '[A-Za-z0-9.-]+\\.[A-Za-z]{2,}.*', title: 'Enter the shop domain, like your-store.myshopify.com' })} value={form.store} onChange={e => setForm(f => ({ ...f, store: e.target.value }))} placeholder={p.storePlaceholder} />
         </label>
-        <label style={lbl}>Webhook secret
-          <input className="form-input" type="password" value={form.webhook_secret} onChange={e => setForm(f => ({ ...f, webhook_secret: e.target.value }))} placeholder={state?.connected ? '•••••• (unchanged if blank)' : 'signing secret'} />
+        <label style={lbl}>Webhook secret *
+          <input className="form-input" type="password" required minLength={6} autoComplete="new-password" value={form.webhook_secret} onChange={e => setForm(f => ({ ...f, webhook_secret: e.target.value }))} placeholder={state?.connected ? '•••••• (unchanged if blank)' : 'signing secret'} />
         </label>
         <label style={lbl}>Default country code <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>(for phones without +, e.g. 91)</span>
-          <input className="form-input" value={form.default_country_code} onChange={e => setForm(f => ({ ...f, default_country_code: e.target.value }))} placeholder="91" />
+          <input className="form-input" inputMode="numeric" pattern="[0-9]{1,4}" title="Digits only, like 91" maxLength={4} value={form.default_country_code} onChange={e => setForm(f => ({ ...f, default_country_code: e.target.value }))} placeholder="91" />
         </label>
-        <button className="btn btn-primary" style={{ width: 'fit-content' }} onClick={connect} disabled={busy}>
+        <button type="submit" className="btn btn-primary" style={{ width: 'fit-content' }} disabled={busy}>
           {busy ? 'Saving…' : 'Save connection'}
         </button>
       </div>
@@ -77,7 +77,7 @@ function PlatformCard({ p }) {
         {p.help}
         <div style={{ fontFamily: 'monospace', marginTop: 6, color: '#374151', overflowWrap: 'anywhere' }}>{state?.webhook_url}</div>
       </div>
-    </div>
+    </form>
   )
 }
 

@@ -29,15 +29,17 @@ export default function ProductsPage() {
     setLoading(false)
   }
 
-  async function saveCatalog() {
+  async function saveCatalog(e) {
+    e?.preventDefault?.()
     if (!catalogInput.trim()) { toast.error('Enter your Meta catalog ID'); return }
     try { await api.saveCatalog({ catalog_id: catalogInput.trim() }); setCatalogId(catalogInput.trim()); toast.success('Catalog connected') }
     catch (err) { toast.error('Failed to save catalog', err?.message) }
   }
 
-  async function save() {
+  async function save(e) {
+    e?.preventDefault?.()
     const p = editing
-    if (!p.retailer_id.trim() || !p.name.trim()) { toast.error('SKU and name are required'); return }
+    if (!p.retailer_id.trim() || !p.name.trim()) { toast.error('SKU and name are required'); return }  // safety net; both fields are required
     const payload = { ...p, price: p.price === '' ? undefined : Number(p.price) }
     try {
       if (p.id) await api.update(p.id, payload)
@@ -64,15 +66,15 @@ export default function ProductsPage() {
       </div>
 
       {/* Catalog config */}
-      <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-        <span style={{ fontWeight: 600, fontSize: 14 }}>Meta catalog ID</span>
-        <input className="form-input" style={{ flex: '1 1 240px', maxWidth: 360 }} value={catalogInput}
+      <form onSubmit={saveCatalog} className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <label htmlFor="pr-catalog" style={{ fontWeight: 600, fontSize: 14 }}>Meta catalog ID *</label>
+        <input id="pr-catalog" required inputMode="numeric" pattern="[0-9]{5,25}" title="The catalog ID is a number, like 1234567890. Copy it from Meta Commerce Manager." className="form-input" style={{ flex: '1 1 240px', maxWidth: 360 }} value={catalogInput}
           onChange={e => setCatalogInput(e.target.value)} placeholder="e.g. 1234567890" />
-        <button className="btn btn-ghost" onClick={saveCatalog}>Save</button>
+        <button type="submit" className="btn btn-ghost">Save</button>
         {catalogId
           ? <span style={{ fontSize: 12, color: '#15803d' }}>✓ connected</span>
           : <span style={{ fontSize: 12, color: '#b45309' }}>not connected — product sends will be blocked</span>}
-      </div>
+      </form>
 
       <div className="card" style={{ overflow: 'hidden' }}>
         {loading ? (
@@ -105,19 +107,19 @@ export default function ProductsPage() {
       {editing && (
         <div onClick={e => { if (e.target === e.currentTarget) setEditing(null) }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-          <div style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: '1.5rem' }}>
+          <form onSubmit={save} style={{ background: '#fff', borderRadius: 14, maxWidth: 440, width: '100%', padding: '1.5rem' }}>
             <h2 style={{ margin: '0 0 1rem', fontSize: 18, fontWeight: 800 }}>{editing.id ? 'Edit' : 'New'} product</h2>
-            <label style={lbl}>SKU (retailer_id) — must match Meta catalog
-              <input className="form-input" value={editing.retailer_id} onChange={e => setEditing(s => ({ ...s, retailer_id: e.target.value }))} disabled={!!editing.id} />
+            <label style={lbl}>SKU (retailer_id) — must match Meta catalog *
+              <input required maxLength={100} className="form-input" value={editing.retailer_id} onChange={e => setEditing(s => ({ ...s, retailer_id: e.target.value }))} disabled={!!editing.id} />
             </label>
-            <label style={lbl}>Name
-              <input className="form-input" value={editing.name} onChange={e => setEditing(s => ({ ...s, name: e.target.value }))} />
+            <label style={lbl}>Name *
+              <input required maxLength={150} className="form-input" value={editing.name} onChange={e => setEditing(s => ({ ...s, name: e.target.value }))} />
             </label>
             <label style={lbl}>Price (₹)
-              <input className="form-input" type="number" min="0" step="0.01" value={editing.price} onChange={e => setEditing(s => ({ ...s, price: e.target.value }))} />
+              <input className="form-input" type="number" min="0" step="0.01" inputMode="decimal" value={editing.price} onChange={e => setEditing(s => ({ ...s, price: e.target.value }))} />
             </label>
             <label style={lbl}>Image URL
-              <input className="form-input" value={editing.image_url ?? ''} onChange={e => setEditing(s => ({ ...s, image_url: e.target.value }))} />
+              <input className="form-input" type="url" inputMode="url" placeholder="https://…" value={editing.image_url ?? ''} onChange={e => setEditing(s => ({ ...s, image_url: e.target.value }))} />
             </label>
             <label style={lbl}>Availability
               <select className="form-select" value={editing.availability} onChange={e => setEditing(s => ({ ...s, availability: e.target.value }))}>
@@ -126,10 +128,10 @@ export default function ProductsPage() {
               </select>
             </label>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: '1.5rem' }}>
-              <button className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
-              <button className="btn btn-primary" onClick={save}>Save</button>
+              <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
+              <button type="submit" className="btn btn-primary">Save</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
     </div>

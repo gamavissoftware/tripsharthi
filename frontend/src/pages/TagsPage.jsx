@@ -203,8 +203,10 @@ function TagModal({ editTag, onClose, onSave }) {
         <form onSubmit={handleSave} style={{ padding: '1.5rem' }}>
           {/* Name */}
           <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-            <label className="form-label" style={{ fontWeight: 700 }}>Tag name *</label>
+            <label className="form-label" htmlFor="tag-name" style={{ fontWeight: 700 }}>Tag name *</label>
             <input
+              id="tag-name"
+              maxLength={50}
               ref={inputRef}
               className="form-input"
               value={name}
@@ -218,7 +220,7 @@ function TagModal({ editTag, onClose, onSave }) {
 
           {/* Colour picker */}
           <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label" style={{ fontWeight: 700 }}>Colour</label>
+            <label className="form-label" htmlFor="tag-hex" style={{ fontWeight: 700 }}>Colour</label>
 
             {/* Palette swatches */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: '.5rem' }}>
@@ -245,12 +247,17 @@ function TagModal({ editTag, onClose, onSave }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: '.85rem' }}>
               <input
                 type="color"
+                aria-label="Pick a colour"
                 value={customHex || color}
                 onChange={e => { setCustomHex(e.target.value); setColor(e.target.value) }}
                 style={{ width: 36, height: 36, borderRadius: 8, border: '1px solid var(--border)',
                          padding: 2, cursor: 'pointer', background: 'none' }}
               />
               <input
+                id="tag-hex"
+                pattern="#[0-9a-fA-F]{6}"
+                title="Use a hex colour like #0a6cc4 (a # and six letters or digits), or leave blank to use the swatches"
+                maxLength={7}
                 className="form-input"
                 value={customHex}
                 onChange={e => {
@@ -381,6 +388,7 @@ export default function TagsPage() {
         <div style={{ position: 'relative', maxWidth: 340, marginBottom: '1.25rem' }}>
           <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', opacity: .5 }}><Search size={15} strokeWidth={2} /></span>
           <input
+            aria-label="Search tags"
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search tags…"

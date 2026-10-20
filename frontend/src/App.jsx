@@ -516,6 +516,7 @@ export default function App() {
           <RegisterPage
             onLogin={handleLogin}
             onShowLogin={() => setShowRegister(false)}
+            onShowForgot={() => { setShowRegister(false); setShowForgot(true) }}
           />
         ) : (
           <LoginPage

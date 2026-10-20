@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CheckCircle2 } from 'lucide-react'
 import AuthBrandPanel from '../components/AuthBrandPanel'
 import { api } from '../api/client'
+import { toast } from '../components/Toast'
+import Field from '../components/FormField'
+import { firstInvalid, shake } from '../lib/formFocus'
 
 export default function ResetPasswordPage({ onResetSuccess }) {
   const token = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('token') ?? ''
@@ -12,6 +15,8 @@ export default function ResetPasswordPage({ onResetSuccess }) {
   const [fieldErrors, setFieldErrors]   = useState({})
   const [success, setSuccess]           = useState(false)
   const [loading, setLoading]           = useState(false)
+  const [show, setShow]                 = useState(false)
+  const formRef = useRef(null)
 
   useEffect(() => {
     if (success) {
@@ -20,12 +25,16 @@ export default function ResetPasswordPage({ onResetSuccess }) {
     }
   }, [success, onResetSuccess])
 
-  function validate() {
+  function validate(pw = password, cf = confirm) {
     const errs = {}
-    if (password.length < 8) errs.password = 'Password must be at least 8 characters.'
-    if (confirm !== password) errs.confirm = 'Passwords do not match.'
+    if (!pw) errs.password = 'Choose a new password'
+    else if (pw.length < 8) errs.password = `Use at least 8 characters (you have ${pw.length})`
+    if (!cf) errs.confirm = 'Type the password again to confirm'
+    else if (cf !== pw) errs.confirm = 'The two passwords do not match'
     return errs
   }
+  // a flagged field clears as soon as it is right
+  const recheck = (pw, cf) => { if (Object.keys(fieldErrors).length) { const n = validate(pw, cf); setFieldErrors(s => ({ ...(s.password ? { password: n.password } : {}), ...(s.confirm ? { confirm: n.confirm } : {}) })) } }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -35,6 +44,9 @@ export default function ResetPasswordPage({ onResetSuccess }) {
     const errs = validate()
     if (Object.keys(errs).length) {
       setFieldErrors(errs)
+      shake(formRef.current); firstInvalid(formRef.current)
+      const keys = Object.keys(errs)
+      toast.warning(keys.length === 1 ? 'One thing needs fixing' : `${keys.length} things need fixing`, errs[keys[0]])
       return
     }
 
@@ -87,41 +99,30 @@ export default function ResetPasswordPage({ onResetSuccess }) {
                 <p style={S.formSub}>Choose a strong password for your account.</p>
               </div>
 
-              <form onSubmit={handleSubmit} style={S.form}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="password">New password</label>
+              <form onSubmit={handleSubmit} style={S.form} noValidate ref={formRef}>
+                <Field label="New password" required error={fieldErrors.password} hint="At least 8 characters. A longer phrase is stronger.">
                   <input
-                    id="password"
-                    type="password"
+                    type={show ? 'text' : 'password'}
                     className="form-input"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={e => { setPassword(e.target.value); recheck(e.target.value, confirm) }}
                     placeholder="Min. 8 characters"
-                    required
                     autoComplete="new-password"
                     autoFocus
                   />
-                  {fieldErrors.password && (
-                    <div className="form-error">{fieldErrors.password}</div>
-                  )}
-                </div>
+                </Field>
 
-                <div className="form-group">
-                  <label className="form-label" htmlFor="confirm">Confirm password</label>
+                <Field label="Confirm password" required error={fieldErrors.confirm}>
                   <input
-                    id="confirm"
-                    type="password"
+                    type={show ? 'text' : 'password'}
                     className="form-input"
                     value={confirm}
-                    onChange={e => setConfirm(e.target.value)}
+                    onChange={e => { setConfirm(e.target.value); recheck(password, e.target.value) }}
                     placeholder="Repeat your password"
-                    required
                     autoComplete="new-password"
                   />
-                  {fieldErrors.confirm && (
-                    <div className="form-error">{fieldErrors.confirm}</div>
-                  )}
-                </div>
+                </Field>
+                <button type="button" onClick={() => setShow(v => !v)} aria-pressed={show} style={{ ...S.link, alignSelf: 'flex-start', marginTop: -6 }}>{show ? 'Hide passwords' : 'Show passwords'}</button>
 
                 {error && <div className="form-error">{error}</div>}
 
@@ -143,6 +144,7 @@ export default function ResetPasswordPage({ onResetSuccess }) {
 }
 
 const S = {
+  link: { background: 'none', border: 'none', color: '#0a6cc4', cursor: 'pointer', padding: 0, fontSize: '.8125rem', textDecoration: 'underline', fontFamily: 'var(--font)' },
   shell: {
     display: 'flex',
     minHeight: '100vh',

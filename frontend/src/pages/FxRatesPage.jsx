@@ -12,7 +12,19 @@ function Row({ r, onChanged }) {
   const [buf, setBuf] = useState(String(r.buffer_pct))
   const [hist, setHist] = useState(null)
   const dirty = Number(rate) !== r.rate || Number(buf) !== r.buffer_pct
+  const [errs, setErrs] = useState({})
+  const check = (rv, bv) => {
+    const e = {}
+    if (rv === '' || !(Number(rv) > 0)) e.rate = 'Enter the rate in rupees, more than 0'
+    if (bv === '' || !(Number(bv) >= 0 && Number(bv) <= 20)) e.buf = 'Buffer must be 0 to 20 percent'
+    return e
+  }
+  const editRate = (v) => { setRate(v); if (errs.rate) setErrs(o => { const c = { ...o }; if (check(v, buf).rate) c.rate = check(v, buf).rate; else delete c.rate; return c }) }
+  const editBuf = (v) => { setBuf(v); if (errs.buf) setErrs(o => { const c = { ...o }; if (check(rate, v).buf) c.buf = check(rate, v).buf; else delete c.buf; return c }) }
   const save = async (confirm = false) => {
+    const bad = check(rate, buf)
+    if (Object.keys(bad).length) { setErrs(bad); toast.warning(Object.keys(bad).length === 1 ? 'One thing needs fixing' : `${Object.keys(bad).length} things need fixing`, `${r.currency}: ${Object.values(bad)[0]}`); return }
+    setErrs({})
     try { await travel.setFx(r.currency, { rate: Number(rate), buffer_pct: Number(buf), confirm }); toast.success(`${r.currency} saved`); onChanged() }
     catch (e) { if (e.status === 409 && window.confirm(e.message + '\n\nSave it anyway?')) save(true); else if (e.status !== 409) toast.error('Not saved', e.message) }
   }
@@ -21,8 +33,8 @@ function Row({ r, onChanged }) {
     <>
       <tr style={{ borderTop: '1px solid var(--border)' }}>
         <td style={{ padding: 8 }}><b>{r.currency}</b> <small style={{ color: 'var(--text-3)' }}>{r.name}</small></td>
-        <td style={{ padding: 8 }}><input className="form-input" type="number" step="any" min="0" value={rate} onChange={e => setRate(e.target.value)} style={{ width: 130 }} /></td>
-        <td style={{ padding: 8 }}><input className="form-input" type="number" step="0.1" min="0" max="20" value={buf} onChange={e => setBuf(e.target.value)} style={{ width: 70 }} /> %</td>
+        <td style={{ padding: 8 }}><div className="ff"><input className={'form-input' + (errs.rate ? ' is-invalid' : '')} aria-label={`${r.currency} rate`} aria-invalid={errs.rate ? 'true' : undefined} type="number" inputMode="decimal" step="any" min="0.000001" value={rate} onChange={e => editRate(e.target.value)} style={{ width: 130 }} />{errs.rate && <div className="ff-err" role="alert">{errs.rate}</div>}</div></td>
+        <td style={{ padding: 8 }}><div className="ff"><span><input className={'form-input' + (errs.buf ? ' is-invalid' : '')} aria-label={`${r.currency} buffer percent`} aria-invalid={errs.buf ? 'true' : undefined} type="number" inputMode="decimal" step="0.1" min="0" max="20" value={buf} onChange={e => editBuf(e.target.value)} style={{ width: 70 }} /> %</span>{errs.buf && <div className="ff-err" role="alert">{errs.buf}</div>}</div></td>
         <td style={{ padding: 8 }}>₹{num(r.cost_rate)}</td>
         <td style={{ padding: 8 }}>
           <span style={{ background: r.source === 'auto' ? '#dcfce7' : '#e0f2fe', color: r.source === 'auto' ? '#15803d' : '#0369a1', padding: '1px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 700 }}>{r.source === 'auto' ? 'automatic' : 'manual'}</span>
@@ -83,8 +95,8 @@ export default function FxRatesPage() {
         </div>
         <form onSubmit={addCurrency} className="card card-body" style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <label style={{ fontSize: 12.5, fontWeight: 700 }}>Add a currency<select className="form-select" required value={add.currency} onChange={e => setAdd(a => ({ ...a, currency: e.target.value }))} style={{ minWidth: 220 }}><option value="">Choose…</option>{d.available.map(c => <option key={c.code} value={c.code}>{c.code} — {c.name}</option>)}</select></label>
-          <label style={{ fontSize: 12.5, fontWeight: 700 }}>Rate ₹ per unit <small style={{ fontWeight: 400 }}>(blank = automatic)</small><input className="form-input" type="number" step="any" min="0" value={add.rate} onChange={e => setAdd(a => ({ ...a, rate: e.target.value }))} style={{ width: 150 }} /></label>
-          <button className="btn btn-primary" disabled={busy === 'add' || !add.currency}>{busy === 'add' ? 'Adding…' : 'Add'}</button>
+          <label style={{ fontSize: 12.5, fontWeight: 700 }}>Rate ₹ per unit <small style={{ fontWeight: 400 }}>(blank = automatic)</small><input className="form-input" type="number" inputMode="decimal" step="any" min="0.000001" value={add.rate} onChange={e => setAdd(a => ({ ...a, rate: e.target.value }))} style={{ width: 150 }} /></label>
+          <button className="btn btn-primary" disabled={busy === 'add'}>{busy === 'add' ? 'Adding…' : 'Add'}</button>
         </form>
       </>}
     </div>

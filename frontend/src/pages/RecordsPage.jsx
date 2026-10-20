@@ -5,14 +5,15 @@ import { toast } from '../components/Toast'
 import LoadFailed from '../components/LoadFailed'
 
 // Render the right input for a field type. Value is always stored as a string.
-export function DynamicField({ field, value, onChange, disabled }) {
+export function DynamicField({ field, value, onChange, disabled, id, required }) {
   const opts = (() => { try { return JSON.parse(field.options || '[]') } catch { return [] } })()
   const common = { width: '100%', border: '1px solid #e5e7eb', borderRadius: 8, padding: '.5rem .7rem', fontSize: '.9rem', boxSizing: 'border-box' }
-  if (field.type === 'textarea') return <textarea style={{ ...common, resize: 'vertical' }} rows={3} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)} />
-  if (field.type === 'select') return <select style={common} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)}><option value="">—</option>{opts.map(o => <option key={o} value={o}>{o}</option>)}</select>
+  if (field.type === 'textarea') return <textarea id={id} required={required} style={{ ...common, resize: 'vertical' }} rows={3} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)} />
+  if (field.type === 'select') return <select id={id} required={required} style={common} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)}><option value="">—</option>{opts.map(o => <option key={o} value={o}>{o}</option>)}</select>
   if (field.type === 'boolean') return <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '.88rem' }}><input type="checkbox" checked={value === 'yes' || value === true} disabled={disabled} onChange={e => onChange(e.target.checked ? 'yes' : 'no')} /> {value === 'yes' ? 'Yes' : 'No'}</label>
   const inputType = { number: 'number', date: 'date', email: 'email', phone: 'tel' }[field.type] ?? 'text'
-  return <input type={inputType} style={common} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)} />
+  const extra = field.type === 'phone' ? { inputMode: 'tel', pattern: '\\+?[0-9 \\-]{8,18}', title: 'Use 8 to 15 digits with the country code, like +919999900000' } : field.type === 'number' ? { step: 'any', inputMode: 'decimal' } : field.type === 'email' ? { inputMode: 'email' } : {}
+  return <input id={id} required={required} {...extra} type={inputType} style={common} value={value ?? ''} disabled={disabled} onChange={e => onChange(e.target.value)} />
 }
 
 function CreateModal({ object, fields, onClose, onCreated }) {
@@ -21,7 +22,7 @@ function CreateModal({ object, fields, onClose, onCreated }) {
   const [saving, setSaving] = useState(false)
   async function save(e) {
     e.preventDefault()
-    if (!name.trim()) { toast.error('A title is required'); return }
+    if (!name.trim()) { toast.error('A title is required'); return }  // safety net; the field is required
     setSaving(true)
     try { await crm.createRecord(object.id, { name, data }); toast.success(`${object.label_singular} created`); onCreated() }
     catch (e) { toast.error('Could not create', e.message) }
@@ -31,12 +32,12 @@ function CreateModal({ object, fields, onClose, onCreated }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(3px)' }}>
       <form onClick={e => e.stopPropagation()} onSubmit={save} style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 480, maxHeight: '88vh', overflow: 'auto', padding: '1.5rem', boxShadow: '0 24px 64px rgba(0,0,0,.22)' }}>
         <h3 style={{ margin: '0 0 1rem', fontWeight: 800, fontSize: '1.05rem' }}>{object.icon} New {object.label_singular}</h3>
-        <label style={lbl}>Title *</label>
-        <input value={name} onChange={e => setName(e.target.value)} placeholder={`${object.label_singular} name`} autoFocus style={inp} />
+        <label htmlFor="rc-title" style={lbl}>Title *</label>
+        <input id="rc-title" required maxLength={190} value={name} onChange={e => setName(e.target.value)} placeholder={`${object.label_singular} name`} autoFocus style={inp} />
         {fields.map(f => (
           <div key={f.id} style={{ marginTop: '.7rem' }}>
-            <label style={lbl}>{f.label}{Number(f.required) ? ' *' : ''}</label>
-            <DynamicField field={f} value={data[f.field_key]} onChange={v => setData(d => ({ ...d, [f.field_key]: v }))} />
+            <label htmlFor={'rc-f-' + f.id} style={lbl}>{f.label}{Number(f.required) ? ' *' : ''}</label>
+            <DynamicField id={'rc-f-' + f.id} required={Number(f.required) === 1 && f.type !== 'boolean'} field={f} value={data[f.field_key]} onChange={v => setData(d => ({ ...d, [f.field_key]: v }))} />
           </div>
         ))}
         <div style={{ display: 'flex', gap: 10, marginTop: '1.25rem' }}>
