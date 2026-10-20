@@ -22,7 +22,10 @@ function LiveChat() {
   const loadList = useCallback(() => admin.chats(status).then(r => setList(r.sessions)).catch(() => {}), [status])
   useEffect(() => { loadList(); const t = setInterval(loadList, 5000); return () => clearInterval(t) }, [loadList])
 
-  // unread total in the tab title so a new chat is noticed from another tab
+  // unread total in the tab title so a new chat is noticed from another tab; the old title comes back on leaving
+  const baseTitle = useRef(document.title)
+  useEffect(() => { const n = list.reduce((a, s) => a + s.unread_agent, 0); document.title = (n ? `(${n}) ` : '') + 'Live chat — TripSarthi' }, [list])
+  useEffect(() => { const t = baseTitle.current; return () => { document.title = t } }, [])
   useEffect(() => { const n = list.reduce((a, s) => a + s.unread_agent, 0); document.title = (n ? `(${n}) ` : '') + 'Live chat — TripSarthi'; return () => { document.title = 'TripSarthi — Your Travel Business. Simplified.' } }, [list])
 
   useEffect(() => {
