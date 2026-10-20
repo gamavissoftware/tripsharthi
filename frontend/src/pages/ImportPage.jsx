@@ -156,7 +156,7 @@ export default function ImportPage() {
           clearInterval(poll)
           setStep(imp.status === 'done' ? 'done' : 'error')
         }
-      } catch (_) {}
+      } catch { /* ignore */ }
     }, 2000)
     return () => clearInterval(poll)
   }, [step, importData])

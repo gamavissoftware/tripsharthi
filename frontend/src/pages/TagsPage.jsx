@@ -21,19 +21,10 @@ const PALETTE = [
   { hex: '#64748b', name: 'Slate'   },
 ]
 
-// Darken a hex color for text contrast
-function darken(hex) {
-  const n = parseInt(hex.replace('#',''), 16)
-  const r = Math.max(0, (n >> 16) - 40)
-  const g = Math.max(0, ((n >> 8) & 0xff) - 40)
-  const b = Math.max(0, (n & 0xff) - 40)
-  return `#${[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('')}`
-}
 
 // ── Tag chip with contact count ───────────────────────────────────────────
 function TagCard({ tag, onEdit, onDelete, confirmId, setConfirmId }) {
   const bg      = tag.color ?? '#0a6cc4'
-  const lightBg = bg + '18'
   const [hover, setHover] = useState(false)
 
   return (

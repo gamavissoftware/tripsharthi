@@ -8,7 +8,7 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { RefreshCw, IndianRupee, TrendingUp, TrendingDown, MessageSquare } from 'lucide-react'
+import { RefreshCw, IndianRupee } from 'lucide-react'
 import { analytics as analyticsApi } from '../../api/analytics'
 import { toast } from '../Toast'
 import Loader from '../Loader'

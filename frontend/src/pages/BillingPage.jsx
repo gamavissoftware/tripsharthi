@@ -166,12 +166,6 @@ function fmtDate(d) {
   if (!d) return ''
   return new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
 }
-function isPlanLimitError(err) {
-  if (!err) return false
-  if (err?.errors?.error === 'plan_limit_exceeded') return true
-  if (typeof err.message === 'string' && err.message.includes('plan_limit_exceeded')) return true
-  return false
-}
 
 // ── Usage Bar ─────────────────────────────────────────────────────────────
 function UsageBar({ icon, label, current, limit, color }) {
@@ -862,7 +856,7 @@ function BillingPanel() {
 
         {/* Plan cards */}
         <div style={{ display:'flex', gap:'1.25rem', flexWrap:'wrap', alignItems:'flex-start' }}>
-          {PLANS.map((plan, i) => (
+          {PLANS.map((plan) => (
             <PlanCard
               key={plan.key}
               plan={plan}

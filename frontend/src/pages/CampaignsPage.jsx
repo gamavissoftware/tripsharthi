@@ -1012,10 +1012,10 @@ function ScheduleModal({ campaign, onSave, onCancel }) {
   const tzOptions = COMMON_TIMEZONES.includes(tz) ? COMMON_TIMEZONES : [tz, ...COMMON_TIMEZONES]
 
   // Minimum = now (local), so the picker discourages past times.
-  const minLocal = (() => {
+  const [minLocal] = useState(() => {
     const n = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     return n.toISOString().slice(0, 16)
-  })()
+  })
 
   async function handleSave() {
     if (!when) { toast.error('Pick a date and time'); return }
@@ -1221,7 +1221,7 @@ export default function CampaignsPage() {
             toast.error('Campaign failed', `"${updated.name}" encountered errors.`)
           }
         }
-      } catch (_) {}
+      } catch { /* ignore */ }
     }, 3000)
   }
 
@@ -1286,7 +1286,6 @@ export default function CampaignsPage() {
   const totalCampaigns = rows.length
   const totalSent      = rows.reduce((acc, c) => acc + Number(c.sent_count ?? 0), 0)
   const totalDelivered = rows.reduce((acc, c) => acc + Number(c.delivered_count ?? 0), 0)
-  const totalMessages  = rows.reduce((acc, c) => acc + Number(c.total_contacts ?? 0), 0)
   const deliveryRate   = totalSent > 0 ? Math.round((totalDelivered / totalSent) * 100) : 0
   const activeNow      = rows.filter(c => c.status === 'processing').length
 

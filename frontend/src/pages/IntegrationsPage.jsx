@@ -19,7 +19,6 @@ async function copyText(text, label) {
 // ── Connected integration card ─────────────────────────────────────────────
 function IntegrationRow({ integration, metaWebhookUrl, onSubscribe, onDisconnect, subscribing, disconnecting, confirmId, setConfirmId }) {
   const isSubscribed = integration.subscribed || integration.config?.subscribed
-  const subscribedAt = integration.config?.subscribed_at
   const [showWebhook, setShowWebhook] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState(null)

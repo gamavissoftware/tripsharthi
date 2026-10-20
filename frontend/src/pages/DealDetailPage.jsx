@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { Building2, User, Calendar, UserCheck, Link2 } from 'lucide-react'
-import { crm, rupees } from '../api/crm'
+import { crm } from '../api/crm'
 import { products as productsApi } from '../api/products'
 import { toast } from '../components/Toast'
 import { fmt, CURRENCIES } from '../components/Charts'
@@ -140,7 +140,6 @@ const STATUS = {
 
 export default function DealDetailPage() {
   const { id } = useParams()
-  const navigate = useNavigate()
   const [deal, setDeal] = useState(null)
   const [stages, setStages] = useState([])
   const [tlKey, setTlKey] = useState(0)

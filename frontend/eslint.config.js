@@ -17,5 +17,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // Style rules from newer plugin versions. The app loads data by calling setState from effects and
+      // exports helpers beside components throughout; both work correctly, so they are warnings, not errors.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-refresh/only-export-components': 'warn',
+    },
   },
 ])

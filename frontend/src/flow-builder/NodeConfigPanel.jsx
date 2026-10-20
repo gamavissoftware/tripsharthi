@@ -7,6 +7,7 @@
  */
 import { useState, useEffect } from 'react'
 import { api } from '../api/client'
+import { TRAVEL_STATE_VARS, TRAVEL_TOKENS } from './travelTriggers'
 
 // ── Exact engine vocabulary ────────────────────────────────────────────
 const CONTACT_STATUS_OPTIONS  = ['new','contacted','qualified','won','lost']
@@ -56,7 +57,7 @@ function Field({ label, children }) {
 }
 
 // ── Main panel ─────────────────────────────────────────────────────────
-export default function NodeConfigPanel({ node, onChange, readOnly, tags, users }) {
+export default function NodeConfigPanel({ node, onChange, readOnly, tags }) {
   const [templates, setTemplates] = useState([])
   const [cfKeys, setCfKeys]       = useState([])
 

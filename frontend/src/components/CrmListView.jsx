@@ -77,7 +77,7 @@ export function TierBadge({ tier }) {
   return <span style={{ padding: '.2rem .55rem', borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: t.bg, color: t.color }}>{t.icon} {t.label}</span>
 }
 
-function Cell({ col, row, first, onRowClick }) {
+function Cell({ col, row, first }) {
   const val = row[col]
   if (first) {
     return <span style={{ fontWeight: 700, color: val ? '#111827' : '#9ca3af' }}>{val || `#${row.id}`}</span>
@@ -400,7 +400,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
                     </td>
                     {columns.map((col, ci) => (
                       <td key={col} style={{ padding: '.65rem .9rem' }}>
-                        <Cell col={col} row={row} first={ci === 0} onRowClick={onRowClick} />
+                        <Cell col={col} row={row} first={ci === 0} />
                       </td>
                     ))}
                   </tr>

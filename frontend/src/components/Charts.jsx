@@ -71,18 +71,16 @@ export function PieChart({ series, format }) {
   if (!series?.length) return <Empty />
   const F = fmtFor(format)
   const total = series.reduce((s, x) => s + x.value, 0) || 1
-  let acc = 0
   const R = 52, C = 2 * Math.PI * R
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 16, paddingTop: 4 }}>
       <svg viewBox="0 0 130 130" width="118" height="118" style={{ flexShrink: 0 }}>
         <g transform="translate(65,65) rotate(-90)">
-          {series.slice(0, 8).map((s, i) => {
+          {series.slice(0, 8).map((s, i, arr) => {
             const frac = s.value / total
+            const before = arr.slice(0, i).reduce((a, x) => a + x.value / total, 0)
             const dash = `${frac * C} ${C}`
-            const el = <circle key={i} r={R} fill="none" stroke={PALETTE[i % PALETTE.length]} strokeWidth="22" strokeDasharray={dash} strokeDashoffset={-acc * C} />
-            acc += frac
-            return el
+            return <circle key={i} r={R} fill="none" stroke={PALETTE[i % PALETTE.length]} strokeWidth="22" strokeDasharray={dash} strokeDashoffset={-before * C} />
           })}
         </g>
       </svg>

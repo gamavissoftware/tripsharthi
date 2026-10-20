@@ -557,8 +557,6 @@ export default function FlowsPage() {
   const [filter, setFilter]         = useState('all')   // all | active | paused | draft
   const [search, setSearch]         = useState('')
 
-  useEffect(() => { load() }, [])
-
   async function load() {
     setLoading(true)
     try {
@@ -569,6 +567,8 @@ export default function FlowsPage() {
     }
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   async function handleToggle(flow) {
     const next = flow.status === 'active' ? 'paused' : 'active'

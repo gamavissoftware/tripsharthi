@@ -308,7 +308,7 @@ export default function InboxPage() {
     try {
       const res = await inboxApi.list(categoryRef.current ? { category: categoryRef.current } : {})
       setConversations(res.data ?? [])
-    } catch (err) {
+    } catch {
       setConversations([])
     }
     setLoadingList(false)
@@ -365,7 +365,7 @@ export default function InboxPage() {
         setActiveConv(res.data)
         setWindowClosed(res.data.send_mode === 'template_only')
       }
-    } catch (_) {}
+    } catch { /* ignore */ }
     // Mark as read — fire-and-forget, don't block UI
     if (!conv.is_read) {
       inboxApi.markRead(conv.id).catch(() => {})
@@ -390,7 +390,7 @@ export default function InboxPage() {
         if (sameTail && pending.length === 0) return prev   // no change → no re-render
         return [...server, ...pending]
       })
-    } catch (_) {}
+    } catch { /* ignore */ }
     if (showLoader) setLoadingMessages(false)
   }
 

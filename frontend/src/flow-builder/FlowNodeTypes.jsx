@@ -114,7 +114,6 @@ function NodeShell({ type, children, selected }) {
       border: `2px solid ${selected ? '#0a6cc4' : border}`,
       borderLeft: `4px solid ${border}`,
       borderRadius: 10,
-      boxShadow: '0 2px 8px rgba(10,31,68,.10)',
       background: bg,
       padding: '8px 12px',
       minWidth: 160,
@@ -200,7 +199,7 @@ export function ConditionNode({ type, data, selected }) {
 }
 
 // ── WindowCheckNode — target + "open" left + "closed" right ───────────
-export function WindowCheckNode({ type, data, selected }) {
+export function WindowCheckNode({ type, selected }) {
   return (
     <NodeShell type={type} selected={selected}>
       <Handle type="target" position={Position.Top} id="target" style={H} />

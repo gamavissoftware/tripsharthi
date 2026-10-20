@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Users, Send, Zap, Megaphone, RefreshCw, BarChart3, ListChecks,
+  Users, Zap, Megaphone, RefreshCw, BarChart3, ListChecks,
   AlertTriangle, IndianRupee, LayoutTemplate, MousePointerClick, ChevronRight,
 } from 'lucide-react'
 import { analytics as analyticsApi } from '../api/analytics'

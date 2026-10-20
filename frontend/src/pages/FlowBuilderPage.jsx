@@ -39,7 +39,7 @@ export default function FlowBuilderPage() {
   const [flow, setFlow]           = useState(null)
   const [validation, setValidation] = useState({ valid:true, errors:[], warnings:[] })
   const [tab, setTab]             = useState('canvas')
-  const [saving, setSaving]       = useState(false)
+  const [, setSaving]            = useState(false)
   const [activating, setActivating] = useState(false)
   const [error, setError]         = useState(null)
   const [selectedNode, setSelectedNode] = useState(null)
@@ -51,7 +51,6 @@ export default function FlowBuilderPage() {
 
   // Supporting data
   const [tags, setTags]   = useState([])
-  const [users, setUsers] = useState([])
 
   // Test modal state
   const [showTestModal, setShowTestModal] = useState(false)
@@ -78,7 +77,7 @@ export default function FlowBuilderPage() {
       setReentry(f.reentry_policy ?? 'once')
       setTriggerConfig(f.trigger_config ? (typeof f.trigger_config === 'string' ? JSON.parse(f.trigger_config) : f.trigger_config) : {})
       setValidation(r.validation ?? { valid:true, errors:[], warnings:[] })
-    } catch (e) {
+    } catch {
       setError('Failed to load flow.')
     }
   }
@@ -109,7 +108,7 @@ export default function FlowBuilderPage() {
   async function handleActivate() {
     setActivating(true); setError(null)
     try {
-      const r = await flowsApi.setStatus(id, 'active')
+      await flowsApi.setStatus(id, 'active')
       await load()
     } catch (e) {
       // 422 from server — validation errors block activation
@@ -274,7 +273,6 @@ export default function FlowBuilderPage() {
             selectedNode={selectedNode}
             setSelectedNode={setSelectedNode}
             tags={tags}
-            users={users}
           />
         )}
         {tab === 'runs' && <RunsList flowId={id} />}

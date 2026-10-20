@@ -16,7 +16,7 @@ import LoadFailed from '../components/LoadFailed'
 const SCORE_LABELS = { lifecycle: 'Lifecycle stage', source: 'Source quality', email: 'Has email', account: 'Has account', deal: 'Linked deal value', engagement: 'WhatsApp engagement', tasks: 'Task completion', decay: 'Recency decay' }
 
 function LeadScoreCard({ contact }) {
-  let breakdown = {}
+  let breakdown
   try { breakdown = typeof contact.score_breakdown === 'string' ? JSON.parse(contact.score_breakdown || '{}') : (contact.score_breakdown || {}) } catch { breakdown = {} }
   const entries = Object.entries(breakdown).filter(([, v]) => v !== 0)
   if (contact.score_tier == null && entries.length === 0) return null

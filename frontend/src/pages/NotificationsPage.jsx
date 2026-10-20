@@ -23,7 +23,6 @@ export default function NotificationsPage() {
   const [saving, setSaving] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
 
-  useEffect(() => { load() }, [])
   async function load() {
     try {
       const r = await notifApi.getSettings()
@@ -33,6 +32,8 @@ export default function NotificationsPage() {
     } catch (err) { toast.error('Could not load settings', err.message) }
     setLoading(false)
   }
+
+  useEffect(() => { load() }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const has = (c) => form.channels.includes(c)
