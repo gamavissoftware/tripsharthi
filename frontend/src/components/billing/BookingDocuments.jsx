@@ -120,7 +120,6 @@ export default function BookingDocuments({ bookingId, refreshKey }) {
   const open = (doc) => travel.openInvoicePdf(doc.id).catch(e => toast.error('Could not open', e.message))
   const copy = async (doc) => { try { await navigator.clipboard.writeText(shareUrl(doc.share_token)); toast.success('Link copied', 'Anyone with this link can download the PDF.') } catch { toast.error('Could not copy', shareUrl(doc.share_token)) } }
   const kindLabel = d.document_type === 'bill_of_supply' ? 'bill of supply' : 'tax invoice'
-  const th = { padding: '7px 8px', textAlign: 'left', color: 'var(--text-3)', fontSize: 11.5, textTransform: 'uppercase' }
 
   return (
     <div className="card card-body">
@@ -131,23 +130,24 @@ export default function BookingDocuments({ bookingId, refreshKey }) {
       {!d.can_issue && <p style={{ color: 'var(--warning)', margin: '8px 0' }}>Complete your <Link to="/settings/business">business profile</Link> to issue invoices (missing: {d.missing.join(', ')}).</p>}
       {d.document_type === 'bill_of_supply' && d.can_issue && <p style={{ color: 'var(--text-3)', margin: '8px 0', fontSize: 13 }}>No GSTIN on your profile, so a <b>Bill of Supply</b> (no GST) is issued. <Link to="/settings/business">Add your GSTIN</Link> for GST invoices.</p>}
       {d.documents.length === 0 ? <p style={{ color: 'var(--text-3)', marginBottom: 0 }}>Nothing issued yet.</p> : (
-        <div style={{ overflowX: 'auto' }}><table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5, marginTop: 6 }}>
-          <thead><tr><th style={th}>Document</th><th style={th}>Date</th><th style={{ ...th, textAlign: 'right' }}>Total</th><th style={th}></th></tr></thead>
-          <tbody>{d.documents.map(doc => { const [bg, fg, label] = TYPE[doc.doc_type]; return (
-            <tr key={doc.id} style={{ borderTop: '1px solid var(--border)' }}>
-              <td style={{ padding: '8px' }}><b>{doc.number}</b> <span style={{ background: bg, color: fg, padding: '1px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 700 }}>{label}</span>
-                {doc.reason && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{doc.reason}</div>}
-                {doc.einvoice && <div style={{ fontSize: 12, color: doc.einvoice.status === 'cancelled' ? 'var(--danger)' : 'var(--text-3)' }}>
-                  {doc.einvoice.status === 'cancelled' ? `E-invoice cancelled — ${doc.einvoice.cancel_reason || ''}` : <>E-invoice · IRN <span title={doc.einvoice.irn} style={{ cursor: 'copy' }} onClick={() => navigator.clipboard?.writeText(doc.einvoice.irn).then(() => toast.success('IRN copied')).catch(() => {})}>{doc.einvoice.irn.slice(0, 12)}…</span> · Ack {doc.einvoice.ack_no}</>}</div>}</td>
-              <td style={{ padding: '8px' }}>{doc.issue_date}</td>
-              <td style={{ padding: '8px', textAlign: 'right' }}>{doc.doc_type === 'credit_note' ? '−' : ''}{inr(doc.total)}</td>
-              <td style={{ padding: '8px', whiteSpace: 'nowrap', textAlign: 'right' }}>
-                <button className="btn btn-sm btn-ghost" onClick={() => open(doc)}>View PDF</button>
+        <div style={{ marginTop: 6 }}>{d.documents.map(doc => { const [bg, fg, label] = TYPE[doc.doc_type]; return (
+          <div key={doc.id} style={{ borderTop: '1px solid var(--border)', padding: '10px 2px', display: 'grid', gap: 4 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'baseline', flexWrap: 'wrap' }}>
+              <span><b>{doc.number}</b> <span style={{ background: bg, color: fg, padding: '1px 8px', borderRadius: 999, fontSize: 11.5, fontWeight: 700 }}>{label}</span> <span style={{ color: 'var(--text-3)', fontSize: 12.5, marginLeft: 4 }}>{doc.issue_date}</span></span>
+              <b style={{ fontSize: 14.5 }}>{doc.doc_type === 'credit_note' ? '−' : ''}{inr(doc.total)}</b>
+            </div>
+            {doc.reason && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{doc.reason}</div>}
+            {doc.einvoice && <div style={{ fontSize: 12, color: doc.einvoice.status === 'cancelled' ? 'var(--danger)' : 'var(--text-3)' }}>
+                  {doc.einvoice.status === 'cancelled' ? `E-invoice cancelled — ${doc.einvoice.cancel_reason || ''}` : <>E-invoice · IRN <span title={doc.einvoice.irn} style={{ cursor: 'copy' }} onClick={() => navigator.clipboard?.writeText(doc.einvoice.irn).then(() => toast.success('IRN copied')).catch(() => {})}>{doc.einvoice.irn.slice(0, 12)}…</span> · Ack {doc.einvoice.ack_no}</>}</div>}
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginLeft: -6 }}>
+              <button className="btn btn-sm btn-ghost" onClick={() => open(doc)}>View PDF</button>
                 <button className="btn btn-sm btn-ghost" onClick={() => sendWa(doc)} title="Send to the customer on WhatsApp">WhatsApp</button>
                 <button className="btn btn-sm btn-ghost" onClick={() => copy(doc)} title="Copy a customer download link">🔗</button>
                 {doc.einvoice?.cancel_hours_left != null && <button className="btn btn-sm btn-ghost" title={`The e-invoice can be cancelled for ${doc.einvoice.cancel_hours_left} more hours`} onClick={() => cancelEi(doc)}>Cancel e-invoice</button>}
                 {['tax_invoice', 'bill_of_supply'].includes(doc.doc_type) && doc.status === 'issued' && <button className="btn btn-sm btn-ghost" onClick={() => setCredit(doc)}>Credit note</button>}
-              </td></tr>) })}</tbody></table></div>)}
+              
+            </div>
+          </div>) })}</div>)}
 
       {d.documents.length > 0 && d.whatsapp_template !== 'approved' && (
         <p style={{ color: 'var(--text-3)', fontSize: 12.5, margin: '8px 0 0' }}>
