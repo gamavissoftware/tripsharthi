@@ -112,8 +112,9 @@ function NodeShell({ type, children, selected }) {
   const Icon = meta.icon
   return (
     <div style={{
-      border: `2px solid ${selected ? '#0a6cc4' : border}`,
-      borderLeft: `4px solid ${border}`,
+      borderStyle: 'solid',
+      borderWidth: '2px 2px 2px 4px',
+      borderColor: `${selected ? '#0a6cc4' : border} ${selected ? '#0a6cc4' : border} ${selected ? '#0a6cc4' : border} ${border}`,
       borderRadius: 10,
       background: bg,
       padding: '8px 12px',
