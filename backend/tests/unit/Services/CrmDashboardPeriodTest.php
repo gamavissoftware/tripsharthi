@@ -27,7 +27,7 @@ final class CrmDashboardPeriodTest extends CIUnitTestCase
     {
         parent::setUp();
         $db = db_connect(); $db->query('SET FOREIGN_KEY_CHECKS=0');
-        foreach (['messages', 'conversations', 'contacts', 'tasks', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
+        foreach (['messages', 'conversations', 'contacts', 'tasks', 'phone_numbers', 'waba_accounts', 'users', 'tenants'] as $t) { $db->table($t)->truncate(); }
         foreach ([1, 2] as $id) { $db->table('tenants')->insert(['id' => $id, 'name' => "Agency $id", 'slug' => "a$id", 'plan' => 'growth', 'status' => 'active', 'mode' => 'saas', 'created_at' => '2026-01-01 00:00:00']); }
         $this->token = bin2hex(random_bytes(32));
         $db->table('users')->insert(['id' => 1, 'tenant_id' => 1, 'name' => 'Owner', 'email' => 'o@example.com', 'password_hash' => 'x', 'role' => 'owner', 'api_token' => hash('sha256', $this->token), 'created_at' => '2026-01-01 00:00:00']);
