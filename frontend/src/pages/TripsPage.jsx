@@ -105,9 +105,18 @@ export default function TripsPage({ user }) {
   const [filter, setFilter] = useState('all')
   const [q, setQ] = useState('')
   const [showNew, setShowNew] = useState(false)
-  // Whose trips to show: 'all' | 'me' | 'none' (no owner) | 'u:<id>' (a teammate - managers only). Remembered in this browser.
-  const [owner, setOwner] = useState(() => { try { return localStorage.getItem('ts_trips_owner') || (localStorage.getItem('ts_trips_mine') === '1' ? 'me' : 'all') } catch { return 'all' } })
-  function pickOwner(v) { setOwner(v); try { localStorage.setItem('ts_trips_owner', v) } catch { /* private mode */ } }
+  // Whose trips to show: 'all' | 'me' | 'none' (no owner) | 'u:<id>' (a teammate - managers only).
+  // Remembered in this browser PER PERSON (a shared key let one login's "only my trips" hide every trip from the next).
+  const okey = `ts_trips_owner_${user?.id ?? 'x'}`
+  const [owner, setOwner] = useState('all')
+  const [ownerLoaded, setOwnerLoaded] = useState(false)
+  useEffect(() => {
+    if (!user) return
+    let v = 'all'
+    try { v = localStorage.getItem(okey) || 'all' } catch { /* private mode */ }
+    setOwner(v); setOwnerLoaded(true)
+  }, [okey, user])
+  function pickOwner(v) { setOwner(v); try { localStorage.setItem(okey, v) } catch { /* private mode */ } }
   const isManager = !!user && ['owner', 'admin'].includes(user.role)
   const [team, setTeam] = useState([])
   useEffect(() => {
@@ -135,7 +144,9 @@ export default function TripsPage({ user }) {
   const nMine = (rows || []).filter(isMine).length
   const nUnowned = (rows || []).filter(r => !r.owner_id).length
   // Agents can only use "mine"; a saved teammate choice from a manager session is ignored for them.
-  const eff = (!user || (!isManager && owner !== 'me')) ? (owner === 'me' && user ? 'me' : 'all') : owner
+  let eff = (!user || (!isManager && owner !== 'me')) ? (owner === 'me' && user ? 'me' : 'all') : owner
+  // A remembered teammate who is not in this workspace's team would show an empty board with a blank dropdown.
+  if (eff.startsWith('u:') && !team.some(m => Number(m.id) === Number(eff.slice(2)))) eff = 'all'
   const match = (r) => eff === 'all' ? true : eff === 'me' ? isMine(r) : eff === 'none' ? !r.owner_id : Number(r.owner_id) === Number(eff.slice(2))
   const scoped = rows && rows.filter(match)
   const countFor = (id) => (rows || []).filter(r => Number(r.owner_id) === Number(id)).length
@@ -198,6 +209,7 @@ export default function TripsPage({ user }) {
           <button className={'btn btn-sm ' + (eff === 'me' ? 'btn-primary' : 'btn-ghost')} onClick={() => pickOwner(eff === 'me' ? 'all' : 'me')} disabled={!user} aria-pressed={eff === 'me'}
             title={user ? 'Show only the trips you own' : 'Loading your profile…'}>Only my trips{rows ? <span className="tboard-fcount">{nMine}</span> : null}</button>
         )}
+        {eff !== 'all' && rows && scoped && scoped.length < rows.length && <button className="btn btn-sm btn-ghost" onClick={() => pickOwner('all')}>{rows.length - scoped.length} hidden by the owner filter · Show all</button>}
         {eff === 'me' && nUnowned > 0 && <span className="text-muted">{nUnowned} trip{nUnowned === 1 ? '' : 's'} with no owner hidden</span>}
         <input className="form-input" style={{ maxWidth: 240, marginLeft: 'auto' }} placeholder="Search destination or title…" value={q} onChange={e => setQ(e.target.value)} />
       </div>
