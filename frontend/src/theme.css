@@ -457,3 +457,51 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .il-edit label { font-size: 11px; color: var(--text-3); display: grid; gap: 2px; }
 .il-edit input { width: 90px; }
 .il-calc { font-size: 12px; color: var(--text-3); }
+
+/* ── Validated form fields (components/FormField.jsx) ── */
+.ff { display: grid; gap: 5px; align-content: start; min-width: 0; }
+.ff-l { font-size: .8125rem; font-weight: 600; color: var(--text-2); }
+.ff-req { color: var(--danger); font-style: normal; }
+.ff .is-invalid { border-color: var(--danger) !important; background-color: color-mix(in srgb, var(--danger) 6%, var(--surface)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent) !important; }
+.ff .is-valid { border-color: var(--success) !important; }
+.ff-err, .ff-ok, .ff-hint { display: flex; align-items: flex-start; gap: 5px; font-size: .78rem; line-height: 1.35; }
+.ff-err { color: var(--danger); font-weight: 500; animation: ff-in .18s ease; }
+.ff-ok { color: var(--success); }
+.ff-hint { color: var(--text-3); }
+@keyframes ff-in { from { opacity: 0; transform: translateY(-3px) } to { opacity: 1; transform: none } }
+@keyframes ff-shake { 0%,100% { transform: none } 20% { transform: translateX(-7px) } 40% { transform: translateX(6px) } 60% { transform: translateX(-4px) } 80% { transform: translateX(3px) } }
+.shake { animation: ff-shake .38s ease; }
+
+/* ── Modern dialog + supplier cards ── */
+.dlg-back { position: fixed; inset: 0; z-index: 9100; background: rgba(10,31,68,.5); backdrop-filter: blur(2px); display: grid; place-items: center; padding: 16px; animation: modal-fade .16s ease; }
+.dlg { background: var(--surface); color: var(--text); width: min(760px, 100%); max-height: calc(100vh - 32px); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); display: flex; flex-direction: column; animation: modal-pop .2s cubic-bezier(.2,.9,.3,1.1); }
+.dlg-h { display: flex; align-items: center; gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--border); }
+.dlg-h h3 { margin: 0; font-size: 1.1rem; }
+.dlg-h small { display: block; color: var(--text-3); font-size: .8rem; margin-top: 2px; }
+.dlg-ico { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--primary) 12%, transparent); font-size: 18px; flex: none; }
+.dlg-x { margin-left: auto; border: 0; background: transparent; cursor: pointer; color: var(--text-2); padding: 6px; border-radius: 8px; }
+.dlg-x:hover { background: var(--surface-2); }
+.dlg-b { padding: 18px 22px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 16px; }
+.dlg-sec { grid-column: 1 / -1; font-size: .72rem; text-transform: uppercase; letter-spacing: .07em; color: var(--primary); font-weight: 700; margin: 4px 0 -4px; }
+.dlg-f { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 22px; border-top: 1px solid var(--border); background: var(--surface-2); border-radius: 0 0 16px 16px; }
+.sdc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 14px; }
+.sdc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; display: grid; gap: 10px; transition: box-shadow .15s, transform .15s, border-color .15s; }
+.sdc:hover { box-shadow: 0 8px 24px rgba(10,31,68,.09); transform: translateY(-1px); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+.sdc-top { display: flex; gap: 12px; align-items: center; }
+.sdc-av { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: color-mix(in srgb, var(--primary) 10%, transparent); flex: none; }
+.sdc-name { font-weight: 700; font-size: 1rem; line-height: 1.2; }
+.sdc-sub { color: var(--text-3); font-size: .8rem; }
+.sdc-rows { display: grid; gap: 4px; font-size: .84rem; color: var(--text-2); }
+.sdc-rows a { color: inherit; text-decoration: none; } .sdc-rows a:hover { color: var(--primary); text-decoration: underline; }
+.sdc-foot { display: flex; gap: 6px; align-items: center; border-top: 1px solid var(--border); padding-top: 10px; }
+.sdc-chip { font-size: .75rem; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-2); border: 0; }
+button.sdc-chip { cursor: pointer; } button.sdc-chip:hover { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); border-radius: 999px; padding: 4px 12px; font-size: .8rem; cursor: pointer; }
+.chip:hover { border-color: var(--primary); } .chip.on { background: var(--primary); border-color: var(--primary); color: #fff; }
+.chip b { opacity: .7; font-weight: 600; margin-left: 4px; }
+.empty-card { text-align: center; padding: 42px 20px; border: 2px dashed var(--border); border-radius: 16px; color: var(--text-2); }
+.empty-card .big { font-size: 38px; margin-bottom: 6px; }
+.rt-tbl tbody tr:hover { background: var(--surface-2); }
+.sk { background: linear-gradient(90deg, var(--surface-2), color-mix(in srgb, var(--surface-2) 50%, var(--surface)), var(--surface-2)); background-size: 200% 100%; animation: sk 1.2s infinite; border-radius: 12px; }
+@keyframes sk { to { background-position: -200% 0 } }
