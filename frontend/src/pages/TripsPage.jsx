@@ -109,12 +109,11 @@ export default function TripsPage({ user }) {
   // Remembered in this browser PER PERSON (a shared key let one login's "only my trips" hide every trip from the next).
   const okey = `ts_trips_owner_${user?.id ?? 'x'}`
   const [owner, setOwner] = useState('all')
-  const [ownerLoaded, setOwnerLoaded] = useState(false)
   useEffect(() => {
     if (!user) return
     let v = 'all'
     try { v = localStorage.getItem(okey) || 'all' } catch { /* private mode */ }
-    setOwner(v); setOwnerLoaded(true)
+    setOwner(v)
   }, [okey, user])
   function pickOwner(v) { setOwner(v); try { localStorage.setItem(okey, v) } catch { /* private mode */ } }
   const isManager = !!user && ['owner', 'admin'].includes(user.role)
