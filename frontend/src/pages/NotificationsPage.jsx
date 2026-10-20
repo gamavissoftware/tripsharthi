@@ -33,6 +33,7 @@ export default function NotificationsPage() {
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [])
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))

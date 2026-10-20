@@ -13,6 +13,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   async function load() {

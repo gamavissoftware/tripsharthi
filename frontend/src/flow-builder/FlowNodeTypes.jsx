@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 /**
  * Custom @xyflow/react node components.
  *

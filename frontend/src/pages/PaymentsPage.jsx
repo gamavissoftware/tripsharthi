@@ -19,6 +19,7 @@ export default function PaymentsPage() {
   const [form, setForm] = useState({ key_id: '', key_secret: '', webhook_secret: '' })
   const [saving, setSaving] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   async function load() {

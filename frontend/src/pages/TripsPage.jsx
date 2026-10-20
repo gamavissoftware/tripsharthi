@@ -113,6 +113,7 @@ export default function TripsPage({ user }) {
     if (!user) return
     let v = 'all'
     try { v = localStorage.getItem(okey) || 'all' } catch { /* private mode */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setOwner(v)
   }, [okey, user])
   function pickOwner(v) { setOwner(v); try { localStorage.setItem(okey, v) } catch { /* private mode */ } }

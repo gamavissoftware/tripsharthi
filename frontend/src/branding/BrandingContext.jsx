@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { settings as settingsApi } from '../api/settings'
 
@@ -79,6 +80,7 @@ export function BrandingProvider({ children }) {
       .finally(() => setLoading(false))
   }, [applyBranding])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { reload() }, [reload])
 
   return (

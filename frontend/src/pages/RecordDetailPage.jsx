@@ -23,6 +23,7 @@ export default function RecordDetailPage() {
     setRecord(r.data)
     setForm({ name: r.data.name ?? '', data: r.data.data ?? {} })
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [recordId])
 
   async function save() {

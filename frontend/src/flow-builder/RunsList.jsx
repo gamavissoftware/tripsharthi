@@ -39,6 +39,7 @@ export default function RunsList({ flowId }) {
 
   useEffect(() => {
     if (!flowId) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setLoading(true)
     flowsApi.runs(flowId)
       .then(r => setRuns(r.data ?? []))

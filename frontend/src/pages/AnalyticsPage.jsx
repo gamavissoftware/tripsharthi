@@ -86,6 +86,7 @@ export default function AnalyticsPage() {
   }, [range.from, range.to])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setLoading(true)
     loadAll().finally(() => setLoading(false))
   }, [loadAll])

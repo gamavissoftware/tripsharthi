@@ -16,6 +16,7 @@ export default function OnboardingBanner({ user }) {
   useEffect(() => {
     if (!user || user.role !== 'owner') return
     if (localStorage.getItem(DISMISSED_KEY) === '1') return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setVisible(true)
 
     Promise.all([

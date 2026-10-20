@@ -18,6 +18,7 @@ export default function ContactPicker({ value, onChange, placeholder = 'Search a
 
   // Resolve an externally-provided value to a display name (e.g. on edit).
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     if (!value) { setSelected(null); return }
     if (selected?.id === value) return
     let alive = true
@@ -29,6 +30,7 @@ export default function ContactPicker({ value, onChange, placeholder = 'Search a
   useEffect(() => {
     if (selected) return // not searching while a contact is chosen
     const term = q.trim()
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     if (term.length < 2) { setResults([]); return }
     setLoading(true)
     const t = setTimeout(async () => {

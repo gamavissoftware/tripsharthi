@@ -129,6 +129,7 @@ export default function TicketsPage() {
   const [view, setView] = useState('cards')   // cards (SLA view) | list (saved views)
   const [listKey, setListKey] = useState(0)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [filter])
   async function load() {
     setLoading(true)

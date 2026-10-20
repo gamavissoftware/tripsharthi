@@ -32,6 +32,7 @@ export default function MetaAdsSection({ fbConfigured }) {
   async function load() {
     try { setStatus((await metaAds.status()).data ?? null) } catch { setStatus(null) }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [])
 
   // Back from Meta with a state for an ads connection.
@@ -44,6 +45,7 @@ export default function MetaAdsSection({ fbConfigured }) {
     metaAds.connect(state)
       .then(async r => { setStatus(r.data ?? null); toast.success('Meta Ads connected'); await openPicker(r.data) })
       .catch(e => toast.error('Could not connect Meta Ads', e.message))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   }, [searchParams, setSearchParams])
 
   async function openPicker(current = status) {

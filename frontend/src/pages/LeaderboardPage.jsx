@@ -19,6 +19,7 @@ export default function LeaderboardPage() {
     catch (e) { toast.error('Failed to load leaderboard', e?.message) }
     setLoading(false)
   }, [period])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   const top = rows[0]

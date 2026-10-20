@@ -24,6 +24,7 @@ export default function EmailPanel({ contactId, onSent }) {
   const [form, setForm]       = useState({ subject: '', body: '' })
   const [sending, setSending] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [contactId])
 
   async function load() {

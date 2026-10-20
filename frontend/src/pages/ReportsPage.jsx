@@ -128,6 +128,7 @@ export default function ReportsPage() {
     } catch (e) { toast.error('Failed to load dashboards', e?.message) }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load(); crm.reportOptions().then(r => setOptions(r.data ?? {})).catch(() => {}) }, [load])
 
   useEffect(() => {

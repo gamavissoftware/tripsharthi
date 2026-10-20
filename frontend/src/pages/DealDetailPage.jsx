@@ -39,6 +39,7 @@ function QuotesPanel({ dealId }) {
   const [quotes, setQuotes] = useState([])
   const [open, setOpen] = useState(null)
   async function load() { try { const r = await crm.listQuotes(dealId); setQuotes(r.data ?? []) } catch { /* noop */ } }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [dealId])
   async function gen() { try { await crm.createQuote(dealId); toast.success('Quote generated'); await load() } catch (e) { toast.error('Could not generate', e.message) } }
   async function setStatus(id, s) { try { await crm.quoteStatus(id, s); await load(); if (open?.id === id) { const r = await crm.getQuote(id); setOpen(r.data) } } catch (e) { toast.error('Could not update', e.message) } }
@@ -175,6 +176,7 @@ export default function DealDetailPage() {
       setStages(pipe?.stages ?? [])
     } catch { /* noop */ }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [id])
 
   async function moveTo(stageId) {

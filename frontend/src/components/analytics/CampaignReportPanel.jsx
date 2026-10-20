@@ -24,6 +24,7 @@ export default function CampaignReportPanel({ campaignId, onBack }) {
 
   useEffect(() => {
     let live = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setLoading(true)
     analyticsApi.campaignReport(campaignId)
       .then(res => { if (live) setReport(res?.data ?? null) })

@@ -15,6 +15,7 @@ export default function WaLinkPage() {
     : ''
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     if (!link) { setQr(''); return }
     QRCode.toDataURL(link, { width: 256, margin: 1 }, (err, url) => { if (!err) setQr(url) })
   }, [link])

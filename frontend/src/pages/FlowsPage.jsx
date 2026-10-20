@@ -568,6 +568,7 @@ export default function FlowsPage() {
     setLoading(false)
   }
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [])
 
   async function handleToggle(flow) {

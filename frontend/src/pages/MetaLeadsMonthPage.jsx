@@ -47,8 +47,10 @@ export default function MetaLeadsMonthPage() {
       setLoading(false)
     }
   }
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [month]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   const leads = data?.leads ?? []
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase()

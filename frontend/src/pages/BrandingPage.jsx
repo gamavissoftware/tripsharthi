@@ -68,6 +68,7 @@ function normalizeBranding(b) {
 // ── Logo mark (image with graceful fallback) ────────────────────────────────
 function LogoMark({ logoUrl, name, color, size = 32, radius = 8 }) {
   const [broken, setBroken] = useState(false)
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { setBroken(false) }, [logoUrl])
   const letter = (name || 'L').trim().charAt(0).toUpperCase()
 

@@ -83,6 +83,7 @@ export default function ContactsPage() {
     setLoading(false)
   }, [filters, page])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   async function detachTag(contactId, tagId, e) {

@@ -194,6 +194,7 @@ export default function CrmDashboardPage() {
   const [days, setDays] = useState(30)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setLoading(true)
     crm.dashboard(days).then(r => setD(r.data)).catch(e => toast.error('Failed to load dashboard', e.message)).finally(() => setLoading(false))
   }, [days])

@@ -70,6 +70,7 @@ export default function ForecastPage() {
     } catch (e) { toast.error('Failed to load forecast', e?.message) }
   }, [period])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
   useEffect(() => { api.get('/team').then(r => setMembers(r.data ?? [])).catch(() => {}) }, [])
 

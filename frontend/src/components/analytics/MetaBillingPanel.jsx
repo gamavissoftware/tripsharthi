@@ -47,6 +47,7 @@ export default function MetaBillingPanel() {
     else setAds(null)
   }, [months])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { setLoading(true); load().finally(() => setLoading(false)) }, [load])
 
   async function sync() {

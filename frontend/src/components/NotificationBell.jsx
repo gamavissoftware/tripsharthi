@@ -25,6 +25,7 @@ export default function NotificationBell() {
     try { const r = await notifApi.feed(); setItems(r.data ?? []); setUnread(r.unread ?? 0) } catch { /* noop */ }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load(); const id = setInterval(load, 45000); return () => clearInterval(id) }, [load])
   useEffect(() => {
     function onDoc(e) { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }

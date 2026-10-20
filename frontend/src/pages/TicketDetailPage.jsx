@@ -42,6 +42,7 @@ export default function TicketDetailPage() {
 
   const [loadErr, setLoadErr] = useState('')
   async function load() { try { const r = await crm.getTicket(id); setTicket(r.data) } catch (e) { setLoadErr(e?.message || 'Not found') } }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [id])
   useEffect(() => { api.get('/team').then(r => setAgents(r.data ?? [])).catch(() => {}) }, [])
 

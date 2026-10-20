@@ -44,6 +44,7 @@ export default function AuditLogPage() {
     }
     setLoading(false)
   }, [filters, page])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   if (forbidden) return <div className="page"><div style={{ padding: '3rem', textAlign: 'center', color: '#9ca3af' }}>🔒 Only owners and admins can view the audit log.</div></div>

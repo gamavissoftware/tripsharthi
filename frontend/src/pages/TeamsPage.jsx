@@ -41,6 +41,7 @@ export default function TeamsPage() {
     catch (e) { toast.error('Failed to load teams', e?.message) }
     setLoading(false)
   }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load(); api.get('/team').then(r => setMembers(r.data ?? [])).catch(() => {}) }, [load])
 
   const nameOf = (uid) => members.find(m => m.id === uid)?.name ?? `User #${uid}`

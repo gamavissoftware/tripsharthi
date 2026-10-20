@@ -163,6 +163,7 @@ export default function ContactDetailPage() {
         })
         .catch(e => { setLoadErr(e?.message || 'Not found'); setLoading(false) })
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   }, [id])
 
   // Company suggestions are searched, not preloaded: /accounts caps at 500 rows
@@ -193,6 +194,7 @@ export default function ContactDetailPage() {
   useEffect(() => {
     if (isNew || !contact) return
     const contactId = parseInt(id, 10)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setFlowRunsLoading(true); setFlowRunsError(null)
     api.get('/analytics/flows')
       .then(async r => {

@@ -22,6 +22,7 @@ export default function DocumentsPanel({ relatedType, relatedId }) {
   const fileRef = useRef(null)
 
   const load = () => documents.list(relatedType, relatedId).then(r => setDocs(r.data ?? [])).catch(() => setDocs([]))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [relatedType, relatedId])
 
   async function onPick(e) {

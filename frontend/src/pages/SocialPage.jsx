@@ -121,6 +121,7 @@ export default function SocialPage() {
   const [when, setWhen]             = useState('')
   const [saving, setSaving]         = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   // Is Facebook Login usable on this install at all?
@@ -142,6 +143,7 @@ export default function SocialPage() {
 
     if (err) { toast.error('Facebook connection failed', err); return }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setPickerState(state)
     social.oauthPages(state)
       .then(r => {

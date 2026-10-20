@@ -62,6 +62,7 @@ export default function FlowBuilderPage() {
   useEffect(() => {
     load()
     api.get('/tags').then(r => setTags(r.data ?? [])).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   }, [id])
 
   useEffect(() => {

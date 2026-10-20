@@ -186,6 +186,7 @@ export default function InboxPage() {
         (c.contact_category || '').toLowerCase().includes(q)
       )
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setFilteredConvs(list)
   }, [conversations, statusTab, searchQ])
 
@@ -227,6 +228,7 @@ export default function InboxPage() {
   useEffect(() => {
     if (countdownRef.current) clearInterval(countdownRef.current)
     if (!activeConv || !activeConv.seconds_remaining || activeConv.seconds_remaining <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
       setLiveSeconds(0)
       return
     }
@@ -259,13 +261,16 @@ export default function InboxPage() {
   }, [])
 
   // Fetch once on mount so the list is ready, and again each time the picker opens.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { loadApprovedTemplates() }, [loadApprovedTemplates])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { if (showTemplatePicker) loadApprovedTemplates() }, [showTemplatePicker, loadApprovedTemplates])
 
   // Reset variable inputs whenever the selected template changes; pre-fill a
   // name-like first variable with the contact's name for convenience.
   useEffect(() => {
     const names = templateVarNames(selectedTpl)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setTplVars(names.map((n, i) =>
       (i === 0 && /name/i.test(n) && activeConv?.contact_name) ? activeConv.contact_name : ''
     ))

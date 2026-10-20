@@ -65,6 +65,7 @@ export default function RecordsPage() {
     } catch (e) { setLoadErr(e?.message || 'Not found'); toast.error('Failed to load', e.message) }
     finally { setLoading(false) }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [id])
 
   if (!object && loadErr) return <LoadFailed what="object" message={loadErr} backTo="/objects" backLabel="Back to objects" />

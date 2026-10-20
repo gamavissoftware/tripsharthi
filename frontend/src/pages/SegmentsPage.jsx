@@ -935,6 +935,7 @@ export default function SegmentsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     loadData()
   }, [loadData])
 

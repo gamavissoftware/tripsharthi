@@ -1188,7 +1188,9 @@ export default function CampaignsPage() {
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
     return () => { Object.values(pollRef.current).forEach(clearInterval) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   }, [])
 
   async function load() {

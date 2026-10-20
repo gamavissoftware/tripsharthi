@@ -107,6 +107,7 @@ export default function TemplatesPage() {
     catch (err) { toast.error('Failed to load templates', err.message) }
     finally { setLoading(false) }
   }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   function openCreate() { setEditingId(null); setForm(BLANK); setModalErr(null); setShowModal(true) }

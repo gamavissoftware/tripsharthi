@@ -22,6 +22,7 @@ export default function RoutingRulesPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(null) // rule object being created/edited
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   async function load() {

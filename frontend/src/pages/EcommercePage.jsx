@@ -22,6 +22,7 @@ function PlatformCard({ p }) {
   const [form, setForm] = useState({ store: '', webhook_secret: '', default_country_code: '' })
   const [busy, setBusy] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
   async function load() {
     try {

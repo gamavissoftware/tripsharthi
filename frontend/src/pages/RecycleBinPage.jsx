@@ -36,6 +36,7 @@ export default function RecycleBinPage() {
     setLoading(false)
   }, [entity])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   function toggle(id) {

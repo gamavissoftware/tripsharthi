@@ -15,6 +15,7 @@ export default function WebhooksPage() {
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ url: '', events: ['*'] })
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   async function load() {

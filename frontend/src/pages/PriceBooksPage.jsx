@@ -31,6 +31,7 @@ export default function PriceBooksPage() {
     } catch (e) { toast.error('Failed to load price books', e?.message) }
     setLoading(false)
   }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load(); productsApi.list().then(r => setCatalog(r.data ?? [])).catch(() => {}) }, [load])
 
   const active = books.find(b => b.id === activeId)

@@ -218,6 +218,7 @@ function NavGroup({ group, onNavigate, collapsed = false, up = false }) {
   const hasActive = group.items.some(i => pathname === i.to || pathname.startsWith(i.to + '/'))
   const [open, setOpen] = useState(hasActive)
   // Keep the active group expanded as the user navigates within it.
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { if (hasActive) setOpen(true) }, [hasActive])
 
   return (
@@ -464,6 +465,7 @@ export default function App() {
   const [, setHashTick]               = useState(0) // re-render on hash change so public #/q/ links switch in place
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     if (window.location.hash.includes('reset-password')) setShowReset(true)
 
     // Global 401 listener — any API call with an expired/revoked token triggers auto-logout

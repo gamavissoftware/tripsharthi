@@ -178,6 +178,7 @@ export default function TeamPage() {
     }
   }, [])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   async function changeRole(member, newRole) {

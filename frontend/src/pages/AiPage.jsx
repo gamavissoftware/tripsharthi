@@ -9,6 +9,7 @@ export default function AiPage() {
   const [form, setForm] = useState({ api_key: '', model: '' })
   const [saving, setSaving] = useState(false)
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   useEffect(() => { load() }, [])
 
   async function load() {

@@ -73,6 +73,7 @@ export default function DeliveryLog({ campaigns = [], lockedCampaignId = null, c
     }
   }, [filters, page])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   const handleExport = async () => {

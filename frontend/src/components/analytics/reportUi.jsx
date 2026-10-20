@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 import { useMemo, useState } from 'react'
 import { Check, CheckCheck, Clock, AlertTriangle, CornerUpLeft } from 'lucide-react'
 
@@ -267,6 +268,7 @@ export function TrendChart({ series, height = 190 }) {
   const [hover, setHover]   = useState(null)
 
   const visible = TREND_SERIES.filter(s => !hidden.has(s.key))
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   const points  = series ?? []
 
   const max = useMemo(() => Math.max(

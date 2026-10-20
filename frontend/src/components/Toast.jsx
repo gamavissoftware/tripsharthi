@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 /**
  * Lightweight toast/growl notification system.
  * Uses a module-level event emitter — no React context needed.

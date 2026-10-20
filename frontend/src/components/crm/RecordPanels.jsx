@@ -25,6 +25,7 @@ export function TimelinePanel({ relatedType, relatedId, refreshKey = 0 }) {
     catch (e) { toast.error('Failed to load timeline', e.message) }
     finally { setLoading(false) }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [relatedType, relatedId, refreshKey])
 
   async function log() {
@@ -93,6 +94,7 @@ export function NotesPanel({ relatedType, relatedId }) {
   async function load() {
     try { const r = await crm.listNotes(relatedType, relatedId); setNotes(r.data ?? []) } catch { /* noop */ }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [relatedType, relatedId])
 
   async function add() {
@@ -137,8 +139,10 @@ export function AssociationsPanel({ relatedType, relatedId }) {
   async function load() {
     try { const r = await crm.listAssociations(relatedType, relatedId); setLinks(r.data ?? []) } catch { /* noop */ }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [relatedType, relatedId])
   useEffect(() => { crm.listObjects().then(r => setObjects(r.data ?? [])).catch(() => {}) }, [])
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { if (objId) crm.listRecords(objId).then(r => { setRecords(r.data ?? []); setRecId('') }).catch(() => {}); else setRecords([]) }, [objId])
 
   async function add() {
@@ -183,6 +187,7 @@ export function TasksPanel({ relatedType, relatedId }) {
   async function load() {
     try { const r = await crm.listTasks({ related_type: relatedType, related_id: relatedId }); setTasks(r.data ?? []) } catch { /* noop */ }
   }
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect -- deps are intentional; adding the function would re-run on every render; loads data on mount / when inputs change
   useEffect(() => { load() }, [relatedType, relatedId])
 
   async function add() {

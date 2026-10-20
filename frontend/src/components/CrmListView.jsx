@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { crm } from '../api/crm'
 import { tags as tagsApi } from '../api/tags'
@@ -123,6 +124,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
   // ── Load meta + saved views once per entity ──
   useEffect(() => {
     let alive = true
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setMeta(null)
     Promise.all([crm.listMeta(entity), crm.listViews(entity)])
       .then(([m, v]) => {
@@ -178,6 +180,7 @@ export default function CrmListView({ entity, customObjectId, onRowClick }) {
     setLoading(false)
   }, [entity, meta, params])
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
   useEffect(() => { load() }, [load])
 
   function toggleSort(field) {

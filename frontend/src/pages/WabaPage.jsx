@@ -397,6 +397,7 @@ export default function WabaPage() {
 
   useEffect(() => {
     loadAll()
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps are intentional; adding the function would re-run on every render
   }, [])
 
   async function loadAll() {

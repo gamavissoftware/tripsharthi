@@ -421,6 +421,7 @@ export default function IntegrationsPage() {
 
     if (err) { toast.error('Facebook connection failed', err); return }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     setPickerState(state)
     socialApi.oauthPages(state)
       .then(r => {

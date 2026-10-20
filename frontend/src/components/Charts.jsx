@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 // ── Lightweight hand-rolled SVG charts (Phase I2) ────────────────────────────
 // No chart library — small, themeable SVG components matching the app style.
 // Each takes { series:[{label,value}], total, format }.

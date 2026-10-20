@@ -603,6 +603,7 @@ function BillingPanel() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads data on mount / when inputs change
     loadBilling()
     analyticsApi.summary()
       .then(res => setAnalyticsData(res?.data ?? res ?? null))

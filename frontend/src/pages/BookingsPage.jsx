@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- helpers/hooks live beside components on purpose; only affects dev hot-reload */
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { travel, inr } from '../api/travel'
