@@ -55,6 +55,40 @@ final class ItineraryService
     }
 
     /**
+     * Edit a line: quantity, nights, price, title, optional flag. The line total is ALWAYS re-derived (unit x quantity [x nights for hotels]),
+     * never trusted from the client, so a changed quantity cannot leave a stale total. Foreign lines keep their locked rate unless a new
+     * foreign price is typed (then they are converted at today's rate).
+     */
+    public function updateItem(int $tenantId, int $itineraryId, int $itemId, array $d): array
+    {
+        $m   = (new ItineraryItemModel())->setTenant($tenantId);
+        $row = $m->where('itinerary_id', $itineraryId)->find($itemId);
+        if (! $row) { throw new \InvalidArgumentException('Item not found.'); }
+        $in = array_intersect_key($d, array_flip(['title', 'details', 'type', 'quantity', 'nights', 'unit_cost', 'unit_cost_fx', 'cost_currency', 'is_optional', 'day_id']));
+        if (array_key_exists('title', $in) && trim((string) $in['title']) === '') { throw new \RuntimeException('The title cannot be empty.'); }
+        $qty    = (float) ($in['quantity'] ?? $row['quantity']);
+        $nights = max(1, (int) ($in['nights'] ?? $row['nights']));
+        if ($qty <= 0 || $qty > 9999) { throw new \RuntimeException('Quantity must be more than 0.'); }
+        $type = (string) ($in['type'] ?? $row['type']);
+        $cur  = strtoupper((string) ($in['cost_currency'] ?? $row['cost_currency'] ?: 'INR'));
+        $newPrice = array_key_exists('unit_cost', $in) || array_key_exists('unit_cost_fx', $in) || array_key_exists('cost_currency', $in);
+        if ($cur !== 'INR' && $newPrice) {
+            $priced = $this->priceInCurrency($tenantId, ['cost_currency' => $cur, 'unit_cost_fx' => (int) ($in['unit_cost_fx'] ?? $row['unit_cost_fx'])]);
+            $in['cost_currency'] = $priced['cost_currency']; $in['unit_cost_fx'] = $priced['unit_cost_fx']; $in['fx_rate'] = $priced['fx_rate']; $in['unit_cost'] = $priced['unit_cost'];
+        } elseif ($cur === 'INR' && $newPrice) {
+            $in['cost_currency'] = 'INR'; $in['unit_cost_fx'] = null; $in['fx_rate'] = null;
+            if (isset($in['unit_cost']) && (int) $in['unit_cost'] < 0) { throw new \RuntimeException('The price cannot be negative.'); }
+        }
+        $unit = (int) ($in['unit_cost'] ?? $row['unit_cost']);
+        $in['quantity'] = $qty; $in['nights'] = $nights;
+        $in['cost_amount'] = (int) round($unit * ($type === 'hotel' ? $qty * $nights : $qty));
+        if (isset($in['is_optional'])) { $in['is_optional'] = (int) (bool) $in['is_optional']; }
+        (new ItineraryItemModel())->setTenant($tenantId)->update($itemId, $in);
+        $this->recalc($tenantId, $itineraryId);
+        return (new ItineraryItemModel())->setTenant($tenantId)->find($itemId);
+    }
+
+    /**
      * A line priced in a foreign currency carries `cost_currency` + `unit_cost_fx` (minor units per unit). We convert it ONCE, here, at the
      * tenant's cost rate (market + forex buffer) and lock that rate on the line; everything downstream stays in INR paise.
      * INR lines are normalised so no stale foreign fields linger.

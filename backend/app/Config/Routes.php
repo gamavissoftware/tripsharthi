@@ -305,6 +305,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->delete('(:num)',                 'Api\ItinerariesController::delete/$1');
         $routes->post('(:num)/days',              'Api\ItinerariesController::addDay/$1');
         $routes->post('(:num)/items',             'Api\ItinerariesController::addItem/$1');
+        $routes->put('(:num)/items/(:num)',       'Api\ItinerariesController::updateItem/$1/$2');
         $routes->delete('(:num)/items/(:num)',    'Api\ItinerariesController::deleteItem/$1/$2');
         $routes->post('(:num)/version',           'Api\ItinerariesController::newVersion/$1');
         $routes->post('(:num)/relock-fx',         'Api\ItinerariesController::relockFx/$1');

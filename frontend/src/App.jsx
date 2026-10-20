@@ -7,7 +7,7 @@ import {
   ShoppingBag, IndianRupee, BarChart3, TrendingUp, Trophy, Copy, Trash2,
   Plug, Smartphone, Store, Webhook, Wallet, Bot, Settings, Shuffle, Target,
   Pin, Clock, Home, CircleUser, Palette, Bell, CreditCard, ScrollText,
-  Mail, Plane, Handshake, PanelLeftClose, PanelLeftOpen, LogOut, Menu, LifeBuoy } from 'lucide-react'
+  Mail, Plane, Handshake, PanelLeftClose, PanelLeftOpen, LogOut, Menu, LifeBuoy, BookOpen } from 'lucide-react'
 import { api, isLoggedIn, clearToken } from './api/client'
 import { ToastProvider } from './components/Toast'
 import GlobalSearch from './components/GlobalSearch'
@@ -84,6 +84,8 @@ import ItineraryBuilderPage from './pages/ItineraryBuilderPage'
 import BookingsPage       from './pages/BookingsPage'
 import BookingDetailPage  from './pages/BookingDetailPage'
 import SuppliersPage      from './pages/SuppliersPage'
+import HelpPage           from './pages/HelpPage'
+import GuideButton        from './components/GuideButton'
 import AdsReportPage      from './pages/AdsReportPage'
 import PublicQuotePage    from './pages/PublicQuotePage'
 import SupportSessionBar from './components/SupportSessionBar'
@@ -205,6 +207,7 @@ const SETTINGS_GROUPS = [
   ]},
   { label: 'Account', icon: CreditCard, items: [
     { to: '/settings/billing', label: 'Billing',   icon: CreditCard },
+    { to: '/help',             label: 'User guides', icon: BookOpen },
     { to: '/support',          label: 'Help & support', icon: LifeBuoy },
     { to: '/settings/audit',   label: 'Audit Log', icon: ScrollText },
   ]},
@@ -345,6 +348,7 @@ function Layout({ user, onLogout }) {
           </button>
           <div className="topbar-search"><GlobalSearch /></div>
           <div className="topbar-right">
+            <GuideButton />
             <NotificationBell />
             {user && <NavLink to="/settings/profile" className="topbar-user" title={user.name}><span className="avatar" style={{ width: 30, height: 30 }}>{initials}</span></NavLink>}
           </div>
@@ -438,6 +442,7 @@ function Layout({ user, onLogout }) {
           <Route path="/settings/waba"          element={<WabaPage />} />
           <Route path="/settings/integrations"  element={<IntegrationsPage />} />
           <Route path="/settings/billing"       element={<BillingPage />} />
+          <Route path="/help"                   element={<HelpPage />} />
           <Route path="/support"                element={<SupportPage />} />
           <Route path="/support/:id"            element={<SupportTicketPage />} />
           <Route path="/settings/branding"      element={<BrandingPage />} />

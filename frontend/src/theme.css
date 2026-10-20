@@ -423,3 +423,37 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 .dep-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 12px; align-items: start; }
 .dep-grid > .card { margin: 0 !important; }
 @media (max-width: 560px) { .dep-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── User guide drawer (components/GuideButton.jsx) and Help page ── */
+.gd-btn { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.gd-btn:hover { border-color: var(--primary); color: var(--primary); }
+@media (max-width: 600px) { .gd-btn span { display: none; } }
+.gd-overlay { position: fixed; inset: 0; background: rgba(10,31,68,.4); z-index: 9000; display: flex; justify-content: flex-end; }
+.gd-drawer { background: var(--surface); color: var(--text); width: min(460px, 100%); height: 100%; overflow-y: auto; box-shadow: -8px 0 30px rgba(0,0,0,.2); display: flex; flex-direction: column; }
+.gd-drawer header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 18px 20px 8px; position: sticky; top: 0; background: var(--surface); }
+.gd-drawer header small { color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+.gd-drawer header h3 { margin: 2px 0 0; font-size: 19px; }
+.gd-x { border: 0; background: transparent; cursor: pointer; color: var(--text-2); padding: 4px; }
+.gd-drawer footer { margin-top: auto; display: flex; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); font-size: 13px; }
+.gd-body { padding: 4px 20px 16px; line-height: 1.55; font-size: 14px; }
+.gd-intro { color: var(--text-2); margin-top: 4px; }
+.gd-body h4 { margin: 16px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--primary); }
+.gd-body h4.gd-warn { color: var(--danger); }
+.gd-body ol, .gd-body ul { margin: 0; padding-left: 20px; }
+.gd-body li { margin-bottom: 6px; }
+.gd-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; background: transparent; border: 0; cursor: pointer; font-size: 15px; color: var(--text); text-align: left; }
+
+/* ── Itinerary builder service picker / editable lines / rate cards ── */
+.rp-box { grid-column: 1 / -1; display: grid; gap: 8px; }
+.rp-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.rp-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.rp-item { display: flex; justify-content: space-between; gap: 10px; width: 100%; padding: 8px 12px; border: 0; border-bottom: 1px solid var(--border); background: transparent; text-align: left; cursor: pointer; color: var(--text); font-size: 13px; }
+.rp-item:hover, .rp-item.on { background: var(--surface-2); }
+.rp-item small { color: var(--text-3); display: block; }
+.rp-badge { font-size: 11px; border-radius: 999px; padding: 1px 8px; background: var(--surface-2); color: var(--text-2); white-space: nowrap; }
+.rp-badge.bad { background: #fde8e8; color: #b42318; }
+.rp-badge.warn { background: #fff4e0; color: #b25e00; }
+.il-edit { display: flex; gap: 6px; flex-wrap: wrap; align-items: end; background: var(--surface-2); padding: 8px 10px; border-radius: 10px; margin: 4px 0 8px; }
+.il-edit label { font-size: 11px; color: var(--text-3); display: grid; gap: 2px; }
+.il-edit input { width: 90px; }
+.il-calc { font-size: 12px; color: var(--text-3); }

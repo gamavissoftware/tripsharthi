@@ -119,6 +119,19 @@ class ItinerariesController extends TravelBaseController
         return $this->ok($item, 201);
     }
 
+    /** PUT /itineraries/:id/items/:itemId - edit quantity / nights / price / title / optional. */
+    public function updateItem($id = null, $itemId = null)
+    {
+        $tid = CurrentUser::tenantId();
+        $it  = $this->model()->find((int) $id);
+        if (! $it) { return $this->failNotFound('Itinerary not found.'); }
+        if (! in_array($it['status'], ['draft', 'sent', 'viewed'], true)) { return $this->fail('This quote is ' . $it['status'] . ' and can no longer be changed. Duplicate it as a new version.', 409); }
+        try {
+            return $this->ok((new ItineraryService())->updateItem($tid, (int) $id, (int) $itemId, $this->body()));
+        } catch (\InvalidArgumentException $e) { return $this->failNotFound($e->getMessage());
+        } catch (\RuntimeException $e) { return $this->fail($e->getMessage(), 422); }
+    }
+
     /** DELETE /itineraries/:id/items/:itemId */
     public function deleteItem($id = null, $itemId = null)
     {

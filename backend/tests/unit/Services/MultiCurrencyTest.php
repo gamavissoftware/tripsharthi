@@ -96,6 +96,23 @@ final class MultiCurrencyTest extends CIUnitTestCase
         return [(int) $trip['id'], (int) $db->insertID()];
     }
 
+    public function testEditingALineRederivesItsTotalFromQuantityAndNights(): void
+    {
+        [, $itId] = $this->itinerary();
+        $svc  = new ItineraryService();
+        $tour = $svc->addItem(1, $itId, ['type' => 'activity', 'title' => 'City tour', 'unit_cost' => 250_000]);          // Rs 2,500 per person, qty 1
+        $upd  = $svc->updateItem(1, $itId, (int) $tour['id'], ['quantity' => 4, 'cost_amount' => 1]);                       // 4 travellers; a client total is ignored
+        $this->assertSame(1_000_000, (int) $upd['cost_amount']);
+        $this->assertSame(1_000_000, (int) db_connect()->table('itineraries')->where('id', $itId)->get()->getRowArray()['cost_total']);
+        $hotel = $svc->addItem(1, $itId, ['type' => 'hotel', 'title' => 'Villa', 'unit_cost' => 500_000, 'nights' => 2]);
+        $upd   = $svc->updateItem(1, $itId, (int) $hotel['id'], ['nights' => 3, 'quantity' => 2]);                          // 2 rooms x 3 nights
+        $this->assertSame(3_000_000, (int) $upd['cost_amount']);
+        $svc->updateItem(1, $itId, (int) $hotel['id'], ['is_optional' => 1]);                                               // optional lines leave the total
+        $this->assertSame(1_000_000, (int) db_connect()->table('itineraries')->where('id', $itId)->get()->getRowArray()['cost_total']);
+        try { $svc->updateItem(1, $itId, (int) $tour['id'], ['quantity' => 0]); $this->fail('zero quantity accepted'); } catch (\RuntimeException) { $this->addToAssertionCount(1); }
+        try { $svc->updateItem(2, $itId, (int) $tour['id'], ['quantity' => 2]); $this->fail('another workspace edited it'); } catch (\InvalidArgumentException) { $this->addToAssertionCount(1); }
+    }
+
     public function testAForeignLineIsConvertedOnceAtTheLockedRateAndNeverLeaksToTheCustomer(): void
     {
         $this->usd();

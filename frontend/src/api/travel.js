@@ -39,6 +39,7 @@ export const travel = {
   updateItinerary:(id, body)  => api.put(`/itineraries/${id}`, body).then(unwrap),
   addDay:         (id, body)  => api.post(`/itineraries/${id}/days`, body).then(unwrap),
   addItem:        (id, body)  => api.post(`/itineraries/${id}/items`, body).then(unwrap),
+  updateItem:     (id, itemId, body) => api.put(`/itineraries/${id}/items/${itemId}`, body).then(unwrap),
   deleteItem:     (id, itemId)=> api.delete(`/itineraries/${id}/items/${itemId}`).then(unwrap),
   newVersion:     (id)        => api.post(`/itineraries/${id}/version`).then(unwrap),
   share:          (id)        => api.post(`/itineraries/${id}/share`).then(unwrap),
