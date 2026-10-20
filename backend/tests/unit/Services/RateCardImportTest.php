@@ -53,6 +53,13 @@ final class RateCardImportTest extends CIUnitTestCase
         $this->assertSame(0, db_connect()->table('supplier_rates')->countAllResults());
     }
 
+    public function testBadBytesInFileNameOrCellsStillGiveAPreviewThatEncodesAsJson(): void
+    {
+        $csv = str_replace('Deluxe', "Delu\xC3xe", self::CSV);   // a truncated multi-byte character inside a cell
+        $r = (new RateCardImportService($this->fakeAi('', false)))->preview(1, 9, 1, null, "caf\xE9 rates.csv", $csv, 'csv');
+        $this->assertNotFalse(json_encode($r), json_last_error_msg());
+    }
+
     public function testCommitCreatesRatesAndIsOneShot(): void
     {
         $svc = new RateCardImportService($this->fakeAi('', false));

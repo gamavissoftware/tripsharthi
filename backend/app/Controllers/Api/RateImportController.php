@@ -12,7 +12,8 @@ class RateImportController extends TravelBaseController
 {
     private function run(callable $fn, int $code = 200)
     {
-        try { return $this->ok($fn(), $code); }
+        // Whatever the file contained, the answer must encode: an invalid byte once turned a preview into a 500 (JSON encoding failed). Bad bytes become U+FFFD.
+        try { return $this->ok(json_decode((string) json_encode($fn(), JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR), true), $code); }
         catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'not_found'], 404); }
         catch (\InvalidArgumentException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'invalid'], 422); }
         catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'conflict'], 409); }

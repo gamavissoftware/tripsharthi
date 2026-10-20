@@ -24,6 +24,13 @@ final class RateCardImportService
     public function __construct(private readonly ?AiReplyService $ai = null) {}
 
     /** @return array{id:int,mode:string,rows:list<array>,counts:array,notes:list<string>} */
+    /** Valid UTF-8 for every string in a value (invalid bytes become "?"). */
+    private static function clean(mixed $v): mixed
+    {
+        if (is_array($v)) { return array_map([self::class, 'clean'], $v); }
+        return is_string($v) ? mb_scrub($v, 'UTF-8') : $v;
+    }
+
     public function preview(int $tenantId, int $userId, int $supplierId, ?int $destinationId, string $sourceName, string $content, string $ext = 'txt', string $currency = 'INR'): array
     {
         $supplier = (new SupplierModel())->setTenant($tenantId)->find($supplierId) ?: throw new \InvalidArgumentException('Choose a supplier first.');
@@ -32,7 +39,10 @@ final class RateCardImportService
         if (! Currency::valid($currency)) { throw new \InvalidArgumentException('Unsupported default currency.'); }
         if (trim($content) === '') { throw new \InvalidArgumentException('Paste your rate list or choose a file.'); }
 
+        $sourceName = self::clean($sourceName);
         [$grid, $text] = $this->read($content, strtolower($ext));
+        $grid = $grid === null ? null : self::clean($grid);   // a stray byte must not turn the whole preview into a 500 when it is encoded as JSON
+        $text = self::clean($text);
         if (mb_strlen($text) > self::MAX_CHARS) { throw new \InvalidArgumentException('That is too much text for one import (about 90,000 characters). Split it by supplier or season.'); }
         $notes = [];
 
