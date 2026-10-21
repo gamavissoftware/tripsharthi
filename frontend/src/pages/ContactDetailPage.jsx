@@ -128,7 +128,7 @@ export default function ContactDetailPage() {
     wa_number: '', name: '', email: '', language: '', status: 'new', lifecycle_stage: 'lead', job_title: '', company: '',
     phone_secondary: '', city: '', state: '', country: '', business_type: '', requirement_type: '',
     current_process: '', budget_amount: '', timeline: '', qualification_status: '', priority: 'medium', remarks: '',
-    source: 'manual', owner_id: '',
+    source: 'manual', owner_id: '', opt_in: true,
   })
   const [agents, setAgents] = useState([])
   const [accountList, setAccountList] = useState([])
@@ -161,7 +161,7 @@ export default function ContactDetailPage() {
             business_type: c.business_type ?? '', requirement_type: c.requirement_type ?? '', current_process: c.current_process ?? '',
             budget_amount: c.budget_amount ?? '', timeline: c.timeline ?? '', qualification_status: c.qualification_status ?? '',
             priority: c.priority ?? 'medium', remarks: c.remarks ?? '',
-            source: c.source ?? 'manual', owner_id: c.owner_id ?? '',
+            source: c.source ?? 'manual', owner_id: c.owner_id ?? '', opt_in: Number(c.opt_in) === 1,
           })
           setLoading(false)
         })
@@ -232,11 +232,11 @@ export default function ContactDetailPage() {
     setSaving(true)
     try {
       if (isNew) {
-        await contactsApi.create(form)
+        await contactsApi.create({ ...form, opt_in: form.opt_in ? 1 : 0 })
         toast.success('Contact created', form.name || form.wa_number)
         navigate('/contacts')
       } else {
-        await contactsApi.update(id, form)
+        await contactsApi.update(id, { ...form, opt_in: form.opt_in ? 1 : 0 })
         toast.success('Contact updated', 'Changes saved.')
         setContact((await contactsApi.get(id)).data)
       }
@@ -393,6 +393,10 @@ export default function ContactDetailPage() {
             <label className="lp-cd-label" htmlFor="cd-wa">WhatsApp number *</label>
             <input id="cd-wa" type="tel" inputMode="tel" autoComplete="off" aria-invalid={errors.wa_number ? 'true' : undefined} className={`lp-cd-input ${errors.wa_number ? 'invalid' : ''}`} value={form.wa_number} onChange={e => { setForm(f => ({ ...f, wa_number: e.target.value })); if (errors.wa_number) setErrors(x => ({ ...x, wa_number: '' })) }} placeholder="+919999900000" />
             {errors.wa_number && <div className="lp-cd-err" role="alert">{errors.wa_number}</div>}
+            <label style={{ display: 'flex', gap: 8, alignItems: 'flex-start', marginTop: 8, fontSize: 12.5, color: '#4b5563', lineHeight: 1.4, cursor: 'pointer' }}>
+              <input type="checkbox" checked={!!form.opt_in} onChange={e => setForm(f => ({ ...f, opt_in: e.target.checked }))} style={{ marginTop: 2 }} />
+              <span><b>Agreed to receive WhatsApp messages from us.</b> Untick if they have not agreed or have asked you to stop: they will then be left out of campaigns and offers. Booking and payment messages still work.</span>
+            </label>
           </div>
           <div>
             <label className="lp-cd-label" htmlFor="cd-name">Full name</label>

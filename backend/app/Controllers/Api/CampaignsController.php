@@ -184,6 +184,14 @@ class CampaignsController extends ResourceController
             $this->model()->update((int) $id, ['status' => 'draft', 'scheduled_at' => null]);
         }
 
+        // A double click must not stack a second job: one send job per campaign is enough (and the per-contact unique row already
+        // guarantees nobody is messaged twice).
+        $already = db_connect()->table('jobs')->where('tenant_id', $tenantId)->where('type', 'campaign_send')->where('source_type', 'campaigns')
+            ->where('source_id', (int) $id)->whereIn('status', ['pending', 'processing'])->countAllResults();
+        if ($already > 0) {
+            return $this->respond(['success' => true, 'status' => 'queued', 'message' => 'This campaign is already queued to send.']);
+        }
+
         JobDispatcher::dispatch(
             tenantId:   $tenantId,
             type:       'campaign_send',

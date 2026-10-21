@@ -181,6 +181,9 @@ class ContactsController extends ResourceController
             'email'         => $email !== '' ? $email : null,
             'status'        => $this->request->getJsonVar('status') ?? 'new',
             'source'        => $source,
+            // Consent is a choice: an explicit "not opted in" must be stored (it used to be dropped, so every contact became opted in).
+            // Absent = the existing default. An EXISTING contact's state is never changed by this call (upsert preserves it).
+            'opt_in'        => ($oi = $this->request->getJsonVar('opt_in')) === null ? null : (int) filter_var($oi, FILTER_VALIDATE_BOOLEAN),
             // getJsonVar returns stdClass for a JSON object unless assoc is
             // forced; without `true` the downstream is_array() guard fails and
             // custom fields are silently dropped.

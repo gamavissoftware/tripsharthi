@@ -218,6 +218,36 @@ class InboxController extends ResourceController
             $language     = $this->request->getJsonVar('language') ?? 'en';
             $components   = $this->request->getJsonVar('components');
 
+            // The template must be one of THIS workspace's and approved: a name typed or posted by a client is never trusted (a made-up
+            // name would only fail later at Meta, after a billed attempt and a confusing error).
+            $tplModel = (new TemplateModel())->setTenant($tenantId);
+            $reqTplId = (int) ($this->request->getJsonVar('template_id') ?? 0);
+            $tplRow   = $reqTplId ? $tplModel->find($reqTplId) : null;
+            if ($tplRow === null && $templateName !== '') {
+                $tplRow = (new TemplateModel())->setTenant($tenantId)->where('name', $templateName)->first();
+            }
+            if (! $tplRow) {
+                return $this->fail(['template' => 'That template was not found in your workspace.'], 422);
+            }
+            if (($tplRow['meta_status'] ?? '') !== 'approved') {
+                return $this->fail(['template' => 'This template is not approved by WhatsApp yet (status: ' . ($tplRow['meta_status'] ?? 'unknown') . ').'], 422);
+            }
+            $templateName = (string) $tplRow['name'];
+            $language     = (string) ($tplRow['language'] ?: $language);
+            // Marketing needs consent and a healthy sending status, exactly like campaigns and the contact page. Utility templates
+            // (payment links, booking updates) are not blocked by a marketing opt-out.
+            if (($tplRow['category'] ?? '') === 'marketing') {
+                $waDigits = ltrim((string) $conv['wa_number'], '+');
+                $optedOut = db_connect()->table('contacts')->where('tenant_id', $tenantId)->where('deleted_at', null)->where('opt_in', 0)
+                    ->groupStart()->where('wa_number', '+' . $waDigits)->orWhere('wa_number', $waDigits)->groupEnd()->countAllResults() > 0;
+                if ($optedOut) {
+                    return $this->fail(['opt_in' => 'This contact has opted out of marketing messages.'], 422);
+                }
+                if (($held = (new \App\Services\WhatsApp\SendingGate())->blockedReason($tenantId)) !== null) {
+                    return $this->fail(['sending' => $held], 422);
+                }
+            }
+
             // Build Meta components from the supplied variable values when the
             // client didn't pass raw components. A template with body variables
             // MUST receive a matching number of params or Meta rejects the send
@@ -470,8 +500,9 @@ class InboxController extends ResourceController
             $user = is_array($m) ? $m['user'] : null;
         }
         if ($user === null) {
-            http_response_code(401);
-            echo 'Unauthorized.';
+            // A real response object (not echo): http_response_code() was ignored once the debug toolbar/output had started, so a tokenless
+            // request could come back as "200 Unauthorized.".
+            $this->response->setStatusCode(401)->setContentType('text/plain')->setBody('Unauthorized.')->send();
             return;
         }
         \App\Services\Auth\CurrentUser::set($user);

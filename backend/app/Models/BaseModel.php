@@ -233,6 +233,21 @@ abstract class BaseModel extends Model
         return parent::first();
     }
 
+    /**
+     * Counts were NOT scoped to the workspace (only find/findAll/first/paginate were): `->setTenant($t)->where(...)->countAllResults()` counted every
+     * customer's rows (a campaign showed 79 contacts for a workspace with 4). The tenant condition is now applied here too. A model with no tenant
+     * set (internal/cron code) behaves as before, and withoutTenantScope() still opts out for the next query.
+     */
+    public function countAllResults(bool $reset = true, bool $test = false)
+    {
+        if ($this->bypassTenantScope) {
+            $this->bypassTenantScope = false;
+        } elseif ($this->tenantId > 0) {
+            $this->where($this->table . '.tenant_id', $this->tenantId);
+        }
+        return parent::countAllResults($reset, $test);
+    }
+
     public function paginate(?int $perPage = null, string $group = 'default', ?int $page = null, int $segment = 0): ?array
     {
         $this->scopeTenant();

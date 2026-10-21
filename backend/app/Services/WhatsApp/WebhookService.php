@@ -68,12 +68,21 @@ class WebhookService
                     : null;
 
                 foreach ($value['messages'] ?? [] as $msg) {
-                    $this->handleMessage($msg, $value['contacts'] ?? [], $phoneNumber);
-                    $processed++;
+                    // One bad message must never cost the customer the OTHER messages Meta batched into this same request.
+                    try {
+                        $this->handleMessage($msg, $value['contacts'] ?? [], $phoneNumber);
+                        $processed++;
+                    } catch (\Throwable $e) {
+                        log_message('error', 'WebhookService: message ' . ($msg['id'] ?? '?') . ' failed: ' . $e->getMessage());
+                    }
                 }
 
                 foreach ($value['statuses'] ?? [] as $status) {
-                    $this->handleStatus($status);
+                    try {
+                        $this->handleStatus($status);
+                    } catch (\Throwable $e) {
+                        log_message('error', 'WebhookService: status update failed: ' . $e->getMessage());
+                    }
                 }
             }
         }
@@ -105,6 +114,11 @@ class WebhookService
         }
 
         $tenantId     = $phoneNumber ? (int) (is_array($phoneNumber) ? $phoneNumber['tenant_id'] : $phoneNumber->tenant_id) : 0;
+        if ($tenantId <= 0) {
+            // A number that is not connected to any workspace (disconnected, or registered on our Meta app by someone else): nothing to store it under.
+            log_message('warning', "WebhookService: message {$msg['id']} for an unknown phone number - dropped.");
+            return;
+        }
         $phoneNumRow  = is_array($phoneNumber) ? $phoneNumber : (array) ($phoneNumber ?? []);
         $phoneNumDbId = (int) ($phoneNumRow['id'] ?? 0);
 
