@@ -209,6 +209,9 @@ final class AdCredentialsService
     public function googleSelect(int $tenantId, string $customerId, string $loginCustomerId = ''): array
     {
         $cid = preg_replace('/\D/', '', $customerId);
+        if ($cid === '' && trim($customerId) !== '') {   // typed something with no digits: a typo must not wipe the saved account and its mapping
+            throw new \InvalidArgumentException('Google Ads customer IDs have 10 digits.');
+        }
         if ($cid === '') { // "Change account": forget the selection and its mapping, keep the Google connection
             $cfg = $this->load($tenantId, 'google_ads');
             unset($cfg['customer_id'], $cfg['login_customer_id'], $cfg['conversion_actions']);

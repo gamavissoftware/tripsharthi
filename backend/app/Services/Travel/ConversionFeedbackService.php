@@ -88,6 +88,11 @@ final class ConversionFeedbackService
             } catch (\Throwable $e) {
                 $upd += ['status' => (int) $row['attempts'] + 1 >= self::MAX_ATTEMPTS ? 'failed' : 'pending', 'response' => mb_substr($e->getMessage(), 0, 500)];
             }
+            // A temporary error (5xx / 429) leaves the event pending for another try, but the LAST attempt must end as 'failed': past
+            // MAX_ATTEMPTS the event is never picked up again, and a row stuck at 'pending' never shows in the failed list or its Retry button.
+            if (($upd['status'] ?? 'pending') === 'pending' && (int) $upd['attempts'] >= self::MAX_ATTEMPTS) {
+                $upd['status'] = 'failed';
+            }
             (new ConversionEventModel())->setTenant($tid)->update((int) $row['id'], $upd);
             $key = $upd['status'] ?? 'pending';
             if ($key === 'sent') { $out['sent']++; } elseif ($key === 'failed') { $out['failed']++; } elseif ($key === 'skipped') { $out['skipped']++; }
@@ -225,9 +230,12 @@ final class ConversionFeedbackService
 
     private function result(array $res): array
     {
-        $ok = $res['status'] >= 200 && $res['status'] < 300;
-        return ['status' => $ok ? 'sent' : 'pending', 'response' => mb_substr($res['body'], 0, 500), 'sent_at' => $ok ? date('Y-m-d H:i:s') : null]
-            + ($ok ? [] : ['status' => $res['status'] >= 400 && $res['status'] < 500 && $res['status'] !== 429 ? 'failed' : 'pending']);
+        $code = (int) $res['status'];
+        $ok   = $code >= 200 && $code < 300;
+        // 4xx (except 429) = the platform refused this event for good (bad token, bad data): fail now. 5xx / 429 / network = try again later.
+        // (This used to merge two arrays with "+", where the LEFT value wins, so a permanent refusal was still retried five times.)
+        $permanent = $code >= 400 && $code < 500 && $code !== 429;
+        return ['status' => $ok ? 'sent' : ($permanent ? 'failed' : 'pending'), 'response' => mb_substr((string) $res['body'], 0, 500), 'sent_at' => $ok ? date('Y-m-d H:i:s') : null];
     }
 
     /** Decrypted integration config, or null. Secrets are stored encrypted under *_enc keys. */

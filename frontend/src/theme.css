@@ -399,16 +399,16 @@ body.imp-active { box-shadow: inset 0 0 0 3px #f98f26; }
 @media (max-width: 800px) { .inbox-grid { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---- shared compact stat tiles (components/StatTile.jsx) ---- */
-.st-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 0 0 14px; }
+.st-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(172px, 1fr)); gap: 10px; margin: 0 0 14px; }
 .st { position: relative; display: grid; grid-template-columns: auto 1fr; column-gap: 9px; align-items: center; text-align: left; background: #fff; border: 1px solid #e3eaf3; border-radius: 13px; padding: 11px 12px 10px 15px; box-shadow: 0 2px 10px rgba(10, 31, 68, .05); overflow: hidden; color: inherit; text-decoration: none; font: inherit; min-width: 0; }
 .st::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--tone, #0a6cc4); }
 .st-ico { grid-row: 1 / span 2; width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; color: #fff; background: var(--tone, #0a6cc4); }
 .st:not(:has(.st-ico)) { display: block; }
 .st-l { font-size: 10.5px; letter-spacing: .5px; text-transform: uppercase; color: #6b7a93; font-weight: 700; line-height: 1.25; }
-.st-v { font-size: 1.3rem; font-weight: 800; letter-spacing: -.4px; color: #0a1f44; line-height: 1.15; display: block; overflow-wrap: anywhere; }
+.st-v { font-size: 1.3rem; font-weight: 800; letter-spacing: -.4px; color: #0a1f44; line-height: 1.15; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
 .st-n { grid-column: 1 / -1; font-size: 11.5px; color: #6b7a93; margin-top: 5px; line-height: 1.3; }
 .st.click { cursor: pointer; } .st.click:hover { border-color: #0a6cc4; } .st.on { outline: 2px solid #0a6cc4; outline-offset: -1px; }
-@media (max-width: 640px) { .st-row { grid-template-columns: 1fr 1fr; } .st-v { font-size: 1.15rem; } }
+@media (max-width: 640px) { .st-row { grid-template-columns: 1fr 1fr; } .st-v { font-size: 1.05rem; } }
 
 /* ---- list / settings pages: use the width, tighter chrome (customer app) ---- */
 .cx .page { padding: 20px 24px 40px; }
