@@ -29,13 +29,13 @@ final class SubscriptionLifecycle
         $db = db_connect(); $moved = 0;
         $now = date('Y-m-d H:i:s', $this->now());
         $graceCut = date('Y-m-d H:i:s', $this->now() - self::RECURRING_GRACE_DAYS * 86400);
-        $rows = $db->table('subscriptions')->where('status', 'active')->where('plan !=', 'free')->where('current_period_end IS NOT NULL')->where('current_period_end <', $now)->get()->getResultArray();
+        $rows = $db->table('subscriptions')->whereIn('status', ['active', 'cancelled'])->where('plan !=', 'free')->where('current_period_end IS NOT NULL')->where('current_period_end <', $now)->get()->getResultArray();
         foreach ($rows as $s) {
             if (str_starts_with((string) $s['razorpay_sub_id'], 'sub_') && (string) $s['current_period_end'] >= $graceCut) { continue; }
-            $db->table('subscriptions')->where('id', $s['id'])->where('status', 'active')->update(['status' => 'downgraded', 'updated_at' => $now]);
+            $db->table('subscriptions')->where('id', $s['id'])->whereIn('status', ['active', 'cancelled'])->update(['status' => 'downgraded', 'updated_at' => $now]);   // a CANCELLED plan still runs to the end of what was paid for, then ends like any other
             if ($db->affectedRows() < 1) { continue; }
             $tid = (int) $s['tenant_id'];
-            $still = $db->table('subscriptions')->where('tenant_id', $tid)->where('status', 'active')->where('current_period_end >', $now)->countAllResults();
+            $still = $db->table('subscriptions')->where('tenant_id', $tid)->whereIn('status', ['active', 'cancelled'])->where('current_period_end >', $now)->countAllResults();
             if ($still === 0) { $db->table('tenants')->where('id', $tid)->update(['plan' => 'free', 'updated_at' => $now]); $moved++; }
         }
         return $moved;

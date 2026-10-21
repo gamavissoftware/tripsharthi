@@ -62,7 +62,7 @@ final class DocumentDeliveryService
 
         $wa      = (string) $contact['wa_number'];
         $client  = $this->client($tenantId);
-        $conv    = (new ConversationModel())->setTenant($tenantId)->where('wa_number', $wa)->first();
+        $conv    = (new ConversationModel())->findByNumber($tenantId, $wa);
         $open    = $conv ? (new WindowService(new ConversationModel(), $this->now()))->isOpenForConversation((array) $conv) : false;
         $convId  = $conv ? (int) $conv['id'] : (int) (new ConversationModel())->findOrCreate($tenantId, $wa)['id'];
         $first   = explode(' ', trim((string) ($contact['name'] ?: 'there')))[0];

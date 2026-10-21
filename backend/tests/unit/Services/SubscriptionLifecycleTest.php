@@ -107,6 +107,19 @@ final class SubscriptionLifecycleTest extends CIUnitTestCase
         $this->assertSame('starter', db_connect()->table('tenants')->where('id', 2)->get()->getRowArray()['plan'], 'a renewed workspace keeps its plan');
     }
 
+    public function testACancelledPlanKeepsRunningUntilItsPaidPeriodEndsAndThenGoesBackToFree(): void
+    {
+        $running = $this->sub(1, 'cancelled', 'pay_cancel_running', $this->at(10));       // cancelled today, 10 paid days left
+        $this->assertSame(0, (new SubscriptionLifecycle(null, self::NOW))->expire(), 'a cancelled plan is NOT cut off early');
+        $this->assertSame('starter', db_connect()->table('tenants')->where('id', 1)->get()->getRowArray()['plan']);
+        $this->assertSame('cancelled', $this->row($running)['status']);
+
+        db_connect()->table('subscriptions')->where('id', $running)->update(['current_period_end' => $this->at(-1)]);   // the paid days are over
+        $this->assertSame(1, (new SubscriptionLifecycle(null, self::NOW))->expire());
+        $this->assertSame('downgraded', $this->row($running)['status']);
+        $this->assertSame('free', db_connect()->table('tenants')->where('id', 1)->get()->getRowArray()['plan'], 'it used to stay on the paid plan forever');
+    }
+
     public function testRunningPeriodsAndLateRecurringChargesAreLeftAlone(): void
     {
         $run = $this->sub(1, 'active', 'pay_run', $this->at(5));

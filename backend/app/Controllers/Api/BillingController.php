@@ -172,6 +172,12 @@ class BillingController extends ResourceController
                 $body['plan'],
                 $body['billing'] ?? 'monthly'
             );
+        } catch (\CodeIgniter\Database\Exceptions\DatabaseException $e) {
+            // Never show a database message (table / key names) to a customer. CI4's DatabaseException is a RuntimeException, so it must be caught first.
+            log_message('error', "BillingController::verifyPayment tenant#{$tenantId}: " . $e->getMessage());
+            return str_contains($e->getMessage(), 'Duplicate entry')
+                ? $this->fail('This payment has already been recorded. If your plan is not active, please contact support with your payment id.', 409)
+                : $this->fail('Payment verification failed. Please contact support if money was deducted.', 500);
         } catch (\RuntimeException $e) {
             log_message('error', "BillingController::verifyPayment tenant#{$tenantId}: " . $e->getMessage());
             return $this->fail($e->getMessage(), 422);

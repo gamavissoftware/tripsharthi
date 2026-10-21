@@ -238,7 +238,7 @@ class BillingService
         $periodDays  = ($cycle === 'annual') ? 365 : 30;
         $now         = new \DateTime();
 
-        $running = $db->table('subscriptions')->selectMax('current_period_end', 'e')->where('tenant_id', $tenantId)->where('status', 'active')->where('current_period_end >', $now->format('Y-m-d H:i:s'))->get()->getRowArray();
+        $running = $db->table('subscriptions')->selectMax('current_period_end', 'e')->where('tenant_id', $tenantId)->whereIn('status', ['active', 'cancelled'])->where('current_period_end >', $now->format('Y-m-d H:i:s'))->get()->getRowArray();
         $start     = (! empty($running['e'])) ? new \DateTime((string) $running['e']) : clone $now;
         $periodEnd = (clone $start)->modify("+{$periodDays} days");
 
@@ -376,7 +376,9 @@ class BillingService
             throw new \RuntimeException("No active subscription found for tenant #{$tenantId}.");
         }
 
-        if (! $this->isMockMode()) {
+        // Only an old RECURRING Razorpay subscription ("sub_...") has anything to cancel at Razorpay. A prepaid order stores its payment id
+        // ("pay_...") here and nothing renews by itself, so calling Razorpay with it just failed ("Failed to cancel") for every customer.
+        if (! $this->isMockMode() && str_starts_with((string) $sub['razorpay_sub_id'], 'sub_')) {
             $this->razorpayPost('/subscriptions/' . $sub['razorpay_sub_id'] . '/cancel', [
                 'cancel_at_cycle_end' => 1,
             ]);

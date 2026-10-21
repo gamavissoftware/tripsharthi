@@ -228,7 +228,7 @@ final class DunningService
         $client = $this->client($tenantId);
         $wa     = (string) $contact['wa_number'];
 
-        $conv    = (new ConversationModel())->setTenant($tenantId)->where('wa_number', $wa)->first();
+        $conv    = (new ConversationModel())->findByNumber($tenantId, $wa);
         $convArr = $conv ? (array) $conv : [];
         $open    = $convArr ? (new WindowService(new ConversationModel(), $this->now()))->isOpenForConversation($convArr) : false;
         $convId  = (int) ($convArr['id'] ?? 0) ?: (int) (new ConversationModel())->findOrCreate($tenantId, $wa)['id'];

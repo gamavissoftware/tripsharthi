@@ -169,6 +169,14 @@ class PaymentLinkService
             return $link;
         }
 
+        // A "paid" notice that says LESS was paid than we asked for must not settle the whole instalment (the subscription path already
+        // checks this). Razorpay only sends payment_link.paid for a full payment, so this is defence in depth against a wrong or replayed
+        // payload; the link stays open and someone is told by the log. When the notice carries no amount, behaviour is unchanged.
+        if ($status === 'paid' && isset($entity['amount_paid']) && (int) $entity['amount_paid'] > 0 && (int) $entity['amount_paid'] < (int) $link['amount_paise']) {
+            log_message('critical', "PaymentLinkService: link #{$link['id']} reported paid with {$entity['amount_paid']} paise but {$link['amount_paise']} was asked - NOT settled, check by hand.");
+            return $link;
+        }
+
         $update = ['status' => $status];
         if ($status === 'paid') {
             $update['paid_at']             = date('Y-m-d H:i:s');

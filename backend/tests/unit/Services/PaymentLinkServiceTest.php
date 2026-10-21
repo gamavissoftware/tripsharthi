@@ -129,6 +129,20 @@ class PaymentLinkServiceTest extends CIUnitTestCase
         $this->assertNotNull($row['paid_at']);
     }
 
+    public function testAPaidNoticeForLessThanTheAmountAskedDoesNotSettle(): void
+    {
+        $this->connectRazorpay();
+        $link = (new PaymentLinkService())->createLink(1, 100, ['description' => 'x']);          // Rs 100 = 10,000 paise
+
+        (new PaymentLinkService())->applyWebhookStatus('payment_link.paid',
+            ['id' => $link['razorpay_link_id'], 'reference_id' => $link['reference_id'], 'status' => 'paid', 'amount_paid' => 9_900], 'pay_short');
+        $this->assertNotSame('paid', (new PaymentLinkModel())->setTenant(1)->find((int) $link['id'])['status'], 'a short payment must not settle the link');
+
+        (new PaymentLinkService())->applyWebhookStatus('payment_link.paid',
+            ['id' => $link['razorpay_link_id'], 'reference_id' => $link['reference_id'], 'status' => 'paid', 'amount_paid' => 10_000], 'pay_full');
+        $this->assertSame('paid', (new PaymentLinkModel())->setTenant(1)->find((int) $link['id'])['status']);
+    }
+
     public function testWebhookUnknownLinkReturnsNull(): void
     {
         $result = (new PaymentLinkService())->applyWebhookStatus(

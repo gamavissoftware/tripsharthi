@@ -21,6 +21,23 @@ class ConversationModel extends BaseModel
      * Find (or create) the conversation for a given wa_number within a tenant.
      * Returns the conversation row (existing or newly inserted).
      */
+    /**
+     * Find (never create) a workspace's conversation for a number, whichever way the '+' was stored. Contacts keep "91…" while
+     * conversations keep "+91…", so an exact match missed the customer's open chat (reminders and document sends then wrongly saw a closed window).
+     * @return array<string,mixed>|null
+     */
+    public function findByNumber(int $tenantId, string $waNumber): ?array
+    {
+        $digits    = ltrim($waNumber, '+');
+        $canonical = ($digits !== '' && ctype_digit($digits)) ? '+' . $digits : $waNumber;
+        foreach (array_unique([$canonical, $digits, $waNumber]) as $candidate) {
+            if ($candidate === '') { continue; }
+            $row = (new self())->setTenant($tenantId)->where('wa_number', $candidate)->first();
+            if ($row !== null) { return (array) $row; }
+        }
+        return null;
+    }
+
     public function findOrCreate(int $tenantId, string $waNumber, array $defaults = []): array
     {
         // Match an existing conversation regardless of '+'-prefix drift. Inbound
