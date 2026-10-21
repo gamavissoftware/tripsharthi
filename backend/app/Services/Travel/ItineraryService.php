@@ -31,6 +31,13 @@ final class ItineraryService
         );
         unset($p['discount_amount']);
         (new ItineraryModel())->setTenant($tenantId)->update($itineraryId, $p);
+        // The deal follows the quote being worked on, until a booking fixes its value (never wipe the budget estimate with an empty quote).
+        if (! empty($it['trip_id']) && (int) ($p['sell_subtotal'] ?? 0) > 0 && in_array($it['status'], ['draft', 'sent', 'viewed', 'accepted'], true)) {
+            $trip = (new \App\Models\TripModel())->setTenant($tenantId)->find((int) $it['trip_id']);
+            if ($trip && ! in_array($trip['status'], ['booked', 'travelling', 'completed', 'cancelled', 'lost'], true)) {
+                (new TripService())->syncDealValue($tenantId, (int) $it['trip_id'], (int) $p['sell_subtotal']);
+            }
+        }
         return (new ItineraryModel())->setTenant($tenantId)->find($itineraryId);
     }
 

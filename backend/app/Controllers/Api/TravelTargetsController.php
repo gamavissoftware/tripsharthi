@@ -16,7 +16,7 @@ class TravelTargetsController extends TravelBaseController
 {
     public function index()
     {
-        $month = (string) ($this->request->getGet('month') ?: date('Y-m'));
+        $month = (string) ($this->request->getGet('month') ?: (new \DateTimeImmutable('now', new \DateTimeZone('Asia/Kolkata')))->format('Y-m'));
         try { return $this->ok((new SalesTargetService())->members(CurrentUser::tenantId(), $month)); }
         catch (\InvalidArgumentException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'invalid'], 422); }
     }

@@ -12,7 +12,19 @@ namespace App\Services\Travel;
 final class TravelReportService
 {
     public function __construct(private readonly ?int $now = null) {}
-    private function today(): string { return date('Y-m-d', $this->now ?? time()); }
+    /** "Today" for a travel agency is the India date (the server clock is UTC, which is still "yesterday" until 05:30 IST). */
+    private function today(): string { return (new \DateTimeImmutable('@' . ($this->now ?? time())))->setTimezone(new \DateTimeZone('Asia/Kolkata'))->format('Y-m-d'); }
+
+    /**
+     * The chosen dates are India dates, the stored timestamps are UTC: 1 Oct 00:00 IST is 30 Sep 18:30 UTC. Using the dates as-is moved every
+     * range by 5h30 (a booking at 00:10 IST on the 1st was reported in the previous period).
+     * @return array{0:string,1:string}
+     */
+    private function utcRange(string $from, string $to): array
+    {
+        $ist = new \DateTimeZone('Asia/Kolkata'); $utc = new \DateTimeZone('UTC');
+        return [(new \DateTimeImmutable($from . ' 00:00:00', $ist))->setTimezone($utc)->format('Y-m-d H:i:s'), (new \DateTimeImmutable($to . ' 23:59:59', $ist))->setTimezone($utc)->format('Y-m-d H:i:s')];
+    }
 
     public static function pct(int|float $a, int|float $b): float { return $b > 0 ? round($a * 100 / $b, 1) : 0.0; }
 
@@ -21,7 +33,7 @@ final class TravelReportService
         foreach ([$from, $to] as $d) { if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || strtotime($d) === false) { throw new \InvalidArgumentException('Choose a valid date range.'); } }
         if ($from > $to) { throw new \InvalidArgumentException('The start date is after the end date.'); }
         if ((strtotime($to) - strtotime($from)) / 86400 > 800) { throw new \InvalidArgumentException('Choose a range of at most about two years.'); }
-        $db = db_connect(); $a = [$tenantId, $from . ' 00:00:00', $to . ' 23:59:59'];
+        $db = db_connect(); [$u0, $u1] = $this->utcRange($from, $to); $a = [$tenantId, $u0, $u1];
 
         // ---- funnel (trips created in the range)
         $f = $db->query("SELECT COUNT(*) enquiries,
@@ -61,7 +73,7 @@ final class TravelReportService
         $trend = [];
         for ($i = 5; $i >= 0; $i--) {
             $m = date('Y-m', strtotime(substr($to, 0, 7) . "-01 -$i months"));
-            $x = $db->query("SELECT COUNT(*) n, COALESCE(SUM(subtotal),0) revenue, COALESCE(SUM(subtotal - cost_total),0) margin FROM bookings WHERE tenant_id = ? AND deleted_at IS NULL AND status <> 'cancelled' AND DATE_FORMAT(created_at,'%Y-%m') = ?", [$tenantId, $m])->getRowArray();
+            $x = $db->query("SELECT COUNT(*) n, COALESCE(SUM(subtotal),0) revenue, COALESCE(SUM(subtotal - cost_total),0) margin FROM bookings WHERE tenant_id = ? AND deleted_at IS NULL AND status <> 'cancelled' AND DATE_FORMAT(CONVERT_TZ(created_at, '+00:00', '+05:30'),'%Y-%m') = ?", [$tenantId, $m])->getRowArray();
             $trend[] = ['month' => $m, 'bookings' => (int) $x['n'], 'revenue' => (int) $x['revenue'], 'margin' => (int) $x['margin']];
         }
 
@@ -118,7 +130,7 @@ final class TravelReportService
         foreach ([$from, $to] as $d) { if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $d) || strtotime($d) === false) { throw new \InvalidArgumentException('Choose a valid date range.'); } }
         if ($from > $to) { throw new \InvalidArgumentException('The start date is after the end date.'); }
         if ((strtotime($to) - strtotime($from)) / 86400 > 800) { throw new \InvalidArgumentException('Choose a range of at most about two years.'); }
-        $db = db_connect(); $a = [$tenantId, $from . ' 00:00:00', $to . ' 23:59:59'];
+        $db = db_connect(); [$u0, $u1] = $this->utcRange($from, $to); $a = [$tenantId, $u0, $u1];
         $rows = $db->query("SELECT x.platform, x.campaign, COUNT(*) leads, SUM(x.quoted) quoted, SUM(x.bookings) bookings, SUM(x.revenue) revenue, SUM(x.margin) margin FROM (
                 SELECT COALESCE(NULLIF(la.platform, ''), 'direct') platform, COALESCE(NULLIF(la.campaign_name, ''), '(no campaign)') campaign,
                        (t.status IN ('quoted','negotiating','booked','travelling','completed')) quoted,

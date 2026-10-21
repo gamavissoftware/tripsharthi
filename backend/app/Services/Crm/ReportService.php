@@ -55,8 +55,18 @@ final class ReportService
             throw new RuntimeException("Unknown report entity '{$entity}'.");
         }
         $cfg    = self::SPEC[$entity];
-        $metric = in_array($spec['metric'] ?? '', $cfg['metrics'], true) ? $spec['metric'] : $cfg['metrics'][0];
-        $dim    = in_array($spec['dimension'] ?? '', $cfg['dimensions'], true) ? $spec['dimension'] : 'none';
+        // A metric or dimension that is not on the allow-list is refused. It used to be swapped silently for "count" / "none", so a widget with a
+        // renamed or mistyped setting showed a confident, wrong number instead of an error. Leaving them out still means the default.
+        $reqMetric = $spec['metric'] ?? null;
+        if ($reqMetric !== null && $reqMetric !== '' && ! in_array($reqMetric, $cfg['metrics'], true)) {
+            throw new RuntimeException("Unknown metric for {$entity}: choose one of " . implode(', ', $cfg['metrics']) . '.');
+        }
+        $reqDim = $spec['dimension'] ?? null;
+        if ($reqDim !== null && $reqDim !== '' && $reqDim !== 'none' && ! in_array($reqDim, $cfg['dimensions'], true)) {
+            throw new RuntimeException("Unknown grouping for {$entity}: choose one of " . implode(', ', $cfg['dimensions']) . '.');
+        }
+        $metric = in_array($reqMetric ?? '', $cfg['metrics'], true) ? $reqMetric : $cfg['metrics'][0];
+        $dim    = in_array($reqDim ?? '', $cfg['dimensions'], true) ? $reqDim : 'none';
 
         [$from, $to] = $this->resolveRange($spec, $now);
 

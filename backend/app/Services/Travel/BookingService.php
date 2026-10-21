@@ -15,6 +15,27 @@ use App\Models\TripModel;
 /** Turns an accepted itinerary into a booking with payment schedule + supplier to-dos. */
 final class BookingService
 {
+    /**
+     * Cancel a booking and keep everything that reads deals honest: its seats go back, and when it was the trip's only live booking the trip
+     * (and so its CRM deal) becomes Lost / "Booking cancelled" instead of staying Won. Cancelling twice is refused.
+     */
+    public function cancel(int $tenantId, int $bookingId, ?string $reason = null): array
+    {
+        $b = (new BookingModel())->setTenant($tenantId)->find($bookingId);
+        if (! $b) { throw new \InvalidArgumentException('Booking not found.'); }
+        if ($b['status'] === 'cancelled') { throw new \DomainException('This booking is already cancelled.'); }
+        (new DepartureService())->releaseForBooking($tenantId, $bookingId);
+        (new BookingModel())->setTenant($tenantId)->update($bookingId, ['status' => 'cancelled', 'cancelled_at' => date('Y-m-d H:i:s'), 'cancel_reason' => $reason]);
+        if (! empty($b['trip_id'])) {
+            $live = (new BookingModel())->setTenant($tenantId)->where('trip_id', (int) $b['trip_id'])->where('status !=', 'cancelled')->countAllResults();
+            if ($live === 0) {
+                try { (new TripService())->setStatus($tenantId, (int) $b['trip_id'], 'cancelled', 'Booking cancelled' . ($reason ? ': ' . $reason : '')); }
+                catch (\Throwable $e) { log_message('error', 'trip status after booking cancel failed: ' . $e->getMessage()); }
+            }
+        }
+        return (array) (new BookingModel())->setTenant($tenantId)->find($bookingId);
+    }
+
     public function createFromItinerary(int $tenantId, int $itineraryId, array $opts = [], ?int $actorId = null): array
     {
         $it = (new ItineraryModel())->setTenant($tenantId)->find($itineraryId);
@@ -51,6 +72,7 @@ final class BookingService
             'cost_total'       => $it['cost_total'],
         ], true);
         if ($seatId !== null) { $departures->attachBooking($tenantId, $seatId, $bookingId); }
+        (new TripService())->syncDealValue($tenantId, (int) $trip['id'], (int) $it['sell_subtotal']);      // the deal is now worth what was booked
         } catch (\Throwable $e) {
             if ($seatId !== null) { $departures->release($tenantId, $seatId, 'booking could not be created'); }
             throw $e;

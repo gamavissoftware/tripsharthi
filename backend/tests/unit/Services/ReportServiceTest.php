@@ -138,11 +138,17 @@ class ReportServiceTest extends CIUnitTestCase
         (new ReportService())->run(1, ['entity' => 'messages', 'metric' => 'count', 'dimension' => 'none']);
     }
 
-    public function testWhitelistFallsBackOnBadMetricDimension(): void
+    public function testAnUnknownMetricOrGroupingIsRefusedAndOmittedOnesUseTheDefaults(): void
     {
         $this->deal(1, ['value_amount' => 100000]);
-        // Garbage metric/dimension → falls back to count/none, never errors.
-        $res = (new ReportService())->run(1, ['entity' => 'deal', 'metric' => 'DROP TABLE', 'dimension' => 'hacker']);
+        // Garbage is refused with a clear message (it used to become "count" silently, so a mistyped widget showed a wrong number).
+        foreach ([['metric' => 'DROP TABLE'], ['metric' => 'count', 'dimension' => 'hacker']] as $bad) {
+            try { (new ReportService())->run(1, ['entity' => 'deal'] + $bad); $this->fail('accepted ' . json_encode($bad)); }
+            catch (\RuntimeException $e) { $this->assertStringContainsString('choose one of', $e->getMessage()); }
+        }
+        // Leaving them out (or "none") is still fine: count, no grouping.
+        $res = (new ReportService())->run(1, ['entity' => 'deal']);
         $this->assertSame(1, $res['total']);
+        $this->assertSame(1, (new ReportService())->run(1, ['entity' => 'deal', 'metric' => 'count', 'dimension' => 'none'])['total']);
     }
 }

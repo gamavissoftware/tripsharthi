@@ -69,6 +69,20 @@ final class TravelHomeServiceTest extends CIUnitTestCase
         $this->assertCount(2, $d['team']);                                             // owner + agent, not the other tenant's user
     }
 
+    public function testMonthWindowsAreIndiaMonthsEvenThoughTimestampsAreStoredInUtc(): void
+    {
+        // 30 Sep 18:40 UTC = 00:10 IST on 1 Oct  -> belongs to OCTOBER;  30 Sep 18:20 UTC = 23:50 IST on 30 Sep -> SEPTEMBER.
+        $this->booking(1, 9, 700_000, 500_000, '2026-09-30 18:40:00');
+        $this->booking(1, 9, 300_000, 200_000, '2026-09-30 18:20:00');
+        $this->trip(1, 9, 'enquiry', '2026-09-30 18:40:00');
+        $this->trip(1, 9, 'enquiry', '2026-09-30 18:20:00');
+        $d = (new TravelHomeService(self::NOW))->build(1, 9, true);
+        $this->assertSame(700_000, $d['kpis']['revenue']['value'], 'the 00:10 IST booking is this month');
+        $this->assertSame(300_000, $d['kpis']['revenue']['prev'], 'the 23:50 IST booking is last month');
+        $this->assertSame([1, 1], [$d['kpis']['enquiries']['value'], $d['kpis']['enquiries']['prev']]);
+        $this->assertSame(700_000, end($d['trend'])['revenue'], 'the six-month chart agrees with the headline');
+    }
+
     public function testAgentGetsOnlyOwnNumbersAndNoCostMarginPayablesOrTeam(): void
     {
         $this->seed();

@@ -25,6 +25,15 @@ final class TravelHomeService
         $this->tz = new \DateTimeZone('Asia/Kolkata');
     }
 
+    /**
+     * Month windows are India months, but created_at / sent_at / paid_at are stored in UTC. Comparing "1 Oct 00:00 IST" straight against UTC
+     * timestamps shifted every window by 5h30: a booking or an overnight ad lead at 00:10 IST on the 1st landed in the PREVIOUS month.
+     */
+    private function utc(string $istDateTime): string
+    {
+        return (new \DateTimeImmutable($istDateTime, $this->tz))->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    }
+
     private function dt(string $mod = 'now'): \DateTimeImmutable
     {
         return (new \DateTimeImmutable('@' . ($this->now ?? time())))->setTimezone($this->tz)->modify($mod);
@@ -41,9 +50,9 @@ final class TravelHomeService
         $db  = db_connect();
         $now = $this->dt();
         $nowS = $now->format('Y-m-d H:i:s'); $today = $now->format('Y-m-d');
-        $m0 = $this->dt('first day of this month')->format('Y-m-01 00:00:00');
-        $m1 = $this->dt('first day of next month')->format('Y-m-01 00:00:00');
-        $p0 = $this->dt('first day of last month')->format('Y-m-01 00:00:00');
+        $m0 = $this->utc($this->dt('first day of this month')->format('Y-m-01 00:00:00'));
+        $m1 = $this->utc($this->dt('first day of next month')->format('Y-m-01 00:00:00'));
+        $p0 = $this->utc($this->dt('first day of last month')->format('Y-m-01 00:00:00'));
 
         $oT = $own !== null ? ' AND t.owner_id = ' . (int) $own : '';        // trips t
         $oB = $own !== null ? ' AND b.owner_id = ' . (int) $own : '';        // bookings b
@@ -137,8 +146,9 @@ final class TravelHomeService
         for ($i = 5; $i >= 0; $i--) {
             $start = $this->dt("first day of -$i months");
             $a = $start->format('Y-m-01 00:00:00'); $z = $start->modify('first day of next month')->format('Y-m-01 00:00:00');
-            $r = $db->query("SELECT COUNT(*) n, COALESCE(SUM(b.subtotal),0) revenue FROM bookings b WHERE b.tenant_id = ? AND b.deleted_at IS NULL AND b.status <> 'cancelled' AND b.created_at >= ? AND b.created_at < ?$oB", [$tenantId, $a, $z])->getRowArray();
-            $c = (int) $db->query("SELECT COALESCE(SUM(p.amount),0) n FROM booking_payments p JOIN bookings b ON b.id = p.booking_id AND b.tenant_id = p.tenant_id WHERE p.tenant_id = ? AND p.status = 'paid' AND p.paid_at >= ? AND p.paid_at < ? AND b.deleted_at IS NULL$oB", [$tenantId, $a, $z])->getRowArray()['n'];
+            $aU = $this->utc($a); $zU = $this->utc($z);
+            $r = $db->query("SELECT COUNT(*) n, COALESCE(SUM(b.subtotal),0) revenue FROM bookings b WHERE b.tenant_id = ? AND b.deleted_at IS NULL AND b.status <> 'cancelled' AND b.created_at >= ? AND b.created_at < ?$oB", [$tenantId, $aU, $zU])->getRowArray();
+            $c = (int) $db->query("SELECT COALESCE(SUM(p.amount),0) n FROM booking_payments p JOIN bookings b ON b.id = p.booking_id AND b.tenant_id = p.tenant_id WHERE p.tenant_id = ? AND p.status = 'paid' AND p.paid_at >= ? AND p.paid_at < ? AND b.deleted_at IS NULL$oB", [$tenantId, $aU, $zU])->getRowArray()['n'];
             $trend[] = ['month' => substr($a, 0, 7), 'bookings' => (int) $r['n'], 'revenue' => (int) $r['revenue'], 'collected' => $c];
         }
 
@@ -176,7 +186,7 @@ final class TravelHomeService
     {
         $own = $manager ? $focusUser : $userId;
         $now = $this->dt(); $month = $now->format('Y-m');
-        $from = $month . '-01 00:00:00'; $to = $this->dt('first day of next month')->format('Y-m-01 00:00:00');
+        $from = $this->utc($month . '-01 00:00:00'); $to = $this->utc($this->dt('first day of next month')->format('Y-m-01 00:00:00'));
         $day = (int) $now->format('j'); $dim = (int) $now->format('t');
         $svc = new SalesTargetService(); $targets = $svc->forMonth($tenantId, $month);
         $out = ['as_of' => $now->format('c'), 'month' => $now->format('F Y'), 'scope' => ['manager' => $manager, 'user_id' => $own, 'everyone' => $own === null],

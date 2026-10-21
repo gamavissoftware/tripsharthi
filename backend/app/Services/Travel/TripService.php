@@ -19,6 +19,18 @@ final class TripService
         'completed' => 'Booking Confirmed', 'lost' => 'Lost', 'cancelled' => 'Lost',
     ];
 
+    /**
+     * Keep the CRM deal's value in step with what the trip is really worth. Only the BUDGET was ever copied onto the deal, so a deal for a
+     * Rs 6.6 lakh booking still showed Rs 0 on the CRM dashboard, forecast and leaderboard. The value is the price BEFORE GST (the same
+     * "revenue ex-tax" every other report uses).
+     */
+    public function syncDealValue(int $tenantId, int $tripId, int $paise): void
+    {
+        $trip = (new TripModel())->setTenant($tenantId)->find($tripId);
+        if (! $trip || ! $trip['deal_id'] || $paise <= 0) { return; }
+        (new DealModel())->setTenant($tenantId)->update((int) $trip['deal_id'], ['value_amount' => $paise]);
+    }
+
     public function create(int $tenantId, array $data, ?int $actorId = null): array
     {
         $pipe   = new TravelPipelineService();

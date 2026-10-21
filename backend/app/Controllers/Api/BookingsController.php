@@ -107,10 +107,10 @@ class BookingsController extends TravelBaseController
     /** POST /bookings/:id/cancel { reason } */
     public function cancel($id = null)
     {
-        if (! $this->model()->find((int) $id)) { return $this->failNotFound('Booking not found.'); }
-        (new \App\Services\Travel\DepartureService())->releaseForBooking(CurrentUser::tenantId(), (int) $id);
-        $this->model()->update((int) $id, ['status' => 'cancelled', 'cancelled_at' => date('Y-m-d H:i:s'), 'cancel_reason' => $this->body()['reason'] ?? null]);
-        return $this->ok($this->model()->find((int) $id));
+        try {
+            return $this->ok((new \App\Services\Travel\BookingService())->cancel(CurrentUser::tenantId(), (int) $id, isset($this->body()['reason']) ? mb_substr((string) $this->body()['reason'], 0, 500) : null));
+        } catch (\InvalidArgumentException $e) { return $this->failNotFound($e->getMessage());
+        } catch (\DomainException $e) { return $this->fail($e->getMessage(), 409); }
     }
 
     /** GET /bookings/dashboard — receivables, payables, upcoming departures. */

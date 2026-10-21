@@ -67,6 +67,21 @@ final class TravelReportServiceTest extends CIUnitTestCase
         $this->assertSame(1_000_000, $r['trend'][5]['revenue']);                      // last trend month = month of $to
     }
 
+    public function testTheChosenDatesAreIndiaDatesNotUtcDates(): void
+    {
+        $t1 = $this->trip('booked', 1, '2026-09-30 18:40:00');                      // 00:10 IST on 1 Oct
+        $t2 = $this->trip('booked', 1, '2026-09-30 18:20:00');                      // 23:50 IST on 30 Sep
+        $this->booking($t1, ['subtotal' => 700_000, 'cost_total' => 500_000, 'created_at' => '2026-09-30 18:40:00']);
+        $this->booking($t2, ['subtotal' => 300_000, 'cost_total' => 200_000, 'created_at' => '2026-09-30 18:20:00']);
+        $oct = $this->svc()->report(1, '2026-10-01', '2026-10-31');
+        $this->assertSame([1, 700_000], [$oct['money']['bookings'], $oct['money']['revenue']]);
+        $this->assertSame(1, $oct['funnel']['enquiries']);
+        $sep = $this->svc()->report(1, '2026-09-01', '2026-09-30');
+        $this->assertSame([1, 300_000], [$sep['money']['bookings'], $sep['money']['revenue']]);
+        $byMonth = array_column($oct['trend'], 'revenue', 'month');
+        $this->assertSame([300_000, 700_000], [$byMonth['2026-09'], $byMonth['2026-10']], 'the monthly trend uses India months too');
+    }
+
     public function testCancelledBookingsAreExcludedFromRevenueButCounted(): void
     {
         $t = $this->trip('booked');
