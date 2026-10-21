@@ -89,6 +89,8 @@ final class OfferAdminService
             $code = OfferService::normalizeCode((string) ($in['code'] ?? ''));
             if (! OfferService::isValidCode($code)) { throw new \InvalidArgumentException('A code is 3-30 characters: letters, numbers, - or _.'); }
             if ($db->table('coupons')->where('code', $code)->countAllResults() > 0) { throw new \DomainException("The code {$code} already exists."); }
+            // Partner referral codes and coupon codes share one namespace (creating a partner already checks coupons; this is the other direction).
+            if ($db->table('partners')->where('code', $code)->countAllResults() > 0) { throw new \DomainException("The code {$code} is a partner's referral code."); }
             $db->table('coupons')->insert($row + ['code' => $code, 'created_by' => $adminId, 'created_at' => $this->stamp()]);
             $id = (int) $db->insertID();
             AuditLogger::log('admin.coupon.create', 'coupon', $id, null, ['code' => $code, 'type' => $row['type'], 'value' => $row['value']], $this->tid($adminId), $adminId);

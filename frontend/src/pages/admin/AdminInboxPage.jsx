@@ -26,7 +26,6 @@ function LiveChat() {
   const baseTitle = useRef(document.title)
   useEffect(() => { const n = list.reduce((a, s) => a + s.unread_agent, 0); document.title = (n ? `(${n}) ` : '') + 'Live chat — TripSarthi' }, [list])
   useEffect(() => { const t = baseTitle.current; return () => { document.title = t } }, [])
-  useEffect(() => { const n = list.reduce((a, s) => a + s.unread_agent, 0); document.title = (n ? `(${n}) ` : '') + 'Live chat — TripSarthi'; return () => { document.title = 'TripSarthi — Your Travel Business. Simplified.' } }, [list])
 
   useEffect(() => {
     if (!sel) return undefined

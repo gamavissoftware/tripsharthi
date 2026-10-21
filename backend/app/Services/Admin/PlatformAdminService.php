@@ -86,6 +86,8 @@ final class PlatformAdminService
     public function setPlan(int $tenantId, string $plan, int $days, float $amountRupees, int $adminId, bool $force = false, string $note = ''): array
     {
         if (! in_array($plan, self::PLANS, true)) { throw new \InvalidArgumentException('Unknown plan.'); }
+        // Refused, not silently clamped: a typo such as 3,00,000 days used to become TEN years without a word.
+        if ($plan !== 'free' && ($days < 1 || $days > 3650)) { throw new \InvalidArgumentException('Days must be between 1 and 3650.'); }
         $db = db_connect(); $t = $db->table('tenants')->where('id', $tenantId)->where('deleted_at', null)->get()->getRowArray() ?: throw new \OutOfBoundsException('Customer not found.');
         if ($amountRupees < 0 || $amountRupees > 1_000_000) { throw new \InvalidArgumentException('Amount must be between 0 and 10,00,000.'); }
         $live = $db->table('subscriptions')->where('tenant_id', $tenantId)->where('status', 'active')->where('razorpay_sub_id NOT LIKE', self::MANUAL_PREFIX . '%')->countAllResults();
