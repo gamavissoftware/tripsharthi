@@ -90,6 +90,13 @@ class ContactExporter
             return ((int) $value) === 1 ? 'yes' : 'no';
         }
 
-        return $value === null ? '' : (string) $value;
+        $text = $value === null ? '' : (string) $value;
+        // A WhatsApp number legitimately starts with "+": keep it as is. Everything else that starts with = + - @ (or a control character)
+        // would be run as a formula by Excel/Sheets (names come from outside: web forms, WhatsApp profile names), so it is neutralised.
+        if ($key === 'wa_number' && preg_match('/^\+?[0-9 ()\-]+$/', $text) === 1) {
+            return $text;
+        }
+
+        return \App\Services\Crm\CrmExporter::safeCell($text);
     }
 }

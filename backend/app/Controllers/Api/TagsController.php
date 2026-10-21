@@ -49,10 +49,18 @@ class TagsController extends ResourceController
             return $this->fail($this->validator->getErrors(), 422);
         }
 
-        $id = $model->insert([
-            'name'  => $this->request->getJsonVar('name'),
-            'color' => $this->request->getJsonVar('color') ?? '#6366f1',
-        ], true);
+        $name  = trim((string) $this->request->getJsonVar('name'));
+        $color = $this->request->getJsonVar('color') ?? '#6366f1';
+        // (tenant, name) is unique, including tags that were deleted (soft delete keeps the row): a plain insert answered 500.
+        $same = db_connect()->table('tags')->select('id, deleted_at')->where('tenant_id', CurrentUser::tenantId())->where('name', $name)->get()->getRowArray();
+        if ($same) {
+            if ($same['deleted_at'] === null) {
+                return $this->fail(['name' => "A tag called \"{$name}\" already exists."], 409);
+            }
+            db_connect()->table('tags')->where('id', (int) $same['id'])->update(['deleted_at' => null, 'color' => $color]);   // bring the deleted tag back
+            return $this->respondCreated(['success' => true, 'data' => $model->find((int) $same['id'])]);
+        }
+        $id = $model->insert(['name' => $name, 'color' => $color], true);
 
         return $this->respondCreated(['success' => true, 'data' => $model->find((int) $id)]);
     }
@@ -69,6 +77,12 @@ class TagsController extends ResourceController
             'name'  => $this->request->getJsonVar('name'),
             'color' => $this->request->getJsonVar('color'),
         ], static fn ($v) => $v !== null);
+
+        if (isset($payload['name'])) {
+            $payload['name'] = trim((string) $payload['name']);
+            $clash = db_connect()->table('tags')->select('id')->where('tenant_id', CurrentUser::tenantId())->where('name', $payload['name'])->where('id !=', (int) $id)->get()->getRowArray();
+            if ($clash) { return $this->fail(['name' => "A tag called \"{$payload['name']}\" already exists."], 409); }
+        }
 
         $model->setTenant(CurrentUser::tenantId())->update((int) $id, $payload);
         return $this->respond(['success' => true, 'data' => $model->find((int) $id)]);

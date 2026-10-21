@@ -66,6 +66,7 @@ class SegmentsController extends ResourceController
         $filters = $this->request->getJsonVar('filters')
             ?? $this->request->getJsonVar('conditions')
             ?? [];
+        $filters = json_decode((string) json_encode($filters), true) ?: [];   // a JSON object arrives as stdClass; the matcher wants an array
         $id = $this->model()->insert([
             'name'        => $this->request->getJsonVar('name'),
             'description' => $this->request->getJsonVar('description'),

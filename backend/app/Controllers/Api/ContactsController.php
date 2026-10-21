@@ -430,6 +430,10 @@ class ContactsController extends ResourceController
         if (! $model->find($id)) {
             return $this->failNotFound("Contact #{$id} not found.");
         }
+        // The tag must belong to THIS workspace: ids are guessable, and attaching another workspace's tag would leak its name and colour.
+        if (! (new \App\Models\TagModel())->setTenant(CurrentUser::tenantId())->find($tagId)) {
+            return $this->failNotFound("Tag #{$tagId} not found.");
+        }
         $model->attachTag($id, $tagId);
         return $this->respond(['success' => true, 'tags' => $model->getTagsFor($id)]);
     }

@@ -92,4 +92,17 @@ class ContactExporterTest extends CIUnitTestCase
         fclose($fh);
         return $rows;
     }
+
+    public function testFormulaLookingCellsAreNeutralisedButPhoneNumbersKeepTheirPlus(): void
+    {
+        $csv = ContactExporter::toCsv([
+            ['wa_number' => '+919811122233', 'name' => '=HYPERLINK("http://evil","x")', 'email' => '@cmd@example.com', 'status' => '-2+3', 'source' => "\tTAB", 'opt_in' => 1],
+        ]);
+        $this->assertStringContainsString('+919811122233', $csv);                     // a real number is not mangled
+        $this->assertStringNotContainsString("'+919811122233", $csv);
+        $this->assertStringContainsString("'=HYPERLINK", $csv);                        // formula is prefixed, so it is shown as text
+        $this->assertStringNotContainsString(',"=HYPERLINK', $csv);
+        $this->assertStringContainsString("'@cmd@example.com", $csv);
+        $this->assertStringContainsString("'-2+3", $csv);
+    }
 }
