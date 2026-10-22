@@ -7,3 +7,6 @@ export const API_URL = process.env.EXPO_PUBLIC_API_URL || (Platform.OS === 'web'
 
 // The web app (shown inside the phone app for every screen that is not built natively). In production it lives on the same host as the API.
 export const WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || API_URL
+
+// The TripSarthi team's admin site (shown inside the app for platform admins). In production: the same address with admin. in front of app.
+export const ADMIN_URL = process.env.EXPO_PUBLIC_ADMIN_URL || API_URL.replace('//app.', '//admin.')

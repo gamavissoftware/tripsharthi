@@ -8,6 +8,33 @@ let token = null
 let onUnauthorized = () => {}
 
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn }
+// ---- the TripSarthi team (platform admin) has its OWN session, separate from a customer sign-in ----
+const ADMIN_KEY = 'tp_admin_token'
+let adminToken = null
+let onAdminUnauthorized = () => {}
+export const setAdminUnauthorizedHandler = (fn) => { onAdminUnauthorized = fn }
+export const adminSessionEnded = () => { adminToken = null; deleteItem(ADMIN_KEY).catch(() => {}); onAdminUnauthorized() }
+export async function loadAdminToken() { adminToken = await getItem(ADMIN_KEY); return adminToken }
+export const getAdminToken = () => adminToken
+export async function clearAdminToken() { adminToken = null; await deleteItem(ADMIN_KEY) }
+export const adminAuth = {
+  /** Signs in as the TripSarthi team. 401 = wrong details or not an admin (the same words for both, on purpose). */
+  async login(email, password) {
+    let res
+    try { res = await fetch(`${API_URL}/api/v1/admin-auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-TS-Client': 'mobile' }, body: JSON.stringify({ email, password }) }) }
+    catch (e) { throw new Error(friendlyError({ message: e && e.message })) }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.token) throw new Error(friendlyError({ status: res.status, message: data.message || (data.messages && Object.values(data.messages).find(v => typeof v === 'string')) }))
+    adminToken = data.token; await setItem(ADMIN_KEY, data.token)
+    return data
+  },
+  async logout() {
+    const t = adminToken
+    await clearAdminToken()
+    if (t) fetch(`${API_URL}/api/v1/admin-auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${t}` } }).catch(() => {})
+  },
+}
+
 export async function loadToken() { token = await getItem(KEY); return token }
 /** The signed-in token, for the web pages shown inside the app (they sign in with the same session). */
 export const getToken = () => token

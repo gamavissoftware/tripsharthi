@@ -102,6 +102,31 @@ const SETTINGS = [
   ]),
 ]
 
+// The TripSarthi team's own admin site (platform admins only); keep in step with NAV in frontend/src/admin/AdminApp.jsx.
+const ADMIN = [
+  G('platform', 'Platform', 'shield-checkmark', [
+    I('/admin', 'Overview', 'speedometer'),
+    I('/admin/customers', 'Customers', 'business'),
+    I('/admin/subscriptions', 'Subscriptions', 'card'),
+    I('/admin/invoices', 'GST invoices', 'receipt'),
+    I('/admin/email', 'Email marketing', 'mail'),
+    I('/admin/support', 'Support', 'help-buoy'),
+    I('/admin/mail', 'Mail server', 'send'),
+    I('/admin/mobile-app', 'Mobile app', 'phone-portrait'),
+    I('/admin/payments', 'Payments', 'wallet'),
+    I('/admin/offers', 'Offers', 'pricetag'),
+    I('/admin/partners', 'Partners', 'handshake'),
+    I('/admin/inbox', 'Website inbox', 'chatbubbles'),
+    I('/admin/access-log', 'Access log', 'list'),
+  ]),
+  G('whatsapp', 'WhatsApp', 'logo-whatsapp', [
+    I('/admin/whatsapp', 'Overview', 'logo-whatsapp'),
+    I('/admin/whatsapp/inbox', 'WhatsApp inbox', 'chatbubbles'),
+    I('/admin/whatsapp/campaigns', 'Campaigns', 'megaphone'),
+    I('/admin/whatsapp/templates', 'Templates', 'document'),
+  ]),
+]
+
 /** Hide what this person cannot use. */
 function visible(groups, manager) {
   return groups.map(g => ({ ...g, items: g.items.filter(i => manager || !i.mgr) })).filter(g => g.items.length > 0)
@@ -116,4 +141,4 @@ function search(groups, q) {
   return out
 }
 
-module.exports = { FEATURES, SETTINGS, visible, search }
+module.exports = { FEATURES, SETTINGS, ADMIN, visible, search }

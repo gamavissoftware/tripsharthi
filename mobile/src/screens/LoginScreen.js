@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react'
 import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Linking, Image, StyleSheet } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { api, saveToken } from '../api'
+import { api, saveToken, adminAuth } from '../api'
 import { c, sp, radius, type, shadow } from '../theme'
 import { GradientHeader, Btn, Icon, useKeyboardHeight } from '../ui'
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onAdminLogin }) {
   const insets = useSafeAreaInsets()
   const kb = useKeyboardHeight()
   const [email, setEmail] = useState('')
@@ -13,6 +13,7 @@ export default function LoginScreen({ onLogin }) {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [admin, setAdmin] = useState(false)          // sign in as the TripSarthi team instead of a workspace user
   const pw = useRef(null)
 
   async function submit() {
@@ -20,7 +21,10 @@ export default function LoginScreen({ onLogin }) {
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setErr('Enter the e-mail you registered with.'); return }
     if (!password) { setErr('Enter your password.'); return }
     setBusy(true); setErr('')
-    try { const r = await api.login(email.trim(), password); await saveToken(r.token); onLogin() }
+    try {
+      if (admin) { await adminAuth.login(email.trim(), password); onAdminLogin(email.trim()) }
+      else { const r = await api.login(email.trim(), password); await saveToken(r.token); onLogin() }
+    }
     catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
 
@@ -34,8 +38,8 @@ export default function LoginScreen({ onLogin }) {
         </GradientHeader>
 
         <View style={[s.card, { marginTop: -42 }]}>
-          <Text style={type.h2}>Welcome back</Text>
-          <Text style={[type.small, { marginTop: 3, marginBottom: sp.l }]}>Sign in with your agency account.</Text>
+          <Text style={type.h2}>{admin ? 'TripSarthi admin' : 'Welcome back'}</Text>
+          <Text style={[type.small, { marginTop: 3, marginBottom: sp.l }]}>{admin ? 'For the TripSarthi team. Use your admin e-mail and password.' : 'Sign in with your agency account.'}</Text>
 
           <Text style={[type.label, { marginBottom: 6 }]}>E-mail</Text>
           <View style={s.field}>
@@ -54,9 +58,12 @@ export default function LoginScreen({ onLogin }) {
 
           {!!err && <View style={s.err}><Icon name="alert-circle" size={17} color={c.danger} /><Text style={{ color: '#7a1d25', flex: 1, fontSize: 13.5 }}>{err}</Text></View>}
 
-          <Btn label="Sign in" onPress={submit} busy={busy} style={{ marginTop: sp.l }} />
+          <Btn label={admin ? 'Sign in as admin' : 'Sign in'} onPress={submit} busy={busy} style={{ marginTop: sp.l }} />
           <TouchableOpacity onPress={() => Linking.openURL('https://app.tripsarthi.com/#/login')} style={{ alignItems: 'center', marginTop: sp.l }}>
             <Text style={{ color: c.primary, fontWeight: '700', fontSize: 13.5 }}>Forgot your password?</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { setAdmin(a => !a); setErr('') }} style={{ alignItems: 'center', marginTop: sp.m }} accessibilityRole="button">
+            <Text style={{ color: c.sub, fontWeight: '600', fontSize: 13 }}>{admin ? '← Back to agency sign-in' : 'TripSarthi team? Sign in as admin'}</Text>
           </TouchableOpacity>
         </View>
 

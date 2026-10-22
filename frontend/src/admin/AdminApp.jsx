@@ -4,6 +4,7 @@ import { Smartphone, LayoutDashboard, Building2, CreditCard, MessagesSquare, Log
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
+import { isEmbedded } from '../lib/embedded'
 import AdminLoginPage from './AdminLoginPage'
 import AdminOverviewPage from '../pages/admin/AdminOverviewPage'
 import AdminCustomersPage from '../pages/admin/AdminCustomersPage'
@@ -55,9 +56,10 @@ function Shell({ user, onLogout }) {
   const [collapsed, setCollapsed] = useState(() => { try { return localStorage.getItem('ts_admin_nav_collapsed') === '1' } catch { return false } })
   const toggleCollapse = () => setCollapsed(c => { const n = !c; try { localStorage.setItem('ts_admin_nav_collapsed', n ? '1' : '0') } catch { /* private mode */ } return n })
   const initials = (user?.name ?? 'A').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+  const embedded = isEmbedded()      // inside the phone app: the phone provides the menu, so only the page is shown
   return (
-    <div className="app-shell ad">
-      <aside className={'sidebar' + (navOpen ? ' open' : '') + (collapsed ? ' collapsed' : '')}>
+    <div className={'app-shell ad' + (embedded ? ' embedded' : '')}>
+      {!embedded && <aside className={'sidebar' + (navOpen ? ' open' : '') + (collapsed ? ' collapsed' : '')}>
         <div className="sidebar-logo">
           <span className="sidebar-logo-icon" style={{ background: '#fff', padding: 3 }}><img src="/brand/tripsarthi-mark.png" alt="" width="30" height="30" style={{ display: 'block' }} /></span>
           <span className="sidebar-logo-text">Trip<span style={{ color: '#2fd0c2' }}>Sarthi</span> <span style={{ fontSize: '.6rem', opacity: .8, letterSpacing: '.6px', textTransform: 'uppercase' }}>Admin</span></span>
@@ -88,14 +90,14 @@ function Shell({ user, onLogout }) {
           </button>
           <button className="sidebar-signout" onClick={onLogout} title="Sign out"><LogOut size={16} /><span className="sidebar-link-text">Sign out</span></button>
         </div>
-      </aside>
-      {navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
+      </aside>}
+      {!embedded && navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
       <main className="app-main">
-        <header className="app-topbar">
+        {!embedded && <header className="app-topbar">
           <button className="topbar-menu" aria-label="Open menu" onClick={() => setNavOpen(true)}><Menu size={20} /></button>
           <div style={{ flex: 1 }} />
           <div className="topbar-right"><span style={{ fontSize: '.82rem', color: 'var(--text-3)', marginRight: 8 }}>{user?.email}</span><span className="avatar" style={{ width: 30, height: 30 }}>{initials}</span></div>
-        </header>
+        </header>}
         <Routes>
           <Route path="/" element={<Navigate to="/admin" replace />} />
           <Route path="/admin" element={<AdminOverviewPage />} />

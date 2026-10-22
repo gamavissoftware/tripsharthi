@@ -7,7 +7,7 @@ import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { loadToken, clearToken, setUnauthorizedHandler, biz, appInfo } from './src/api'
+import { loadToken, clearToken, setUnauthorizedHandler, biz, appInfo, loadAdminToken, adminAuth, setAdminUnauthorizedHandler } from './src/api'
 import Constants from 'expo-constants'
 import { ErrorBoundary, UpdateRequired } from './src/components'
 import { installGlobalErrorReporter } from './src/errors'
@@ -22,6 +22,8 @@ import ReportScreen from './src/screens/ReportScreen'
 import MoreScreen from './src/screens/MoreScreen'
 import WebPageScreen from './src/screens/WebPageScreen'
 import FeaturesScreen from './src/screens/FeaturesScreen'
+import AdminHomeScreen from './src/screens/AdminHomeScreen'
+import { Sheet, Input, Btn } from './src/ui'
 import TripScreen from './src/screens/TripScreen'
 import TargetsScreen from './src/screens/TargetsScreen'
 import BookingScreen from './src/screens/BookingScreen'
@@ -47,7 +49,7 @@ const Tabs = createBottomTabNavigator()
 const ICON = { Home: ['home', 'home-outline'], Enquiries: ['airplane', 'airplane-outline'], Chats: ['chatbubbles', 'chatbubbles-outline'], Bookings: ['briefcase', 'briefcase-outline'], More: ['grid', 'grid-outline'] }
 const headerOpts = { headerStyle: { backgroundColor: '#fff' }, headerShadowVisible: false, headerTitleStyle: { fontWeight: '800', color: c.text, fontSize: 18 }, headerTintColor: c.primary }
 
-function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, update }) {
+function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, update, onOpenAdmin }) {
   return (
     <Tabs.Navigator screenOptions={({ route }) => ({
       ...headerOpts,
@@ -62,7 +64,7 @@ function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, u
       </Tabs.Screen>
       <Tabs.Screen name="Bookings" component={BookingsScreen} options={{ title: 'Bookings' }} />
       <Tabs.Screen name="More" options={{ title: 'More', tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
-        {(props) => <MoreScreen {...props} user={user} unread={unread} onSignOut={onSignOut} />}
+        {(props) => <MoreScreen {...props} user={user} unread={unread} onSignOut={onSignOut} onOpenAdmin={onOpenAdmin} />}
       </Tabs.Screen>
     </Tabs.Navigator>
   )
@@ -79,12 +81,19 @@ export default function App() {
   const lockOn = useRef(false)
   const [askPush, setAskPush] = useState(false)
   const [user, setUser] = useState(null)
+  const [adminAuthed, setAdminAuthed] = useState(false)      // signed in as the TripSarthi team (separate from a workspace sign-in)
+  const [adminMode, setAdminMode] = useState(false)          // showing the admin area right now
+  const [adminEmail, setAdminEmail] = useState('')
+  const [askAdmin, setAskAdmin] = useState(false)
+  const [adminPw, setAdminPw] = useState('')
+  const [adminErr, setAdminErr] = useState('')
+  const [adminBusy, setAdminBusy] = useState(false)
   const [info, setInfo] = useState(null)        // newest / oldest allowed version, from the server
   const version = Constants.expoConfig?.version || '0.0.0'
   const update = { state: updateState(version, info), link: updateLink(info), latest: info?.latest_version }
   const [fontsReady] = useFonts(Ionicons.font)
 
-  const signOut = useCallback(async () => { await unregisterPush(); await clearToken(); await cacheClear(); setUnread(0); setChatUnread(0); setLocked(false); setUser(null); setAuthed(false) }, [])
+  const signOut = useCallback(async () => { await unregisterPush(); await clearToken(); await cacheClear(); await adminAuth.logout(); setAdminAuthed(false); setAdminMode(false); setUnread(0); setChatUnread(0); setLocked(false); setUser(null); setAuthed(false) }, [])
 
   // is there a newer version? asked at start and whenever the app comes back to the front
   useEffect(() => {
@@ -96,7 +105,8 @@ export default function App() {
 
   useEffect(() => {
     setUnauthorizedHandler(() => setAuthed(false))
-    loadToken().then(t => { setAuthed(!!t); setReady(true) })
+    setAdminUnauthorizedHandler(() => { setAdminAuthed(false); setAdminMode(false) })
+    Promise.all([loadToken(), loadAdminToken()]).then(([t, a]) => { setAuthed(!!t); if (a) { setAdminAuthed(true); if (!t) setAdminMode(true) } setReady(true) })
   }, [])
 
   // App lock: cold start locks (when enabled); returning after the grace period locks; the switcher snapshot is covered.
@@ -148,6 +158,15 @@ export default function App() {
     return () => { tap.remove(); arrive.remove(); token.remove() }
   }, [authed])
 
+  const openAdmin = useCallback(() => { if (adminAuthed) setAdminMode(true); else { setAdminPw(''); setAdminErr(''); setAskAdmin(true) } }, [adminAuthed])
+  async function adminSignIn() {
+    if (!adminPw) { setAdminErr('Enter your admin password.'); return }
+    setAdminBusy(true); setAdminErr('')
+    try { await adminAuth.login(user?.email || '', adminPw); setAdminEmail(user?.email || ''); setAdminAuthed(true); setAdminMode(true); setAskAdmin(false); setAdminPw('') }
+    catch (e) { setAdminErr(e.message) } finally { setAdminBusy(false) }
+  }
+  async function adminSignOut() { await adminAuth.logout(); setAdminAuthed(false); setAdminMode(false) }
+
   if (update.state === 'required') return <UpdateRequired link={update.link} />
   if (!ready || !fontsReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.primary} /></View>
   return (
@@ -155,9 +174,14 @@ export default function App() {
     <ErrorBoundary>
     <NavigationContainer ref={navRef} onReady={flushPending}>
       <StatusBar style="dark" />
-      {authed ? (
+      {adminMode && adminAuthed ? (
         <Stack.Navigator screenOptions={{ ...headerOpts, contentStyle: { backgroundColor: c.bg } }}>
-          <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} update={update} />}</Stack.Screen>
+          <Stack.Screen name="AdminHome" options={{ title: 'TripSarthi admin' }}>{(props) => <AdminHomeScreen {...props} email={adminEmail || user?.email || ''} hasWorkspace={authed} onWorkspace={() => setAdminMode(false)} onSignOut={adminSignOut} />}</Stack.Screen>
+          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: 'TripSarthi admin' }} />
+        </Stack.Navigator>
+      ) : authed ? (
+        <Stack.Navigator screenOptions={{ ...headerOpts, contentStyle: { backgroundColor: c.bg } }}>
+          <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} update={update} onOpenAdmin={openAdmin} />}</Stack.Screen>
           <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Enquiry' }} />
           <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Booking' }} />
           <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Contact' }} />
@@ -176,7 +200,7 @@ export default function App() {
         </Stack.Navigator>
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="Login">{() => <LoginScreen onLogin={() => setAuthed(true)} />}</Stack.Screen>
+          <Stack.Screen name="Login">{() => <LoginScreen onLogin={() => setAuthed(true)} onAdminLogin={(email) => { setAdminEmail(email); setAdminAuthed(true); setAdminMode(true) }} />}</Stack.Screen>
         </Stack.Navigator>
       )}
       {authed && (locked || covered) && (
@@ -187,6 +211,11 @@ export default function App() {
             <TouchableOpacity style={lk.btn} onPress={unlock}><Text style={{ color: '#fff', fontWeight: '800' }}>Unlock</Text></TouchableOpacity>
             <TouchableOpacity onPress={signOut}><Text style={{ color: c.sub, marginTop: 18 }}>Sign out instead</Text></TouchableOpacity></>}
         </View>)}
+      <Sheet visible={askAdmin} onClose={() => setAskAdmin(false)} title="TripSarthi admin">
+        <Text style={{ color: c.sub, marginBottom: 12, lineHeight: 19 }}>Enter the admin password for {user?.email}. The admin area has its own sign-in.</Text>
+        <Input label="Admin password" value={adminPw} onChangeText={t => { setAdminPw(t); setAdminErr('') }} secureTextEntry autoCapitalize="none" error={adminErr} autoFocus onSubmitEditing={adminSignIn} />
+        <Btn label="Open the admin area" icon="shield-checkmark" onPress={adminSignIn} busy={adminBusy} />
+      </Sheet>
       <PushPrompt visible={authed && askPush}
         onEnable={async () => { setAskPush(false); await markPrompted(); registerForPush({ ask: true }) }}
         onLater={async () => { setAskPush(false); await markPrompted() }} />

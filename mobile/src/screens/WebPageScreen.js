@@ -1,12 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
 import { View, Text, ActivityIndicator, BackHandler, Linking, Platform, TouchableOpacity, StyleSheet } from 'react-native'
 import { WebView } from 'react-native-webview'
-import { getToken, biz } from '../api'
-import { WEB_URL } from '../config'
+import { getToken, getAdminToken, adminSessionEnded, biz } from '../api'
+import { WEB_URL, ADMIN_URL } from '../config'
 import { c, sp, type } from '../theme'
 import { Btn, Icon, Empty } from '../ui'
 
-const ORIGIN = (() => { try { return new URL(WEB_URL).origin } catch { return WEB_URL } })()
+const originOf = (u) => { try { return new URL(u).origin } catch { return u } }
 
 /**
  * Any screen of the TripSarthi web app, shown INSIDE the phone app and already signed in (the same session), with the web menu hidden. This is how
@@ -14,12 +14,14 @@ const ORIGIN = (() => { try { return new URL(WEB_URL).origin } catch { return WE
  * TripSarthi site (Google or Facebook sign-in, documents, links) open in the phone's own browser instead.
  */
 export default function WebPageScreen({ route, navigation }) {
-  const { path, title } = route.params
+  const { path, title, admin } = route.params          // admin = the TripSarthi team's own site (platform admins), with its own session
+  const BASE = admin ? ADMIN_URL : WEB_URL
+  const ORIGIN = originOf(BASE)
   const ref = useRef(null)
   const [canGoBack, setCanGoBack] = useState(false)
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
-  const token = getToken()
+  const token = admin ? getAdminToken() : getToken()
 
   useEffect(() => { navigation.setOptions({ title: title || 'TripSarthi' }) }, [navigation, title])
 
@@ -39,8 +41,8 @@ export default function WebPageScreen({ route, navigation }) {
   if (!token) return <Empty icon="lock-closed" title="Please sign in again" text="Your session has ended." />
 
   // the web app reads its session from localStorage: hand it the one this app already has, before the page loads
-  const inject = `try { localStorage.setItem('tp_token', ${JSON.stringify(token)}); sessionStorage.setItem('ts_embed', '1'); } catch (e) {} true;`
-  const uri = `${WEB_URL}/#${path}`
+  const inject = `try { localStorage.setItem('${admin ? 'tp_admin_token' : 'tp_token'}', ${JSON.stringify(token)}); sessionStorage.setItem('ts_embed', '1'); } catch (e) {} true;`
+  const uri = `${BASE}/#${path}`
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -61,7 +63,7 @@ export default function WebPageScreen({ route, navigation }) {
           onHttpError={(e) => { if (e.nativeEvent.statusCode >= 500) { setFailed(true) } }}
           onNavigationStateChange={(s) => setCanGoBack(!!s.canGoBack)}
           onMessage={(e) => {
-            try { const m = JSON.parse(e.nativeEvent.data); if (m.type === 'unauthorized') biz.me().catch(() => {}) } catch { /* not ours */ }     // an ended session signs the whole app out
+            try { const m = JSON.parse(e.nativeEvent.data); if (m.type === 'unauthorized') { if (admin) adminSessionEnded(); else biz.me().catch(() => {}) } } catch { /* not ours */ }     // an ended session signs the whole app out
           }}
           onShouldStartLoadWithRequest={(req) => {
             const url = req.url || ''

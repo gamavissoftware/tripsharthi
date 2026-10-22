@@ -6,7 +6,7 @@ import { Screen, Card, Row, Avatar, Section, Icon, Pill } from '../ui'
 const ROLE = { owner: 'Owner', admin: 'Admin', agent: 'Agent' }
 
 /** Everything that does not fit in the five tabs. Owner-only items are hidden from agents (the server enforces it too). */
-export default function MoreScreen({ navigation, user, unread = 0, onSignOut }) {
+export default function MoreScreen({ navigation, user, unread = 0, onSignOut, onOpenAdmin }) {
   const manager = user?.role === 'owner' || user?.role === 'admin'
   const go = (n) => () => navigation.navigate(n)
   return (
@@ -40,6 +40,13 @@ export default function MoreScreen({ navigation, user, unread = 0, onSignOut }) 
         <Section title="Business">
           <Card pad={false} style={{ marginHorizontal: sp.l, paddingHorizontal: sp.l }}>
             <Row icon="stats-chart" tone={c.ok} title="Business report" sub="Revenue, margin, funnel, cash position" onPress={go('Report')} last />
+          </Card>
+        </Section>)}
+
+      {!!user?.is_platform_admin && (
+        <Section title="TripSarthi team">
+          <Card pad={false} style={{ marginHorizontal: sp.l, paddingHorizontal: sp.l }}>
+            <Row icon="shield-checkmark" tone={c.navy} title="TripSarthi admin" sub="Customers, subscriptions, invoices, support, partners" onPress={onOpenAdmin} last />
           </Card>
         </Section>)}
 
