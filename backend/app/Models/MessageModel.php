@@ -78,9 +78,15 @@ class MessageModel extends BaseModel
     /**
      * Messages for a conversation, newest-last, with optional ?since= cursor.
      */
-    public function forConversation(int $tenantId, int $conversationId, ?string $since = null, int $limit = 50): array
+    public function forConversation(int $tenantId, int $conversationId, ?string $since = null, int $limit = 50, ?int $afterId = null): array
     {
         $this->setTenant($tenantId)->where('conversation_id', $conversationId);
+
+        // Exact cursor for the phone: created_at only has one-second resolution, so "newer than the last timestamp" skips a message that
+        // arrives in the same second as the last one we hold. Ids never repeat.
+        if ($afterId !== null && $afterId > 0) {
+            return $this->where('id >', $afterId)->orderBy('id', 'ASC')->findAll($limit);
+        }
 
         if ($since !== null) {
             // Incremental poll: everything newer than the last seen message, oldest-first.

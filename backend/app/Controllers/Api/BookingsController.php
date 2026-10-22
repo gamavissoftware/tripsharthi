@@ -55,8 +55,13 @@ class BookingsController extends TravelBaseController
     public function markPaid($paymentId = null)
     {
         $b = $this->body();
+        // The mode is stored and shown on receipts: only the ways money really arrives are accepted (the web prompt offers upi / card / bank / cash).
+        $mode = strtolower(trim((string) ($b['mode'] ?? 'upi')));
+        if (! in_array($mode, ['upi', 'card', 'bank', 'cash', 'cheque', 'other'], true)) {
+            return $this->fail(['message' => 'Choose how it was paid: upi, card, bank, cash, cheque or other.'], 422);
+        }
         try {
-            return $this->ok((new BookingService())->markPaid(CurrentUser::tenantId(), (int) $paymentId, (string) ($b['mode'] ?? 'upi'), $b['reference'] ?? null));
+            return $this->ok((new BookingService())->markPaid(CurrentUser::tenantId(), (int) $paymentId, $mode, $b['reference'] ?? null));
         } catch (\InvalidArgumentException $e) {
             return $this->failNotFound($e->getMessage());
         }

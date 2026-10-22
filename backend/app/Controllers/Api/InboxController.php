@@ -158,7 +158,8 @@ class InboxController extends ResourceController
 
         $since    = $this->request->getGet('since') ?: null;
         $limit    = (int) ($this->request->getGet('limit') ?? 50);
-        $messages = (new MessageModel())->forConversation(CurrentUser::tenantId(), $id, $since, $limit);
+        $afterId  = (int) ($this->request->getGet('after_id') ?? 0);
+        $messages = (new MessageModel())->forConversation(CurrentUser::tenantId(), $id, $since, $limit, $afterId > 0 ? $afterId : null);
 
         return $this->respond(['success' => true, 'data' => MessageModel::withTemplateCards($messages)]);
     }

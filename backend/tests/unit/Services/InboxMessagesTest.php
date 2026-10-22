@@ -127,6 +127,22 @@ class InboxMessagesTest extends CIUnitTestCase
 
     // ── findOrCreate: +/no-+ dedup ────────────────────────────────────
 
+    public function testAfterIdCursorDoesNotLoseMessagesFromTheSameSecond(): void
+    {
+        $db = db_connect(); $same = '2026-01-15 12:00:05';
+        foreach (['first', 'second', 'third'] as $b) {
+            $db->table('messages')->insert(['tenant_id' => 1, 'conversation_id' => 77, 'direction' => 'in', 'type' => 'text', 'body' => $b, 'status' => 'delivered', 'created_at' => $same]);
+        }
+        $model = new MessageModel();
+        $all   = $model->forConversation(1, 77, null, 50);
+        $firstId = (int) $all[0]['id'];
+        // the timestamp cursor cannot see the others (they share the second); the id cursor can
+        $this->assertCount(0, $model->forConversation(1, 77, $same, 50));
+        $after = $model->forConversation(1, 77, null, 50, $firstId);
+        $this->assertSame(['second', 'third'], array_column($after, 'body'));
+        $this->assertCount(0, $model->forConversation(1, 77, null, 50, (int) $all[2]['id']), 'nothing newer than the last id');
+    }
+
     public function testFindOrCreateMatchesExistingDespitePlusPrefix(): void
     {
         $model = new ConversationModel();

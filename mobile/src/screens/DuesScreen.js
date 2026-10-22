@@ -10,25 +10,28 @@ export default function DuesScreen({ navigation }) {
   const [rows, setRows] = useState(null)
   const [meta, setMeta] = useState({ stale: false, at: null })
   const [refreshing, setRefreshing] = useState(false)
+  const [err, setErr] = useState('')
   const load = useCallback(async () => {
+    setErr('')
     const r = await api.duesC()
     setDash(r.data.dash); setMeta({ stale: r.stale, at: r.at })
     setRows(r.data.bookings.filter(x => Number(x.total_amount) > Number(x.paid_amount) && x.status !== 'cancelled'))
   }, [])
-  useFocusEffect(useCallback(() => { load().catch(() => {}) }, [load]))
+  useFocusEffect(useCallback(() => { load().catch(e => setErr(e.message)) }, [load]))
 
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <OfflineBanner stale={meta.stale} at={meta.at} />
+      {!!err && <Text style={{ color: c.danger, padding: 16 }}>{err}</Text>}
       {dash && (
         <View style={{ flexDirection: 'row', gap: 10, padding: 12 }}>
           <View style={[s.kpi, { borderColor: c.danger }]}><Text style={s.kl}>Overdue</Text><Text style={[s.kv, { color: c.danger }]}>{inr(dash.receivables?.overdue)}</Text></View>
           <View style={s.kpi}><Text style={s.kl}>Upcoming</Text><Text style={s.kv}>{inr(dash.receivables?.upcoming)}</Text></View>
-          <View style={s.kpi}><Text style={s.kl}>Departing 30d</Text><Text style={s.kv}>{dash.departures_30d.length}</Text></View>
+          <View style={s.kpi}><Text style={s.kl}>Departing 30d</Text><Text style={s.kv}>{(dash.departures_30d || []).length}</Text></View>
         </View>)}
       <FlatList
         data={rows || []} keyExtractor={b => String(b.id)} contentContainerStyle={{ padding: 12, gap: 10 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(() => {}); setRefreshing(false) }} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load().catch(e => setErr(e.message)); setRefreshing(false) }} />}
         ListEmptyComponent={rows ? <Text style={{ textAlign: 'center', color: c.sub, marginTop: 40 }}>Nothing pending — all collected 🎉</Text> : null}
         renderItem={({ item: b }) => (
           <TouchableOpacity style={s.card} onPress={() => navigation.navigate('Booking', { id: b.id })}>

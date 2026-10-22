@@ -4,6 +4,7 @@ import { api, inr } from '../api'
 import { c } from '../theme'
 import { StatusPill } from './TripsScreen'
 import OfflineBanner from '../OfflineBanner'
+import { latestQuote } from '../logic'
 
 const digits = (s) => String(s || '').replace(/\D/g, '')
 
@@ -16,7 +17,7 @@ export default function TripScreen({ route, navigation }) {
   if (!t) return <View style={s.wrap}><Text style={{ padding: 20 }}>Loading…</Text></View>
 
   const phone = t.contact?.wa_number
-  const latest = t.itineraries?.[0]
+  const latest = latestQuote(t.itineraries)   // the API lists quotes oldest-first; [0] shared an OLD version
   async function sendQuote() {
     try {
       const r = await api.shareItinerary(latest.id)

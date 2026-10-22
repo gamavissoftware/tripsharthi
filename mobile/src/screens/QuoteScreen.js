@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { View, Text, ScrollView, TextInput, TouchableOpacity, Linking, Share, Alert, StyleSheet } from 'react-native'
 import { api, inr } from '../api'
 import { c } from '../theme'
-import { digits } from '../logic'
+import { digits, isFlatMarkup, quotePatch } from '../logic'
 
 /** Draft a quote with AI, check the price, adjust markup / discount, and send it — all from the phone. */
 export default function QuoteScreen({ route, navigation }) {
@@ -25,11 +25,10 @@ export default function QuoteScreen({ route, navigation }) {
     catch (e) { Alert.alert('Could not draft', e.message) } finally { setBusy('') }
   }
   async function reprice() {
-    const m = Number(markup), d = Number(discount || 0)
-    if (!(m >= 0 && m <= 200)) return Alert.alert('Markup', 'Enter a markup between 0 and 200 %.')
-    if (!(d >= 0)) return Alert.alert('Discount', 'Discount cannot be negative.')
+    const r = quotePatch(it, markup, discount)
+    if (r.error) return Alert.alert(r.error[0], r.error[1])
     setBusy('price')
-    try { show(await api.updateItinerary(it.id, { markup_type: 'percent', markup_value: m, discount_amount: Math.round(d * 100) })) }
+    try { show(await api.updateItinerary(it.id, r.patch)) }
     catch (e) { Alert.alert('Could not update', e.message) } finally { setBusy('') }
   }
   async function send() {
@@ -50,7 +49,7 @@ export default function QuoteScreen({ route, navigation }) {
       <Text style={{ color: c.sub, marginTop: 10, fontSize: 12 }}>For fully manual quotes with your own line items, use the web app.</Text>
     </View></View>)
 
-  const locked = ['accepted'].includes(it.status)
+  const locked = ['accepted', 'rejected', 'expired'].includes(it.status)
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ padding: 14, gap: 12 }} keyboardShouldPersistTaps="handled">
       <View style={s.card}>
@@ -64,10 +63,11 @@ export default function QuoteScreen({ route, navigation }) {
         <Row k="Total to customer" v={inr(it.grand_total)} bold />
         <Row k="Your margin" v={inr(it.margin_amount)} muted />
         {!locked && <View style={{ marginTop: 10, flexDirection: 'row', gap: 10, alignItems: 'flex-end' }}>
-          <View style={{ flex: 1 }}><Text style={s.l}>Markup %</Text><TextInput style={s.input} keyboardType="decimal-pad" value={markup} onChangeText={setMarkup} /></View>
+          <View style={{ flex: 1 }}><Text style={s.l}>Markup %</Text><TextInput style={s.input} keyboardType="decimal-pad" value={markup} onChangeText={setMarkup} placeholder={isFlatMarkup(it) ? 'flat' : ''} /></View>
           <View style={{ flex: 1 }}><Text style={s.l}>Discount ₹</Text><TextInput style={s.input} keyboardType="number-pad" value={discount} onChangeText={setDiscount} /></View>
           <TouchableOpacity style={[s.btn, { paddingHorizontal: 16 }, busy === 'price' && { opacity: 0.6 }]} disabled={busy === 'price'} onPress={reprice}><Text style={s.btnT}>Update</Text></TouchableOpacity>
         </View>}
+        {!locked && isFlatMarkup(it) && <Text style={{ color: c.sub, marginTop: 6, fontSize: 12 }}>This quote has a flat markup of {inr(it.markup_value)} (set in the web app). Leave Markup % blank to keep it, or type a percentage to replace it.</Text>}
         {locked && <Text style={{ color: c.sub, marginTop: 8 }}>This quote was accepted, so the price is locked. Create a new version in the web app to change it.</Text>}
       </View>
       {(it.days || []).map(d => (

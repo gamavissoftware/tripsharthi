@@ -68,7 +68,7 @@ export default function ChatScreen({ route, navigation }) {
     const t = setInterval(async () => {
       const last = msgs[msgs.length - 1]
       try {
-        const [m, k] = await Promise.all([last ? chatApi.messages(id, last.created_at) : chatApi.messages(id), chatApi.one(id).catch(() => null)])
+        const [m, k] = await Promise.all([last ? chatApi.messages(id, last.id) : chatApi.messages(id), chatApi.one(id).catch(() => null)])
         if (!alive.current) return
         if (m.length) { merge(m); chatApi.markRead(id).catch(() => {}) }
         if (k) setConv(k)
@@ -84,13 +84,13 @@ export default function ChatScreen({ route, navigation }) {
     const body = text.trim()
     if (!body || sending) return
     setSending(true)
-    try { await chatApi.sendText(id, body); setText(''); const m = await chatApi.messages(id, msgs[msgs.length - 1]?.created_at); merge(m) }
+    try { await chatApi.sendText(id, body); setText(''); const m = await chatApi.messages(id, msgs[msgs.length - 1]?.id); merge(m) }
     catch (e) {
       if (e.code === 'WINDOW_CLOSED') { Alert.alert('Window closed', 'The 24-hour reply window just closed. Send a template instead.'); chatApi.one(id).then(setConv).catch(() => {}) }
       else Alert.alert('Not sent', e.message)
     } finally { setSending(false) }
   }
-  async function sendTemplate(tpl, vars) { await chatApi.sendTemplate(id, tpl, vars); merge(await chatApi.messages(id, msgs[msgs.length - 1]?.created_at)); chatApi.one(id).then(setConv).catch(() => {}) }
+  async function sendTemplate(tpl, vars) { await chatApi.sendTemplate(id, tpl, vars); merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id)); chatApi.one(id).then(setConv).catch(() => {}) }
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: c.bg }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>

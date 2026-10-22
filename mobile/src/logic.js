@@ -91,4 +91,55 @@ function toGoText(p, fmt, daysLeft) {
 /** True when a pace block has something to draw. */
 function hasTarget(p) { return !!p && p.status !== 'none' && Number(p.target) > 0 }
 
-module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget }
+// ---- quotes ----
+
+/** The API lists a trip's quotes oldest-first, so "the latest" is the highest id (a new version always has a higher id). */
+function latestQuote(list) {
+  if (!Array.isArray(list) || !list.length) return null
+  return list.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a))
+}
+
+/** True when the quote's markup is a flat amount (set in the web app), which the phone's % box cannot show. */
+function isFlatMarkup(it) { return !!it && !!it.markup_type && it.markup_type !== 'percent' }
+
+/**
+ * What to send when the person presses Update on the quote screen. A blank markup box on a FLAT-markup quote means "leave the markup
+ * alone": sending 0 % there used to wipe a flat markup and cut the price. Returns { patch } or { error: [title, text] }.
+ */
+function quotePatch(it, markupText, discountText) {
+  const d = Number(String(discountText || '').trim() === '' ? 0 : discountText)
+  if (!(d >= 0)) return { error: ['Discount', 'Discount cannot be negative.'] }
+  const patch = { discount_amount: Math.round(d * 100) }
+  const typed = String(markupText == null ? '' : markupText).trim() !== ''
+  if (typed) {
+    const m = Number(markupText)
+    if (!(m >= 0 && m <= 200)) return { error: ['Markup', 'Enter a markup between 0 and 200 %.'] }
+    patch.markup_type = 'percent'; patch.markup_value = m
+  } else if (!isFlatMarkup(it)) {
+    return { error: ['Markup', 'Enter a markup between 0 and 200 %.'] }
+  }
+  return { patch }
+}
+
+// ---- errors ----
+
+const LIMIT_NAMES = { ai_replies: 'AI drafts', agents: 'team members', contacts: 'contacts', active_flows: 'automations', waba_numbers: 'WhatsApp numbers', deals: 'deals' }
+
+/** Words a travel agent can act on, instead of a code like "plan_limit_exceeded" or "Network request failed". */
+function friendlyError({ status, code, message, data } = {}) {
+  const raw = String(message || '')
+  if (raw === 'plan_limit_exceeded' || (data && data.messages && data.messages.error === 'plan_limit_exceeded')) {
+    const m = (data && data.messages) || {}
+    const what = LIMIT_NAMES[m.limit_type] || 'this feature'
+    return Number(m.limit) === 0
+      ? `Your plan does not include ${what}. Upgrade in the web app (Billing) to use it.`
+      : `Your plan's limit for ${what} (${m.limit}) is used up. Upgrade in the web app (Billing).`
+  }
+  if (status === undefined || status === null) return /abort|timed? ?out/i.test(raw) ? 'This is taking too long. Check your connection and try again.' : 'Cannot reach TripSarthi. Check your internet connection and try again.'
+  if (status === 403 && (code === 'tenant_suspended' || /suspended|cancelled/i.test(raw))) return raw || 'This workspace is suspended. Please contact TripSarthi support.'
+  if (status === 429) return 'Too many tries. Please wait a minute and try again.'
+  if (status >= 500) return 'TripSarthi had a problem on our side. Please try again in a moment.'
+  return raw || `Something went wrong (${status}).`
+}
+
+module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError }

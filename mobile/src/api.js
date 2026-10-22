@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store'
 import { API_URL } from './config'
-import { cached } from './cache'
+import { cached, cacheClear } from './cache'
+import { friendlyError } from './logic'
 
 const KEY = 'tp_token'
 let token = null
@@ -11,18 +12,29 @@ export async function loadToken() { token = await SecureStore.getItemAsync(KEY);
 export async function saveToken(t) { token = t; await SecureStore.setItemAsync(KEY, t) }
 export async function clearToken() { token = null; await SecureStore.deleteItemAsync(KEY) }
 
+const TIMEOUT_MS = 20000   // a dead connection must fail (and fall back to saved data) instead of spinning forever
+
 async function request(method, path, body) {
-  const res = await fetch(`${API_URL}/api/v1${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  })
+  const ctl = new AbortController()
+  const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
+  let res
+  try {
+    res = await fetch(`${API_URL}/api/v1${path}`, {
+      method,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctl.signal,
+    })
+  } catch (e) {
+    // no status: the network (or the timeout) is the problem; callers may serve saved data (see shouldUseCache)
+    throw Object.assign(new Error(friendlyError({ message: e && e.name === 'AbortError' ? 'timed out' : e && e.message })), { status: undefined })
+  } finally { clearTimeout(timer) }
   const data = await res.json().catch(() => ({}))
-  if (res.status === 401) { await clearToken(); onUnauthorized() }
+  if (res.status === 401) { await clearToken(); await cacheClear(); onUnauthorized() }   // an expired session must not leave this person's customers on the phone
   if (!res.ok) {
     const m = data.message || (data.messages && Object.values(data.messages).find(v => typeof v === 'string'))
     // status lets callers tell "server said no" (422, 409…) from "server/network is down" (see shouldUseCache)
-    throw Object.assign(new Error(m || `HTTP ${res.status}`), { status: res.status, code: data.code, data })
+    throw Object.assign(new Error(friendlyError({ status: res.status, code: data.code, message: m, data })), { status: res.status, code: data.code, data })
   }
   return data
 }
@@ -58,7 +70,8 @@ export const api = {
 export const chatApi = {
   list: () => cached('chats', () => request('GET', '/inbox?per_page=50').then(r => r.data)),
   one: (id) => request('GET', `/inbox/${id}`).then(r => r.data),
-  messages: (id, since) => request('GET', `/inbox/${id}/messages${since ? `?since=${encodeURIComponent(since)}` : '?limit=60'}`).then(r => r.data),
+  // afterId = the id of the newest message we hold (an exact cursor: a timestamp cannot tell apart messages that arrive in the same second)
+  messages: (id, afterId) => request('GET', `/inbox/${id}/messages${afterId ? `?after_id=${Number(afterId)}` : '?limit=60'}`).then(r => r.data),
   messagesC: (id) => cached(`chat:${id}`, () => request('GET', `/inbox/${id}/messages?limit=60`).then(r => r.data)),
   sendText: (id, body) => request('POST', `/inbox/${id}/messages`, { type: 'text', body }).then(r => r.data),
   sendTemplate: (id, tpl, variables) => request('POST', `/inbox/${id}/messages`, { type: 'template', template_id: tpl.id, template_name: tpl.name, language: tpl.language || 'en', variables }).then(r => r.data),

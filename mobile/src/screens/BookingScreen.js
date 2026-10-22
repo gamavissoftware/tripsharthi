@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, Share, StyleSheet } from 'react-native'
+import { View, Text, ScrollView, TouchableOpacity, Alert, Share, Platform, StyleSheet } from 'react-native'
 import { api, inr } from '../api'
 import { c } from '../theme'
 
@@ -11,10 +11,12 @@ export default function BookingScreen({ route }) {
 
   const sendLink = (p) => api.paymentLink(p.id).then(l => Share.share({ message: `Payment link for ${b.booking_ref} – ${p.label}: ${l.short_url}` })).catch(e => Alert.alert('Could not create link', e.message))
   const remind = (p) => api.remind(p.id).then(() => { Alert.alert('Reminder sent', 'The customer was reminded on WhatsApp.'); load() }).catch(e => Alert.alert('Reminder not sent', e.message))
-  const markPaid = (p) => Alert.alert('Mark as paid?', `${p.label} · ${inr(p.amount)}`, [
-    { text: 'Cancel', style: 'cancel' },
-    ...['upi', 'bank', 'cash'].map(mode => ({ text: mode.toUpperCase(), onPress: () => api.markPaid(p.id, mode).then(load).catch(e => Alert.alert('Failed', e.message)) })),
-  ])
+  // Android alerts hold at most THREE buttons: with Cancel as a fourth, "Cash" silently disappeared. Android gets the three modes and
+  // is dismissed with the back button / a tap outside; iOS also gets an explicit Cancel.
+  const markPaid = (p) => {
+    const modes = ['upi', 'bank', 'cash'].map(mode => ({ text: mode.toUpperCase(), onPress: () => api.markPaid(p.id, mode).then(load).catch(e => Alert.alert('Failed', e.message)) }))
+    Alert.alert('Paid how?', `${p.label} · ${inr(p.amount)}`, Platform.OS === 'ios' ? [...modes, { text: 'Cancel', style: 'cancel' }] : modes, { cancelable: true })
+  }
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 14, gap: 12 }}>
       <View style={s.card}>
