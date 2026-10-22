@@ -71,7 +71,7 @@ export default function HomeScreen({ navigation, unread = 0, user }) {
     a.payments_overdue?.count > 0 && { icon: 'cash', tone: c.danger, text: `${a.payments_overdue.count} payment${a.payments_overdue.count > 1 ? 's' : ''} overdue`, sub: inrFull(a.payments_overdue.amount) + ' to collect', to: go('Bookings') },
     a.tasks_today > 0 && { icon: 'today', tone: c.orange, text: `${a.tasks_today} task${a.tasks_today > 1 ? 's' : ''} due today`, to: go('Tasks') },
     a.payments_week?.count > 0 && { icon: 'calendar', tone: c.orange, text: `${a.payments_week.count} payment${a.payments_week.count > 1 ? 's' : ''} due this week`, sub: inrFull(a.payments_week.amount), to: go('Bookings') },
-    a.quotes_to_chase > 0 && { icon: 'eye', tone: c.purple, text: `${a.quotes_to_chase} quote${a.quotes_to_chase > 1 ? 's' : ''} viewed, not accepted`, sub: 'Worth a call', to: go('Enquiries') },
+    a.quotes_to_chase > 0 && { icon: 'eye', tone: c.purple, text: `${a.quotes_to_chase} quote${a.quotes_to_chase > 1 ? 's' : ''} viewed, not accepted`, sub: 'Worth a call', to: (d.quotes_to_chase || []).length === 1 ? go('Trip', { id: Number(d.quotes_to_chase[0].trip_id) }) : go('Enquiries') },
     a.no_activity > 0 && { icon: 'chatbubble-ellipses', tone: c.primary, text: `${a.no_activity} enquir${a.no_activity > 1 ? 'ies' : 'y'} with no next step`, to: go('Enquiries') },
     a.departures_7d > 0 && { icon: 'airplane', tone: c.teal, text: `${a.departures_7d} departure${a.departures_7d > 1 ? 's' : ''} in 7 days`, to: go('Departures') },
     a.docs_pending_7d > 0 && { icon: 'document-text', tone: c.orange, text: `${a.docs_pending_7d} departure${a.docs_pending_7d > 1 ? 's' : ''} with documents pending`, to: go('Departures') },
@@ -79,7 +79,8 @@ export default function HomeScreen({ navigation, unread = 0, user }) {
 
   const maxPipe = Math.max(1, ...(d.pipeline || []).map(p => Number(p.count)))
   const maxSrc = Math.max(1, ...(d.sources || []).map(p => Number(p.enquiries)))
-  const trend = (d.trend || []).map(t => ({ label: monthLabel(t.month), a: t.revenue, b: t.collected }))
+  const trendAll = (d.trend || []).map(t => ({ label: monthLabel(t.month), a: t.revenue, b: t.collected }))
+  const trend = trendAll.some(t => Number(t.a) > 0 || Number(t.b) > 0) ? trendAll : []     // an all-zero chart is just noise
 
   return (
     <Screen header={header} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}>
