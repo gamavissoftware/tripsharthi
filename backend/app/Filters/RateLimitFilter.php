@@ -26,8 +26,8 @@ class RateLimitFilter implements FilterInterface
     private const USER_LIMIT = 600;
     /** Safety net for ALL signed-in traffic from one IP (a NAT with a large office) */
     private const IP_USER_LIMIT = 3000;
-    /** Login endpoint: attempts per window */
-    private const LOGIN_LIMIT = 10;
+    /** Sign-in endpoints (customer, admin, partner): requests per window per address. A flood guard only: guessing is limited by FAILED tries per account (FailedLoginLimiter), so an office signing in together is not locked out. */
+    private const LOGIN_LIMIT = 60;
     /** Window in seconds */
     private const WINDOW = 60;
 

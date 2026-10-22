@@ -46,6 +46,9 @@ class PartnerPortalController extends ResourceController
     public function changePassword()
     {
         $b = $this->body();
-        return $this->run(function () use ($b) { (new PartnerService())->changePassword(CurrentPartner::id(), (string) ($b['current'] ?? ''), (string) ($b['new'] ?? ''), $this->request->getIPAddress()); return ['changed' => true]; });
+        return $this->run(function () use ($b) { (new PartnerService())->changePassword(CurrentPartner::id(), (string) ($b['current'] ?? ''), (string) ($b['new'] ?? ''), $this->request->getIPAddress());
+            // every OTHER device is signed out (a lost laptop must stop working); this one stays signed in
+            (new \App\Services\Partner\PartnerSessionService())->revokeOthers(CurrentPartner::id(), (string) preg_replace('/^Bearer\s+/i', '', $this->request->getHeaderLine('Authorization')));
+            return ['changed' => true]; });
     }
 }

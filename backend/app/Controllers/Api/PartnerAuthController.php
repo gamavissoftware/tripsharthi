@@ -27,11 +27,14 @@ class PartnerAuthController extends ResourceController
         $email = strtolower(trim((string) $this->request->getJsonVar('email')));
         $pass  = (string) $this->request->getJsonVar('password');
         if (! filter_var($email, FILTER_VALIDATE_EMAIL) || $pass === '' || strlen($pass) > 200) { return $this->fail(['message' => 'Enter your email and password.'], 422); }
-        if (! service('throttler')->check('partnerlogin_' . md5($this->request->getIPAddress() . '|' . $email), 5, 900)) { return $this->respond(['success' => false, 'message' => 'Too many attempts. Try again in a few minutes.'], 429); }
+        $limitKey = 'partnerlogin_' . md5($this->request->getIPAddress() . '|' . $email);
+        $limiter  = new \App\Services\Auth\FailedLoginLimiter(5, 900);          // only FAILED tries count; a successful sign-in resets it
+        if ($limiter->blocked($limitKey)) { return $this->respond(['success' => false, 'message' => 'Too many attempts. Try again in a few minutes.'], 429); }
 
         $svc = new PartnerService();
         $p = $svc->verifyLogin($email, $pass, $this->request->getIPAddress());
-        if ($p === null) { return $this->respond(['success' => false, 'message' => 'Invalid email or password.'], 401); }
+        if ($p === null) { $limiter->fail($limitKey); return $this->respond(['success' => false, 'message' => 'Invalid email or password.'], 401); }
+        $limiter->clear($limitKey);
         $token = (new PartnerSessionService())->create((int) $p['id'], $this->request->getIPAddress(), $this->request->getUserAgent()->getAgentString());
         return $this->respond(['success' => true, 'token' => $token, 'partner' => $this->brief($p)]);
     }

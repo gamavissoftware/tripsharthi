@@ -42,12 +42,25 @@ class AuthController extends ResourceController
         $email    = $this->request->getJsonVar('email');
         $password = $this->request->getJsonVar('password');
 
+        // Guess protection that counts only FAILED tries: 5 per account (IP + e-mail) and 30 per address per 15 minutes. A successful sign-in resets
+        // the account counter, so an office signing in together is never locked out; the old rule (10 requests a minute per address, successes
+        // included) did that, and said nothing about one account being hammered slowly.
+        $keyAcct = 'login_' . md5($this->request->getIPAddress() . '|' . strtolower(trim((string) $email)));
+        $keyIp   = 'loginip_' . md5($this->request->getIPAddress());
+        $acctLim = new \App\Services\Auth\FailedLoginLimiter(5, 900);
+        $ipLim   = new \App\Services\Auth\FailedLoginLimiter(30, 900);
+        if ($acctLim->blocked($keyAcct) || $ipLim->blocked($keyIp)) {
+            return $this->respond(['success' => false, 'message' => 'Too many failed attempts. Please wait a few minutes, or use "Forgot password".'], 429);
+        }
+
         $userModel = new UserModel();
         $user      = $userModel->findByEmail($email);
 
         if ($user === null || ! password_verify($password, is_array($user) ? $user['password_hash'] : $user->password_hash)) {
+            $acctLim->fail($keyAcct); $ipLim->fail($keyIp);
             return $this->failUnauthorized('Invalid email or password.');
         }
+        $acctLim->clear($keyAcct);
 
         $userId   = (int) (is_array($user) ? $user['id'] : $user->id);
         $isAdmin  = (int) (is_array($user) ? ($user['is_platform_admin'] ?? 0) : ($user->is_platform_admin ?? 0)) === 1;

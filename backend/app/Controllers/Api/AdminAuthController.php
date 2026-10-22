@@ -30,16 +30,19 @@ class AdminAuthController extends ResourceController
 
         // 5 tries per 15 minutes per IP+email, on top of the general API limiter.
         $key = 'adminlogin_' . md5($this->request->getIPAddress() . '|' . $email);
-        if (! service('throttler')->check($key, 5, 900)) { return $this->respond(['success' => false, 'message' => 'Too many attempts. Try again in a few minutes.'], 429); }
+        $limiter = new \App\Services\Auth\FailedLoginLimiter(5, 900);          // only FAILED tries count; a successful sign-in resets it
+        if ($limiter->blocked($key)) { return $this->respond(['success' => false, 'message' => 'Too many attempts. Try again in a few minutes.'], 429); }
 
         $user = (new UserModel())->findByEmail($email);
         $u    = $user === null ? null : (is_array($user) ? $user : (array) $user);
         $ok   = password_verify($pass, $u['password_hash'] ?? self::DUMMY_HASH) && $u !== null && (int) ($u['is_platform_admin'] ?? 0) === 1;
         if (! $ok) {
+            $limiter->fail($key);
             if ($u !== null && (int) ($u['is_platform_admin'] ?? 0) === 1) { AuditLogger::log('admin.login_failed', 'user', (int) $u['id'], null, null, (int) $u['tenant_id'], (int) $u['id']); }
             return $this->respond(['success' => false, 'message' => 'Invalid email or password.'], 401);
         }
 
+        $limiter->clear($key);
         $token = (new AdminSessionService())->create((int) $u['id'], $this->request->getIPAddress(), $this->request->getUserAgent()->getAgentString());
         AuditLogger::log('admin.login', 'user', (int) $u['id'], null, null, (int) $u['tenant_id'], (int) $u['id']);
         return $this->respond(['success' => true, 'token' => $token, 'user' => $this->view($u), 'session_hours' => AdminSessionService::ABSOLUTE_HOURS]);

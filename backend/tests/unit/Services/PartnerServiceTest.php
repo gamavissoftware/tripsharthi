@@ -160,6 +160,16 @@ final class PartnerServiceTest extends CIUnitTestCase
         $this->assertNull($sess->partner($tok));
     }
 
+    public function testRevokeOthersSignsOutEveryOtherDeviceButKeepsTheCurrentOne(): void
+    {
+        $p = $this->activePartner(); $sess = new PartnerSessionService();
+        $laptop = $sess->create($p['id']); $phone = $sess->create($p['id']); $here = $sess->create($p['id']);
+        $this->assertSame(2, $sess->revokeOthers($p['id'], $here));
+        $this->assertNull($sess->partner($laptop));
+        $this->assertNull($sess->partner($phone));
+        $this->assertNotNull($sess->partner($here), 'the device that changed the password stays signed in');
+    }
+
     public function testPartnerSessionsExpireIdleAndAbsoluteAndAreCapped(): void
     {
         $p = $this->activePartner(); $t0 = time();

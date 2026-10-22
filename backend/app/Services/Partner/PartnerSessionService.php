@@ -59,4 +59,12 @@ final class PartnerSessionService
         $db->table('partner_sessions')->where('partner_id', $partnerId)->where('revoked_at', null)->update(['revoked_at' => $this->stamp()]);
         return $db->affectedRows();
     }
+
+    /** Sign out every session of this partner EXCEPT the one presented (used after a password change: the other devices must stop working). */
+    public function revokeOthers(int $partnerId, string $keepRawToken): int
+    {
+        $db = db_connect();
+        $db->table('partner_sessions')->where('partner_id', $partnerId)->where('revoked_at', null)->where('token_hash !=', hash('sha256', $keepRawToken))->update(['revoked_at' => $this->stamp()]);
+        return $db->affectedRows();
+    }
 }
