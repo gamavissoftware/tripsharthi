@@ -93,6 +93,7 @@ export default function TripScreen({ route, navigation }) {
         </View>
         <Btn label="Add a follow-up task" icon="alarm-outline" kind="ghost" small onPress={() => setTask(true)} style={{ marginTop: sp.m }} />
       </Card>
+      <Btn label="Full enquiry on the web screen" icon="open-outline" kind="ghost" small onPress={() => navigation.navigate('Web', { path: `/trips/${t.id}`, title: 'Enquiry' })} />
       <NewTask visible={task} dealId={t.deal_id ? Number(t.deal_id) : undefined} onClose={() => setTask(false)} onSaved={() => { setTask(false); Alert.alert('Task added', 'It will show on your Home and Tasks.') }} />
     </Screen>)
 }

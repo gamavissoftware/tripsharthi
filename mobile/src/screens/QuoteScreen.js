@@ -6,7 +6,7 @@ import { Screen, Card, Pill, Btn, Input, Icon, Skeleton, ErrorBox, Empty, ok } f
 import { digits, isFlatMarkup, quotePatch, inrFull } from '../logic'
 
 /** Draft a quote with AI, check the price, adjust markup / discount, and send it, all from the phone. */
-export default function QuoteScreen({ route }) {
+export default function QuoteScreen({ route, navigation }) {
   const { tripId, itineraryId } = route.params
   const [trip, setTrip] = useState(null)
   const [it, setIt] = useState(null)
@@ -98,6 +98,6 @@ export default function QuoteScreen({ route }) {
           {(d.items || []).map(i => <View key={i.id} style={{ flexDirection: 'row', gap: 8, paddingVertical: 3 }}><Icon name={i.type === 'hotel' ? 'bed' : i.type === 'flight' ? 'airplane' : i.type === 'transfer' ? 'car' : 'ellipse'} size={i.type ? 15 : 8} color={c.faint} style={{ marginTop: 2 }} /><Text style={{ color: c.text, flex: 1 }}>{i.title}</Text></View>)}
         </Card>))}
       <Btn label="Send quote on WhatsApp" icon="logo-whatsapp" kind="green" onPress={send} busy={busy === 'send'} />
-      <Text style={[type.small, { textAlign: 'center' }]}>To add or edit hotels, flights and other line items, use the web app.</Text>
+      <Btn label="Edit hotels, flights & line items" icon="create-outline" kind="ghost" onPress={() => navigation.navigate('Web', { path: `/itineraries/${it.id}`, title: 'Itinerary' })} />
     </Screen>)
 }

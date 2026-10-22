@@ -81,6 +81,8 @@ export default function BookingScreen({ route, navigation }) {
             sub={[x.service_date && fmtDay(x.service_date), x.confirmation_no && `Ref ${x.confirmation_no}`].filter(Boolean).join(' · ') || String(x.service_type).replace(/_/g, ' ')} right={<Pill tone={SVC[x.status] || 'neutral'} text={x.status} />} />)}
         </Card></>}
 
+      <Btn label="Documents, travellers & invoices" icon="document-text-outline" kind="ghost" onPress={() => navigation.navigate('Web', { path: `/bookings/${b.id}`, title: b.booking_ref })} />
+
       <Sheet visible={!!pay} onClose={() => setPay(null)} title="Record a payment">
         {!!pay && <>
           <View style={{ backgroundColor: c.bg, borderRadius: 14, padding: sp.l, marginBottom: sp.l }}>

@@ -64,6 +64,7 @@ export default function ContactScreen({ route, navigation }) {
         {trips.length === 0 && <Text style={[type.small, { paddingVertical: sp.l }]}>No enquiries yet for this customer.</Text>}
         {trips.map((t, i) => <Row key={t.id} icon="airplane" tone={c.primary} title={t.title} last={i === trips.length - 1} sub={`${t.destination_text || 'Destination not set'}${t.start_date ? ' · ' + fmtDay(t.start_date) : ''}`} onPress={() => navigation.navigate('Trip', { id: Number(t.id) })} right={<Pill status={t.status} text={t.status} />} />)}
       </Card>
+      <Btn label="Edit contact, notes & full history" icon="create-outline" kind="ghost" onPress={() => navigation.navigate('Web', { path: `/contacts/${ct.id}`, title: ct.name || 'Contact' })} />
       <Btn label="New enquiry for this customer" icon="add-circle" onPress={createEnquiry} busy={busy} />
     </Screen>)
 }
