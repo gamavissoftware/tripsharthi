@@ -7,6 +7,7 @@ import { Screen, Card, Chip, Empty, ErrorBox, SkeletonList, Fab, Sheet, Input, B
 import { indiaToday } from '../logic'
 import { TaskRow } from './HomeScreen'
 import OfflineBanner from '../OfflineBanner'
+import DateField from '../DateField'
 
 const TYPES = [['call', 'Call', 'call'], ['whatsapp', 'WhatsApp', 'logo-whatsapp'], ['email', 'E-mail', 'mail'], ['meeting', 'Meeting', 'people'], ['todo', 'To-do', 'checkbox']]
 const addDays = (n) => { const d = new Date(Date.now() + 330 * 60000 + n * 86400000); return d.toISOString().slice(0, 10) }
@@ -64,14 +65,15 @@ function NewTask({ visible, onClose, onSaved, dealId }) {
   const [title, setTitle] = useState('')
   const [type, setType] = useState('call')
   const [when, setWhen] = useState(1)
+  const [custom, setCustom] = useState('')          // a date picked from the calendar overrides the quick choices
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   async function save() {
     if (title.trim().length < 2) { setErr('Say what needs doing'); return }
     setBusy(true); setErr('')
     try {
-      await biz.createTask({ title: title.trim(), type, priority: 'medium', due_at: `${addDays(when)} 10:00:00`, ...(dealId ? { related_type: 'deal', related_id: dealId } : {}) })
-      ok(); setTitle(''); onSaved()
+      await biz.createTask({ title: title.trim(), type, priority: 'medium', due_at: `${custom || addDays(when)} 10:00:00`, ...(dealId ? { related_type: 'deal', related_id: dealId } : {}) })
+      ok(); setTitle(''); setCustom(''); setWhen(1); onSaved()
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
   return (
@@ -80,7 +82,8 @@ function NewTask({ visible, onClose, onSaved, dealId }) {
       <Text style={[type.label, { marginBottom: 8 }]}>Type</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: sp.m }}>{TYPES.map(([k, l, i]) => <Chip key={k} label={l} icon={i} active={type === k} onPress={() => setType(k)} />)}</ScrollView>
       <Text style={[type.label, { marginBottom: 8 }]}>When</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: sp.l }}>{WHEN.map(([l, n]) => <Chip key={l} label={l} active={when === n} onPress={() => setWhen(n)} />)}</ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: sp.l }}>{WHEN.map(([l, n]) => <Chip key={l} label={l} active={!custom && when === n} onPress={() => { setCustom(''); setWhen(n) }} />)}</ScrollView>
+      <DateField label="Or pick a date" value={custom} onChange={setCustom} minimumDate={new Date()} clearable placeholder="Choose from the calendar" />
       <Btn label="Add task" icon="add" onPress={save} busy={busy} />
     </Sheet>)
 }

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { chatApi } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -57,7 +57,7 @@ export default function ChatsScreen({ navigation, onUnread }) {
       <OfflineBanner stale={res?.stale} at={res?.at} />
       {!!err && <View style={{ paddingHorizontal: sp.l }}><ErrorBox text={err} onRetry={load} /></View>}
       {!res && !err ? <SkeletonList n={5} /> : (
-        <FlatList data={rows} keyExtractor={x => String(x.id)} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+        <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={rows} keyExtractor={x => String(x.id)} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
           ListEmptyComponent={res ? <Empty icon="chatbubbles" title={q || only !== 'all' ? 'No chats match' : 'No conversations yet'} text={q || only !== 'all' ? 'Try another filter.' : 'When customers message your WhatsApp number, their chats appear here.'} /> : null}
           renderItem={({ item: x }) => {

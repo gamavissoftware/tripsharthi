@@ -3,7 +3,7 @@ import { View, Text, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView
 import { chatApi } from '../api'
 import { c, sp, radius, type } from '../theme'
 import { composerMode, windowLabel, templateVarCount } from '../logic'
-import { Icon, Sheet, Btn, Input, Empty, tap } from '../ui'
+import { Icon, Sheet, Btn, Input, Empty, tap, useKeyboardHeight } from '../ui'
 import OfflineBanner from '../OfflineBanner'
 
 const TICK = { sent: 'checkmark', delivered: 'checkmark-done', read: 'checkmark-done', failed: 'alert-circle', queued: 'time-outline' }
@@ -50,6 +50,7 @@ export default function ChatScreen({ route, navigation }) {
   const [sending, setSending] = useState(false)
   const [sheet, setSheet] = useState(false)
   const listRef = useRef(null)
+  const kb = useKeyboardHeight()
   const alive = useRef(true)
   useEffect(() => { navigation.setOptions({ title: name }); return () => { alive.current = false } }, [navigation, name])
 
@@ -79,7 +80,7 @@ export default function ChatScreen({ route, navigation }) {
     }, 6000)
     return () => clearInterval(t)
   }, [id, msgs, merge])
-  useEffect(() => { if (msgs.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50) }, [msgs.length])
+  useEffect(() => { if (msgs.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50) }, [msgs.length, kb])
 
   const mode = composerMode(conv)
   async function sendText() {
@@ -99,7 +100,7 @@ export default function ChatScreen({ route, navigation }) {
   const winOpen = mode === 'text'
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#eaf0f7' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+    <View style={{ flex: 1, backgroundColor: '#eaf0f7', paddingBottom: kb }}>
       <OfflineBanner stale={!!stale} at={stale} />
       {conv && (
         <View style={[s.win, { backgroundColor: winOpen ? c.okSoft : c.warnSoft }]}>
@@ -134,7 +135,7 @@ export default function ChatScreen({ route, navigation }) {
       {mode === 'template' && <View style={s.bar}><Btn label="Send an approved template" icon="document-text" onPress={() => setSheet(true)} disabled={!!stale} style={{ flex: 1 }} /></View>}
       {mode === 'resolved' && <View style={s.bar}><Text style={{ color: c.sub, flex: 1, textAlign: 'center' }}>This conversation is resolved. Reopen it from the web app to reply.</Text></View>}
       <TemplateSheet visible={sheet} onClose={() => setSheet(false)} onSend={sendTemplate} />
-    </KeyboardAvoidingView>)
+    </View>)
 }
 const s = StyleSheet.create({
   win: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 9 },

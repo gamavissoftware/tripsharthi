@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList } from 'react-native'
+import { View, Text, FlatList, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { biz } from '../api'
 import { c, sp, type } from '../theme'
@@ -22,7 +22,7 @@ export default function DeparturesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <OfflineBanner stale={meta.stale} at={meta.at} />
-      <FlatList data={list} keyExtractor={x => String(x.id)} contentContainerStyle={{ padding: sp.l, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+      <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={list} keyExtractor={x => String(x.id)} contentContainerStyle={{ padding: sp.l, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
         onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
         ListHeaderComponent={!!err && <View style={{ marginBottom: sp.m }}><ErrorBox text={err} onRetry={load} /></View>}
         ListEmptyComponent={!rows && !err ? <SkeletonList n={3} /> : rows ? <Empty icon="airplane" title="No group departures" text="Fixed-date group tours you create on the web app appear here with live seat counts." /> : null}

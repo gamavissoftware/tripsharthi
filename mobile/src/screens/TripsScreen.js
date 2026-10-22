@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { api, biz } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -49,7 +49,7 @@ export default function TripsScreen({ navigation }) {
       <OfflineBanner stale={meta.stale} at={meta.at} />
       {!!err && <View style={{ paddingHorizontal: sp.l }}><ErrorBox text={err} onRetry={() => load()} /></View>}
       {!rows && !err ? <SkeletonList n={4} /> : (
-        <FlatList data={rows || []} keyExtractor={t => String(t.id)} contentContainerStyle={{ paddingHorizontal: sp.l, paddingBottom: 110 }} showsVerticalScrollIndicator={false}
+        <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={rows || []} keyExtractor={t => String(t.id)} contentContainerStyle={{ paddingHorizontal: sp.l, paddingBottom: 110 }} showsVerticalScrollIndicator={false}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
           ListEmptyComponent={rows ? <Empty icon="airplane" title={q ? 'No enquiries found' : 'No enquiries here yet'} text={q ? 'Try another name or destination.' : 'Tap + to add a customer enquiry in about 20 seconds.'} action={q ? undefined : 'New enquiry'} onAction={() => navigation.navigate('NewEnquiry')} /> : null}
           renderItem={({ item: t }) => (

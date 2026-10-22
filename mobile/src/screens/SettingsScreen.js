@@ -5,6 +5,7 @@ import { c, sp, radius, type } from '../theme'
 import { Screen, Card, Section, Btn, Pill, Icon, Skeleton, ErrorBox } from '../ui'
 import { permissionState, registerForPush } from '../push'
 import { lockEnabled, lockAvailable, setLockEnabled } from '../lock'
+import DateField from '../DateField'
 
 const REASON = {
   category_off: 'You turned this category off', notifications_off: 'Notifications are off', quiet_hours: 'Quiet hours', throttled: 'Too many at once, summarised',
@@ -62,6 +63,8 @@ export default function SettingsScreen() {
     try { const r = await pushApi.test(); Alert.alert('Sent', `Test sent to ${r.devices} phone${r.devices > 1 ? 's' : ''}. It should arrive in a few seconds.`); setTimeout(load, 2500) }
     catch (e) { Alert.alert('Could not send a test', e.message) } finally { setBusy('') }
   }
+  // both times must be chosen before anything is saved (a half-set pair is refused by the server)
+  function persistQuiet(a, b) { if (a && b) save({ quiet_start: a, quiet_end: b }) }
   function saveQuiet() {
     if (!quiet.start && !quiet.end) return save({ quiet_start: null, quiet_end: null })
     if (!hhmm(quiet.start) || !hhmm(quiet.end)) return Alert.alert('Use 24-hour times', 'For example 22:00 and 07:00.')
@@ -109,11 +112,11 @@ export default function SettingsScreen() {
       <Card>
         <Text style={type.h3}>Quiet hours</Text>
         <Text style={[type.small, { marginTop: 4, marginBottom: sp.m, lineHeight: 17 }]}>No alerts on this phone between these times (India time). They still appear in your notifications. Leave both empty to turn off.</Text>
-        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
-          <TextInput style={st.time} placeholder="22:00" placeholderTextColor={c.faint} value={quiet.start} onChangeText={v => setQuiet(q => ({ ...q, start: v }))} onBlur={saveQuiet} maxLength={5} keyboardType="numbers-and-punctuation" />
-          <Text style={type.small}>to</Text>
-          <TextInput style={st.time} placeholder="07:00" placeholderTextColor={c.faint} value={quiet.end} onChangeText={v => setQuiet(q => ({ ...q, end: v }))} onBlur={saveQuiet} maxLength={5} keyboardType="numbers-and-punctuation" />
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'flex-start' }}>
+          <DateField mode="time" label="From" value={quiet.start} onChange={v => { setQuiet(q => ({ ...q, start: v })); persistQuiet(v, quiet.end) }} placeholder="22:00" style={{ flex: 1, marginBottom: 0 }} />
+          <DateField mode="time" label="Until" value={quiet.end} onChange={v => { setQuiet(q => ({ ...q, end: v })); persistQuiet(quiet.start, v) }} placeholder="07:00" style={{ flex: 1, marginBottom: 0 }} />
         </View>
+        {(!!quiet.start || !!quiet.end) && <Btn label="Turn quiet hours off" kind="ghost" small onPress={() => { setQuiet({ start: '', end: '' }); save({ quiet_start: null, quiet_end: null }) }} style={{ marginTop: sp.m, alignSelf: 'flex-start' }} />}
       </Card>
 
       <Card><Toggle title="Hide details on the lock screen" hint="Alerts say “Payment update” instead of names and amounts. Details stay in the app." value={prefs.privacy === 'minimal'} onChange={v => save({ privacy: v ? 'minimal' : 'full' })} /></Card>

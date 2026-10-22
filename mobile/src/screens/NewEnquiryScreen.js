@@ -3,7 +3,8 @@ import { View, Text, Alert, Platform } from 'react-native'
 import { api } from '../api'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Input, Btn, Chip, ok } from '../ui'
-import { validateEnquiry } from '../logic'
+import { validateEnquiry, indiaToday } from '../logic'
+import DateField from '../DateField'
 
 const blank = { name: '', phone: '', destination: '', start_date: '', nights: '', adults: '2', children: '0', budget_rs: '', notes: '' }
 const POPULAR = ['Bali', 'Dubai', 'Thailand', 'Goa', 'Kerala', 'Kashmir', 'Singapore', 'Maldives']
@@ -39,7 +40,7 @@ export default function NewEnquiryScreen({ navigation }) {
         <Input label="Destination" value={f.destination} onChangeText={set('destination')} placeholder="Bali, Kashmir, Goa…" autoCapitalize="words" style={{ marginBottom: sp.s }} />
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: sp.m }}>{POPULAR.map(p => <Chip key={p} label={p} active={f.destination === p} onPress={() => set('destination')(p)} />)}</View>
         <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Input label="Travel date" value={f.start_date} onChangeText={set('start_date')} error={errs.start_date} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" maxLength={10} style={{ flex: 1.4 }} />
+          <DateField label="Travel date" value={f.start_date} onChange={set('start_date')} error={errs.start_date} minimumDate={new Date()} clearable placeholder="Choose a date (optional)" style={{ flex: 1.6 }} />
           <Input label="Nights" value={f.nights} onChangeText={set('nights')} error={errs.nights} keyboardType="number-pad" maxLength={2} placeholder="5" style={{ flex: 1 }} />
         </View>
         <View style={{ flexDirection: 'row', gap: 10 }}>

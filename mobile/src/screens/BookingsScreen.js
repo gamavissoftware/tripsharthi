@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { View, Text, FlatList, TextInput, ScrollView, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TextInput, ScrollView, StyleSheet, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { biz } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -51,7 +51,7 @@ export default function BookingsScreen({ navigation }) {
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
       <OfflineBanner stale={meta.stale} at={meta.at} />
-      <FlatList
+      <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'}
         data={all ? rows : []} keyExtractor={b => String(b.id)} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}
         onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
         ListHeaderComponent={<View style={{ padding: sp.l, paddingBottom: sp.s }}>

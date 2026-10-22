@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { pushApi } from '../api'
 import { c, sp, type } from '../theme'
@@ -44,7 +44,7 @@ export default function NotificationsScreen({ onUnread }) {
       {unread > 0 && <View style={{ padding: sp.l, paddingBottom: 0, alignItems: 'flex-end' }}><Btn label={`Mark all ${unread} as read`} icon="checkmark-done" kind="soft" small onPress={() => pushApi.markAllRead().then(load)} /></View>}
       {!!err && <View style={{ padding: sp.l }}><ErrorBox text={err} onRetry={load} /></View>}
       {!rows && !err ? <SkeletonList n={5} /> : (
-        <FlatList data={rows || []} keyExtractor={n => String(n.id)} contentContainerStyle={{ padding: sp.l, gap: sp.s, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+        <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={rows || []} keyExtractor={n => String(n.id)} contentContainerStyle={{ padding: sp.l, gap: sp.s, paddingBottom: 40 }} showsVerticalScrollIndicator={false}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
           ListEmptyComponent={rows ? <Empty icon="notifications" title="Nothing yet" text="New leads, customer replies, quote views and payments will show up here." /> : null}
           renderItem={({ item: n }) => {

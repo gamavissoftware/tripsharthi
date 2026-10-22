@@ -3,10 +3,11 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingVi
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api, saveToken } from '../api'
 import { c, sp, radius, type, shadow } from '../theme'
-import { GradientHeader, Btn, Icon } from '../ui'
+import { GradientHeader, Btn, Icon, useKeyboardHeight } from '../ui'
 
 export default function LoginScreen({ onLogin }) {
   const insets = useSafeAreaInsets()
+  const kb = useKeyboardHeight()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [show, setShow] = useState(false)
@@ -24,8 +25,8 @@ export default function LoginScreen({ onLogin }) {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: c.bg }}>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, paddingBottom: kb }} showsVerticalScrollIndicator={false}>
         <GradientHeader style={{ paddingTop: insets.top + 36, paddingBottom: 70, alignItems: 'center' }}>
           <View style={s.logoWrap}><Image source={require('../../assets/icon.png')} style={{ width: 76, height: 76, borderRadius: 18 }} /></View>
           <Text style={{ color: '#fff', fontSize: 30, fontWeight: '800', letterSpacing: -0.6, marginTop: 14 }}>Trip<Text style={{ color: '#6fe0d6' }}>Sarthi</Text></Text>
@@ -64,7 +65,7 @@ export default function LoginScreen({ onLogin }) {
           <TouchableOpacity onPress={() => Linking.openURL('https://tripsarthi.com')}><Text style={{ color: c.primary, fontWeight: '700', marginTop: 4 }}>Create your agency account at tripsarthi.com</Text></TouchableOpacity>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>)
+    </View>)
 }
 
 const s = StyleSheet.create({

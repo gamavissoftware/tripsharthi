@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { contactApi } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -49,7 +49,7 @@ export default function ContactsScreen({ navigation }) {
       {!!err && <View style={{ padding: sp.l }}><ErrorBox text={err} onRetry={() => load(q.trim())} /></View>}
       {!rows && !err && <SkeletonList n={5} />}
       {rows && (
-        <FlatList data={rows} keyExtractor={x => String(x.id)} contentContainerStyle={{ paddingHorizontal: sp.l, paddingBottom: 110 }} showsVerticalScrollIndicator={false}
+        <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={rows} keyExtractor={x => String(x.id)} contentContainerStyle={{ paddingHorizontal: sp.l, paddingBottom: 110 }} showsVerticalScrollIndicator={false}
           ListEmptyComponent={<Empty icon="people" title={q ? 'No one found' : 'No contacts yet'} text={q ? 'Try a different name or number.' : 'Add the people who enquire with you.'} action={q ? undefined : 'Add a contact'} onAction={() => setSheet(true)} />}
           ListFooterComponent={page.cur < page.count ? <Btn label={more ? 'Loading…' : `Load more (${rows.length} of ${page.total})`} kind="ghost" small busy={more} style={{ marginTop: sp.m }} onPress={async () => { setMore(true); await load(q.trim(), page.cur + 1); setMore(false) }} /> : null}
           renderItem={({ item: x, index }) => (

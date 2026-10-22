@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated, StyleSheet, ActivityIndicator, Platform, Modal, TextInput, KeyboardAvoidingView } from 'react-native'
+import { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react'
+import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated, StyleSheet, ActivityIndicator, Platform, Modal, TextInput, Keyboard, Dimensions } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Haptics from 'expo-haptics'
@@ -196,41 +196,75 @@ export function SkeletonList({ n = 4 }) {
   return <View style={{ gap: sp.m, padding: sp.l }}>{Array.from({ length: n }).map((_, i) => <View key={i} style={[s.card, { padding: sp.l, gap: 10 }]}><Skeleton h={16} w="60%" /><Skeleton h={12} w="85%" /><Skeleton h={12} w="40%" /></View>)}</View>
 }
 
+/**
+ * Height of the on-screen keyboard (0 when closed). Newer Android versions no longer shrink the screen when the keyboard opens, so every
+ * form must make room itself: this is what lifts sheets, forms, the chat box and the sign-in form above the keyboard.
+ */
+export function useKeyboardHeight() {
+  const [h, setH] = useState(0)
+  useEffect(() => {
+    const ios = Platform.OS === 'ios'
+    const a = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', (e) => setH(e.endCoordinates?.height || 0))
+    const b = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setH(0))
+    return () => { a.remove(); b.remove() }
+  }, [])
+  return h
+}
+
+const ScrollCtx = createContext(null)
+
 /** A scrolling page with pull-to-refresh. */
 export function Screen({ children, onRefresh, refreshing, style, contentStyle, header }) {
+  const kb = useKeyboardHeight()
+  const ref = useRef(null)
+  // a field that gets focus scrolls into the visible part of the page (above the keyboard)
+  const reveal = useCallback((fieldRef) => {
+    setTimeout(() => {
+      const sv = ref.current, f = fieldRef.current
+      if (!sv || !f || !sv.getInnerViewNode) return
+      try { f.measureLayout(sv.getInnerViewNode(), (_x, y) => sv.scrollTo({ y: Math.max(0, y - 120), animated: true }), () => {}) } catch { /* the page simply stays where it is */ }
+    }, 120)
+  }, [])
   return (
-    <ScrollView style={[{ flex: 1, backgroundColor: c.bg }, style]} contentContainerStyle={[{ paddingBottom: 40 }, contentStyle]} showsVerticalScrollIndicator={false}
-      refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} /> : undefined}>
-      {header}
-      {children}
-    </ScrollView>)
+    <ScrollCtx.Provider value={reveal}>
+      <ScrollView ref={ref} style={[{ flex: 1, backgroundColor: c.bg }, style]} contentContainerStyle={[{ paddingBottom: 40 + kb }, contentStyle]} showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        refreshControl={onRefresh ? <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={c.primary} colors={[c.primary]} /> : undefined}>
+        {header}
+        {children}
+      </ScrollView>
+    </ScrollCtx.Provider>)
 }
 
 /** A labelled text field with an inline error. */
-export function Input({ label, error, style, hint, ...p }) {
+export function Input({ label, error, style, hint, onFocus, ...p }) {
+  const reveal = useContext(ScrollCtx)
+  const box = useRef(null)
   return (
-    <View style={[{ marginBottom: sp.m }, style]}>
+    <View ref={box} style={[{ marginBottom: sp.m }, style]}>
       {!!label && <Text style={[type.label, { marginBottom: 6 }]}>{label}</Text>}
-      <TextInput placeholderTextColor={c.faint} {...p} style={[s.input, error && { borderColor: c.danger }, p.multiline && { minHeight: 84, textAlignVertical: 'top' }]} />
+      <TextInput placeholderTextColor={c.faint} {...p} onFocus={(e) => { if (reveal) reveal(box); if (onFocus) onFocus(e) }} style={[s.input, error && { borderColor: c.danger }, p.multiline && { minHeight: 84, textAlignVertical: 'top' }]} />
       {!!error ? <Text style={{ color: c.danger, fontSize: 12, marginTop: 4 }}>{error}</Text> : !!hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
     </View>)
 }
 
 /** A card that slides up from the bottom (new task, new contact...). */
 export function Sheet({ visible, onClose, title, children }) {
+  const kb = useKeyboardHeight()
+  const maxH = Math.max(260, Dimensions.get('window').height - kb - 56)        // never taller than the space above the keyboard
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, justifyContent: 'flex-end' }}>
-        <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,31,68,0.45)' }} />
-        <View style={s.sheet}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent navigationBarTranslucent>
+      <View style={{ flex: 1, justifyContent: 'flex-end', paddingBottom: kb }}>
+        <TouchableOpacity activeOpacity={1} onPress={() => { Keyboard.dismiss(); onClose() }} style={{ ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(10,31,68,0.45)' }} />
+        <View style={[s.sheet, { maxHeight: maxH }]}>
           <View style={{ alignSelf: 'center', width: 42, height: 4, borderRadius: 2, backgroundColor: c.border, marginBottom: sp.m }} />
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: sp.l }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: sp.m }}>
             <Text style={[type.h2, { flex: 1 }]}>{title}</Text>
-            <TouchableOpacity onPress={onClose} hitSlop={10}><Ionicons name="close" size={24} color={c.sub} /></TouchableOpacity>
+            <TouchableOpacity onPress={() => { Keyboard.dismiss(); onClose() }} hitSlop={12} accessibilityLabel="Close"><Ionicons name="close" size={26} color={c.sub} /></TouchableOpacity>
           </View>
-          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>{children}</ScrollView>
+          <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: sp.s }}>{children}</ScrollView>
         </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>)
 }
 
@@ -258,7 +292,7 @@ const s = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: c.border, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   input: { backgroundColor: '#fff', borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: c.text },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: sp.l, paddingBottom: sp.xl + 8, maxHeight: '88%' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: sp.l, paddingBottom: sp.l },
   fab: { position: 'absolute', right: 18, width: 58, height: 58, borderRadius: 29, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', ...shadow, elevation: 6 },
   rowIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 })
