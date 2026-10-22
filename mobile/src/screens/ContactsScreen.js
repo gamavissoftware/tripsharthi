@@ -9,7 +9,7 @@ import OfflineBanner from '../OfflineBanner'
 
 const STAGE_TONE = { lead: 'info', prospect: 'warn', customer: 'ok', won: 'ok', lost: 'danger' }
 
-export default function ContactsScreen({ navigation }) {
+export default function ContactsScreen({ navigation, route }) {
   const [q, setQ] = useState('')
   const [rows, setRows] = useState(null)
   const [page, setPage] = useState({ cur: 1, count: 1, total: 0 })
@@ -31,6 +31,7 @@ export default function ContactsScreen({ navigation }) {
     } catch (e) { if (alive.current && my === seq.current) setErr(e.message) }
   }, [])
   useFocusEffect(useCallback(() => { load(q); contactApi.summaryC().then(r => alive.current && setSum(r.data)).catch(() => {}) }, [])) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (route?.params?.new) setSheet(true) }, [route?.params?.new])           // the Home shortcut opens the form straight away
   useEffect(() => { const t = setTimeout(() => load(q.trim()), 300); return () => clearTimeout(t) }, [q, load])   // search as you type
 
   return (

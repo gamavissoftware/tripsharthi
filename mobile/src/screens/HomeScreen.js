@@ -51,6 +51,11 @@ export default function HomeScreen({ navigation, unread = 0, user }) {
       <Text style={{ color: '#9db8e0', marginTop: 12, fontSize: 12.5 }}>
         {d ? `${d.month} · day ${d.month_progress.day} of ${d.month_progress.days_in_month} · ${d.month_progress.days_left} days left` : ' '}
       </Text>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
+        <QuickAction icon="add-circle" label="New enquiry" onPress={() => navigation.navigate('NewEnquiry')} />
+        <QuickAction icon="alarm" label="New task" onPress={() => navigation.navigate('Tasks', { new: Date.now() })} />
+        <QuickAction icon="person-add" label="New contact" onPress={() => navigation.navigate('Contacts', { new: Date.now() })} />
+      </View>
     </GradientHeader>
   )
 
@@ -226,6 +231,15 @@ export default function HomeScreen({ navigation, unread = 0, user }) {
           </Card>
         </Section>)}
     </Screen>)
+}
+
+/** One of the three big shortcuts under the greeting: the things an agent does all day. */
+function QuickAction({ icon, label, onPress }) {
+  return (
+    <TouchableOpacity activeOpacity={0.8} onPress={onPress} accessibilityRole="button" accessibilityLabel={label} style={{ flex: 1, alignItems: 'center', paddingVertical: 11, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)' }}>
+      <Icon name={icon} size={24} color="#fff" />
+      <Text style={{ color: '#fff', fontWeight: '700', fontSize: 12.5, marginTop: 5 }}>{label}</Text>
+    </TouchableOpacity>)
 }
 
 function Legend({ color, text }) { return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}><View style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: color }} /><Text style={type.small}>{text}</Text></View> }
