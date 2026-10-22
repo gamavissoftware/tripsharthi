@@ -5,7 +5,7 @@ Tick things off in order. 👤 = only the owner can do it (accounts, payments, l
 
 ## 0. Decide BEFORE the first build (cannot be changed after the app is published)
 - [ ] 👤🛠 **Bundle id / package name.** It is still `com.gamavis.travelpilot` (the old product name) in `app.json` (iOS `bundleIdentifier` and Android `package`), plus `slug: travelpilot` and `scheme: travelpilot`. A store id is permanent once published. Recommended: `com.gamavis.tripsarthi`, slug `tripsarthi`, scheme `tripsarthi`. Do this before `eas init`.
-- [ ] 🛠 **Icon and splash** (`assets/icon.png`, `splash-icon.png`, Android adaptive icon files) must be the TripSarthi logo. iOS icon: 1024x1024 PNG, no transparency.
+- [x] 🛠 **Icon and splash** — DONE 2026-10-22: all icons were still the Expo template art; they are now cut from the TripSarthi mark (`assets/icon.png` opaque white 1024, adaptive foreground/background/monochrome 1024 with the mark inside the Android safe zone, `notification-icon.png` white silhouette for the status bar). Original note: (`assets/icon.png`, `splash-icon.png`, Android adaptive icon files) must be the TripSarthi logo. iOS icon: 1024x1024 PNG, no transparency.
 - [ ] 🛠 **`supportsTablet: true`** means Apple requires iPad screenshots and the layouts must look right on iPad. The app is phone-first: set it to `false` unless you want to test iPad.
 - [ ] 👤 **Publisher accounts** (start now, they are the slowest step):
   - Apple Developer Program (about USD 99 a year). As a company (Gamavis Software Solutions) you enrol as an *organisation*, which needs a D-U-N-S number and can take days to weeks. An individual account is faster but shows a person's name as the seller.

@@ -17,12 +17,18 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "package": "com.gamavis.travelpilot"
+      "package": "com.gamavis.travelpilot",
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,7 +39,8 @@
         "expo-notifications",
         {
           "color": "#0a6cc4",
-          "defaultChannel": "task"
+          "defaultChannel": "task",
+          "icon": "./assets/notification-icon.png"
         }
       ],
       [
