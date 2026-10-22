@@ -17,10 +17,10 @@
     if (qm && REF_OK.test(qm[1]) && !readRef()) localStorage.setItem(REF_KEY, JSON.stringify({ code: qm[1].toUpperCase(), at: Date.now() }));
   } catch (e) { /* storage blocked: the referral is simply not remembered */ }
   var REF = readRef();
-  document.querySelectorAll('[data-app]').forEach(function (a) {
-    var signup = a.getAttribute('data-app') === 'signup';
-    a.href = REF && signup ? APP_URL + '/?ref=' + encodeURIComponent(REF) + '#/register' : APP_URL + '/#/' + (signup ? 'register' : 'login');
-  });
+  // ONE place builds the app links, so a sign-up button added later (the plan finder's result) cannot forget the partner's code.
+  function appHref(signup) { return REF && signup ? APP_URL + '/?ref=' + encodeURIComponent(REF) + '#/register' : APP_URL + '/#/' + (signup ? 'register' : 'login'); }
+  window.tsAppHref = appHref;       // the plan finder (a separate block below) builds its sign-up link with the same helper
+  document.querySelectorAll('[data-app]').forEach(function (a) { a.href = appHref(a.getAttribute('data-app') === 'signup'); });
 
   var yr = document.getElementById('yr'); if (yr) yr.textContent = new Date().getFullYear();
 
@@ -132,7 +132,7 @@
       var hit = LIM.filter(function (p) { return a <= p[3] && c <= p[2] && w <= p[4]; })[0], out = document.getElementById('pf-out');
       if (!hit) { out.innerHTML = '<small>Your needs are above our standard plans</small><div class="amt" style="font-size:34px">Let’s talk</div><a class="btn btn-accent btn-lg" href="contact.html?topic=pricing#demo">Contact us</a>'; return; }
       out.innerHTML = '<small>We would suggest</small><div class="amt">' + hit[0] + '</div><small>' + (hit[1] ? inr(hit[1]) + ' / month + GST' : 'Free forever to explore') + '</small><hr><div class="two-col"><div><small>Contacts</small><b>' + hit[2].toLocaleString('en-IN') + '</b></div><div><small>Team agents · WhatsApp numbers</small><b>' + hit[3] + ' · ' + hit[4] + '</b></div></div><a class="btn btn-accent btn-lg" data-app="signup" href="#">Start free</a>';
-      document.querySelectorAll('#pf-out [data-app]').forEach(function (el) { el.href = (window.TRIPSARTHI_APP_URL || (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? 'http://localhost:5917' : 'https://app.tripsarthi.com')) + '/#/register'; });
+      document.querySelectorAll('#pf-out [data-app]').forEach(function (el) { el.href = window.tsAppHref(true); });
     };
     Object.keys(inputs).forEach(function (k) { inputs[k].addEventListener('input', run); }); run();
   }

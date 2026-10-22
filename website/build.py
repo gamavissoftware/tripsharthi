@@ -32,7 +32,10 @@ def ver(path):
 NAV = [('features.html', 'Features'), ('solutions.html', 'Solutions'), ('pricing.html', 'Pricing'), ('partners.html', 'Partners'), ('blog/index.html', 'Blog'), ('about.html', 'About'), ('contact.html', 'Contact')]
 
 def header(cur='', p=''):
-    links = ''.join(f'<a href="{p}{h}"{" class=\"cur\" aria-current=\"page\"" if h == cur else (" class=\"hot\"" if h == "partners.html" else "")}>{t}</a>' for h, t in NAV)
+    def _link(h, t):
+        attr = ' class="cur" aria-current="page"' if h == cur else (' class="hot"' if h == "partners.html" else "")
+        return f'<a href="{p}{h}"{attr}>{t}</a>'
+    links = ''.join(_link(h, t) for h, t in NAV)
     return f"""<header class="nav" id="top">
   <div class="wrap nav-in">
     <a class="brand" href="{p}index.html" aria-label="TripSarthi home"><img src="{p}assets/brand/mark-96.png" alt="" width="40" height="40"><span>Trip<b>Sarthi</b></span></a>
@@ -288,9 +291,9 @@ def contact_page():
     phones = ''.join(f'<a class="big" href="tel:{t}">{d}</a>' for d, t in PHONES)
     body = hero('Contact us', 'Let’s talk about your <span class="grad">travel business</span>', 'Questions, a demo, help with setup or a partnership — call or write to us and we’ll get back to you.') + f'''
 <section class="section" style="padding-top:24px"><div class="wrap">
-<div class="cards3 reveal"><article class="card cc"><span class="ico-bubble blue">{ico('phone')}</span><h3>Call us</h3><div class="clist">{phones}</div></article>
-<article class="card cc"><span class="ico-bubble teal">{ico('chat')}</span><h3>Email us</h3><div class="clist"><a class="big" href="mailto:{EMAIL}">{EMAIL}</a></div><p class="fine">We reply as soon as we can.</p></article>
-<article class="card cc"><span class="ico-bubble orange">{ico('pin')}</span><h3>Visit us</h3><address>{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}</address><p style="margin-top:10px"><a href="https://www.google.com/maps/search/?api=1&amp;query={MAPS_Q}" target="_blank" rel="noopener">Open in Google Maps ↗</a></p></article></div>
+<div class="cards3 reveal"><article class="card cc"><span class="ico-bubble blue">{ico('phone')}</span><h3 aria-level="2">Call us</h3><div class="clist">{phones}</div></article>
+<article class="card cc"><span class="ico-bubble teal">{ico('chat')}</span><h3 aria-level="2">Email us</h3><div class="clist"><a class="big" href="mailto:{EMAIL}">{EMAIL}</a></div><p class="fine">We reply as soon as we can.</p></article>
+<article class="card cc"><span class="ico-bubble orange">{ico('pin')}</span><h3 aria-level="2">Visit us</h3><address>{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}</address><p style="margin-top:10px"><a href="https://www.google.com/maps/search/?api=1&amp;query={MAPS_Q}" target="_blank" rel="noopener">Open in Google Maps ↗</a></p></article></div>
 <div class="cform-wrap" id="demo"><div class="cform-copy"><p class="kicker">Send a message</p><h2>Book a demo or ask us anything</h2><p class="sub">Tell us a little about your agency and we’ll reply by email or phone.</p>
 <ul class="bul"><li>See the product on your own use case</li><li>Get help connecting WhatsApp and importing rates</li><li>Ask about plans, teams and migration</li></ul></div>
 <form class="card cform" id="contact-form" novalidate><div class="two-f"><label>Your name *<input name="name" required autocomplete="name"></label><label>Email *<input type="email" name="email" required autocomplete="email"></label></div>
@@ -312,7 +315,7 @@ def legal(fname, title, desc, inner):
     return page(fname, f'{title} — TripSarthi', desc, body)
 
 def privacy_page():
-    return legal('privacy.html', 'Privacy policy', 'How TripSarthi handles personal data.', f'''<h1>Privacy policy</h1><p class="meta">Last updated: {UPDATED}</p>
+    return legal('privacy.html', 'Privacy policy', 'How TripSarthi collects, uses, stores and protects personal data, and the choices and rights you have over it.', f'''<h1>Privacy policy</h1><p class="meta">Last updated: {UPDATED}</p>
 <p>TripSarthi is operated by {COMPANY}, {ADDRESS} (“we”, “us”). This policy explains what we collect, why, and the choices you have. It applies to this website and to the TripSarthi software service.</p>
 <h2>Two roles</h2><p>When you use TripSarthi to manage <em>your</em> customers’ enquiries, bookings and messages, you are the data fiduciary for that data and we process it on your behalf, only to provide the service. For information about you as our customer (account, billing and usage), we are the data fiduciary.</p>
 <h2>What we collect</h2><ul><li><b>Account data:</b> name, work email, company name, phone number and password (stored hashed).</li><li><b>Billing data:</b> plan, invoices and payment status. Card details are handled by our payment provider and never stored by us.</li><li><b>Workspace data you add:</b> contacts, enquiries, quotes, bookings, payments, supplier details and messages. Passport numbers and customer document uploads are encrypted at rest.</li><li><b>Messages you send us:</b> what you write in our contact form or by email or phone.</li><li><b>Technical data:</b> IP address, device and browser type, and basic logs to keep the service secure.</li></ul>
@@ -325,7 +328,7 @@ def privacy_page():
 <h2>Contact</h2><p>{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}<br><a href="mailto:{EMAIL}">{EMAIL}</a></p>''')
 
 def terms_page():
-    return legal('terms.html', 'Terms of service', 'The terms for using TripSarthi.', f'''<h1>Terms of service</h1><p class="meta">Last updated: {UPDATED}</p>
+    return legal('terms.html', 'Terms of service', 'The terms that apply when you use TripSarthi: your account, plans and billing, acceptable use, your data and our responsibilities.', f'''<h1>Terms of service</h1><p class="meta">Last updated: {UPDATED}</p>
 <p>These terms govern your use of TripSarthi, provided by {COMPANY}, {ADDRESS} (“we”). By creating an account you agree to them.</p>
 <h2>The service</h2><p>TripSarthi is software for travel businesses: CRM, WhatsApp messaging, quotes, bookings, payments tracking, GST documents and ad management. Features and plan limits are described on our website and may change.</p>
 <h2>Your account</h2><ul><li>You must provide accurate information and keep your credentials secure.</li><li>You are responsible for activity in your workspace, including that of users you invite.</li></ul>
