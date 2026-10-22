@@ -75,6 +75,11 @@ class BookingsController extends TravelBaseController
         $svc = $m->find((int) $serviceId);
         if (! $svc) { return $this->failNotFound('Service not found.'); }
         $in = array_intersect_key($this->body(), array_flip(['status', 'confirmation_no', 'cost_amount', 'cost_fx', 'pay_by', 'notes', 'supplier_id']));
+        if (! CurrentUser::isPrivileged()) {      // what a service costs is the owner's business, not the agent's
+            $triedCost = array_intersect_key($in, array_flip(['cost_amount', 'cost_fx', 'pay_by', 'supplier_id'])) !== [];
+            unset($in['cost_amount'], $in['cost_fx'], $in['pay_by'], $in['supplier_id']);
+            if ($in === []) { return $triedCost ? $this->failForbidden('Only an owner or admin can change supplier costs.') : $this->ok($svc); }
+        }
         if (($svc['cost_currency'] ?? 'INR') !== 'INR') {
             // A foreign-currency service is priced in ITS currency: the INR figure is derived at the rate locked on the quote, never typed.
             unset($in['cost_amount']);

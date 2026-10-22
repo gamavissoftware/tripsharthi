@@ -274,7 +274,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     });
 
     // --- Travel vertical ---
-    $routes->group('travel', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('travel', ['filter' => ['auth', 'costhide']], static function (RouteCollection $routes): void {
         $routes->group('rate-import', ['filter' => 'role:owner,admin'], static function (RouteCollection $routes): void {
             $routes->post('preview',          'Api\RateImportController::preview');
             $routes->get('(:num)',            'Api\RateImportController::show/$1');
@@ -287,7 +287,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('(:segment)/(:num)',     'Api\TravelMasterController::save/$1/$2');
         $routes->delete('(:segment)/(:num)',  'Api\TravelMasterController::destroy/$1/$2');
     });
-    $routes->group('trips', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('trips', ['filter' => ['auth', 'costhide']], static function (RouteCollection $routes): void {
         $routes->post('ai-parse',         'Api\TripsController::aiParse');
         $routes->get('',                  'Api\TripsController::index');
         $routes->post('',                 'Api\TripsController::create');
@@ -297,7 +297,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('(:num)/ai-itinerary', 'Api\TripsController::aiItinerary/$1');
         $routes->post('quick',               'Api\TripsController::quick');
     });
-    $routes->group('itineraries', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('itineraries', ['filter' => ['auth', 'costhide']], static function (RouteCollection $routes): void {
         $routes->get('',                          'Api\ItinerariesController::index');
         $routes->post('',                         'Api\ItinerariesController::create');
         $routes->get('(:num)',                    'Api\ItinerariesController::show/$1');
@@ -587,7 +587,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('bookings/(:num)',    'Api\ChecklistsController::generate/$1');
         $routes->patch('items/(:num)',      'Api\ChecklistsController::setStatus/$1');
     });
-    $routes->group('bookings', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('bookings', ['filter' => ['auth', 'costhide']], static function (RouteCollection $routes): void {
         $routes->get('',                          'Api\BookingsController::index');
         $routes->get('dashboard',                 'Api\BookingsController::dashboard');
         $routes->post('',                         'Api\BookingsController::create');

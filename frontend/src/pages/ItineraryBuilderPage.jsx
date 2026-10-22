@@ -30,6 +30,7 @@ function suggestQty(unit, itin) {
 const mult = (type, qty, nights) => (type === 'hotel' ? qty * nights : qty)
 
 function AddItem({ itin, day, rates, fx, onAdded }) {
+  const canCost = itin.cost_total !== undefined      // agents are never sent supplier costs: they pick the rate card and the server prices the line
   const blank = { type: 'sightseeing', title: '', cost_rs: '', nights: 1, quantity: 1, rate_id: '', currency: 'INR', unit: '' }
   const [open, setOpen] = useState(false)
   const [f, setF] = useState(blank)
@@ -57,7 +58,7 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
     // Rate cards store minor units of THEIR currency: $100.00 is 10,000, not ₹100.
     setF(s => ({ ...s, rate_id: r.id, title: r.service_name, type, unit: r.unit, quantity: suggestQty(r.unit, itin),
       nights: type === 'hotel' ? (Number(itin.nights) || 1) : 1,
-      currency: haveFx ? r.currency : 'INR', cost_rs: foreign ? (haveFx ? toMajor(r.cost_amount, r.currency) : '') : Math.round(r.cost_amount / 100) }))
+      currency: haveFx ? r.currency : 'INR', cost_rs: !canCost ? '' : foreign ? (haveFx ? toMajor(r.cost_amount, r.currency) : '') : Math.round(r.cost_amount / 100) }))
     setList(false); setQ('')
   }
   const qty = Number(f.quantity) || 0
@@ -71,7 +72,7 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
     if (!f.title.trim() || qty <= 0) return   // safety net: the inputs are `required` / min 1, so the form check normally stops this first
     const rate = rates.find(x => String(x.id) === String(f.rate_id))
     try {
-      const price = f.currency === 'INR' ? { unit_cost: toPaise(f.cost_rs) } : { cost_currency: f.currency, unit_cost_fx: toMinor(f.cost_rs, f.currency) }
+      const price = !canCost ? {} : f.currency === 'INR' ? { unit_cost: toPaise(f.cost_rs) } : { cost_currency: f.currency, unit_cost_fx: toMinor(f.cost_rs, f.currency) }
       await travel.addItem(itin.id, { day_id: day?.id, type: f.type, title: f.title, ...price, quantity: qty, nights, rate_id: rate?.id, supplier_id: rate?.supplier_id, meta: f.unit ? { unit: f.unit } : undefined })
       setF(blank); setOpen(false); onAdded()
     } catch (er) { toast.error('Could not add', er.message) }
@@ -92,7 +93,7 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
             {shown.map(({ r, state, here }) => (
               <button type="button" key={r.id} className="rp-item" onClick={() => pickRate(r)}>
                 <span><b>{r.service_name}</b><small>{r.supplier_name} · {r.service_type}{r.destination_name ? ` · ${r.destination_name}` : ''}{here ? ' · this trip' : ''}</small></span>
-                <span style={{ textAlign: 'right' }}><b>{r.currency && r.currency !== 'INR' ? fmt(r.cost_amount, r.currency) : inr(r.cost_amount)}</b><small>{UNIT_LABEL[r.unit] || r.unit}</small>
+                <span style={{ textAlign: 'right' }}>{canCost && <b>{r.currency && r.currency !== 'INR' ? fmt(r.cost_amount, r.currency) : inr(r.cost_amount)}</b>}<small>{UNIT_LABEL[r.unit] || r.unit}</small>
                   {state === 'expired' && <span className="rp-badge bad">expired {r.valid_to}</span>}{state === 'future' && <span className="rp-badge warn">starts {r.valid_from}</span>}</span>
               </button>
             ))}
@@ -100,10 +101,11 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
       </div>
       <select className="form-select" aria-label="Service type" value={f.type} onChange={set('type')}>{Object.keys(TYPE_ICON).map(t => <option key={t}>{t}</option>)}</select>
       <input className="form-input" aria-label="Service title" required maxLength={200} placeholder="Service title" value={f.title} onChange={set('title')} />
+      {canCost && (
       <div style={{ display: 'flex', gap: 4 }}>
         {fx.length > 0 && <select className="form-select" style={{ maxWidth: 82 }} value={f.currency} onChange={set('currency')} aria-label="Currency" title="Currency the supplier charges in"><option>INR</option>{fx.map(x => <option key={x.currency}>{x.currency}</option>)}</select>}
         <input className="form-input" aria-label="Cost per unit" type="number" inputMode="decimal" step="any" min="0" placeholder={f.currency === 'INR' ? `Cost ₹ ${UNIT_LABEL[f.unit] || 'per unit'}` : `Cost ${f.currency} per unit`} value={f.cost_rs} onChange={set('cost_rs')} />
-      </div>
+      </div>)}
       <label style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-3)' }}>{f.unit === 'per_pax' ? 'Number of people' : f.unit === 'per_room' || f.unit === 'per_night' ? 'Number of rooms' : f.unit === 'per_vehicle' ? 'Number of vehicles' : 'Quantity'}
         <input className="form-input" type="number" inputMode="decimal" required min="1" step="any" value={f.quantity} onChange={set('quantity')} /></label>
       {f.type === 'hotel' && <label style={{ display: 'grid', gap: 2, fontSize: 11, color: 'var(--text-3)' }}>Nights<input className="form-input" type="number" inputMode="numeric" required min="1" max="365" step="1" value={f.nights} onChange={set('nights')} /></label>}
@@ -119,6 +121,7 @@ function AddItem({ itin, day, rates, fx, onAdded }) {
 
 /** One service line: shows the working (unit x qty x nights), and edits in place. */
 function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
+  const canCost = i.cost_amount !== undefined       // hidden from agents by the server
   const [edit, setEdit] = useState(false)
   const foreign = i.cost_currency && i.cost_currency !== 'INR'
   const cur = foreign ? i.cost_currency : 'INR'
@@ -130,7 +133,7 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
   const qty = Number(i.quantity) || 1
   const nights = Number(i.nights) || 1
   const opt = Number(i.is_optional) === 1
-  const startEdit = () => { setF({ title: i.title, quantity: qty, nights, price: foreign ? toMajor(i.unit_cost_fx, cur) : Number(i.unit_cost) / 100, is_optional: opt }); setErrs({}); setEdit(true) }
+  const startEdit = () => { setF({ title: i.title, quantity: qty, nights, price: !canCost ? 0 : foreign ? toMajor(i.unit_cost_fx, cur) : Number(i.unit_cost) / 100, is_optional: opt }); setErrs({}); setEdit(true) }
   const check = (d) => {
     const e = {}
     if (!String(d.title).trim()) e.title = 'Give the service a title'
@@ -149,7 +152,7 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
       return
     }
     try {
-      const price = foreign ? { unit_cost_fx: toMinor(f.price, cur), cost_currency: cur } : { unit_cost: toPaise(f.price) }
+      const price = !canCost ? {} : foreign ? { unit_cost_fx: toMinor(f.price, cur), cost_currency: cur } : { unit_cost: toPaise(f.price) }
       await travel.updateItem(itin.id, i.id, { title: f.title, quantity: Number(f.quantity), nights: Number(f.nights), is_optional: f.is_optional ? 1 : 0, ...price })
       setEdit(false); onChanged()
     } catch (er) { toast.error('Could not save', er.message) }
@@ -168,7 +171,7 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
           {foreign && <small style={{ color: 'var(--text-3)' }}> · {fmt(i.unit_cost_fx, i.cost_currency)} @ ₹{Number(i.fx_rate).toFixed(2)}</small>}
           {working && <small className="il-calc" style={{ display: 'block' }}>{working}</small>}
           {paxWarn && <small style={{ display: 'block', color: 'var(--warning)' }}>⚠ per-person rate with quantity 1. Edit if this is for everyone.</small>}</span>
-        <span style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap' }}><b>{inr(i.cost_amount)}</b>
+        <span style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap' }}>{canCost && <b>{inr(i.cost_amount)}</b>}
           {!lock && <button className="btn btn-sm btn-ghost" title="Edit quantity, nights or price" onClick={() => (edit ? setEdit(false) : startEdit())}>✎</button>}
           {!lock && <button className="btn btn-sm btn-ghost" title="Remove" onClick={async () => { if (!(await confirmAsk(`Remove “${i.title}” from this quote?`, { okLabel: 'Remove', danger: true }))) return; try { await travel.deleteItem(itin.id, i.id); onChanged() } catch (er) { toast.error('Could not remove', er.message) } }}>✕</button>}</span>
       </div>
@@ -177,7 +180,7 @@ function ItemRow({ itin, item: i, sup, rates, lock, onChanged }) {
           <Field label="Title" required error={errs.title} style={{ flex: '2 1 160px' }}><input className="form-input" style={{ width: '100%' }} maxLength={200} value={f.title} onChange={e => upd('title', e.target.value)} /></Field>
           <Field label={unit === 'per_pax' ? 'People' : unit === 'per_room' || unit === 'per_night' ? 'Rooms' : unit === 'per_vehicle' ? 'Vehicles' : 'Quantity'} required error={errs.quantity}><input className="form-input" type="number" inputMode="decimal" min="1" step="any" value={f.quantity} onChange={e => upd('quantity', e.target.value)} /></Field>
           {i.type === 'hotel' && <Field label="Nights" required error={errs.nights}><input className="form-input" type="number" inputMode="numeric" min="1" max="365" step="1" value={f.nights} onChange={e => upd('nights', e.target.value)} /></Field>}
-          <Field label={`Price per unit (${cur})`} required error={errs.price}><input className="form-input" type="number" inputMode="decimal" min="0" step="any" value={f.price} onChange={e => upd('price', e.target.value)} /></Field>
+          {canCost && <Field label={`Price per unit (${cur})`} required error={errs.price}><input className="form-input" type="number" inputMode="decimal" min="0" step="any" value={f.price} onChange={e => upd('price', e.target.value)} /></Field>}
           <label style={{ flexDirection: 'row', display: 'flex', alignItems: 'center', gap: 6, paddingBottom: 8 }}><input type="checkbox" checked={f.is_optional} onChange={e => setF({ ...f, is_optional: e.target.checked })} /> Optional add-on</label>
           <button className="btn btn-sm btn-primary" onClick={save}>Save</button><button className="btn btn-sm btn-ghost" onClick={() => setEdit(false)}>Cancel</button>
         </div>)}
@@ -272,11 +275,11 @@ export default function ItineraryBuilderPage() {
           {(it.days.some(d => d.items.some(i => i.cost_currency && i.cost_currency !== 'INR')) || it.extras?.some(i => i.cost_currency && i.cost_currency !== 'INR')) && !['accepted'].includes(it.status) &&
             <button className="btn btn-sm btn-ghost" style={{ marginBottom: 10 }} title="Foreign-currency lines keep the rate they were priced at. Press to re-price them at today's rates."
               onClick={async () => { try { const r = await travel.relockFx(it.id); setIt(r.itinerary); toast.success(r.changed ? `${r.changed} line(s) re-priced` : 'Rates unchanged', r.changed ? `Total ${inr(r.old_total)} → ${inr(r.new_total)}` : undefined); if (r.stale?.length) toast.error('Old rates', `${r.stale.join(', ')} rate is more than 3 days old — refresh it in Exchange rates.`) } catch (e) { toast.error('Could not re-price', e.message) } }}>↻ Re-price foreign lines at today's rates</button>}
-          {[['Supplier cost', it.cost_total, true], ['Selling price', it.sell_subtotal], [`GST ${Number(it.gst_rate)}%`, it.gst_amount], Number(it.tcs_amount) > 0 && [`TCS ${Number(it.tcs_rate)}%`, it.tcs_amount]].filter(Boolean).map(([k, v, dim]) => (
+          {[it.cost_total !== undefined && ['Supplier cost', it.cost_total, true], ['Selling price', it.sell_subtotal], [`GST ${Number(it.gst_rate)}%`, it.gst_amount], Number(it.tcs_amount) > 0 && [`TCS ${Number(it.tcs_rate)}%`, it.tcs_amount]].filter(Boolean).map(([k, v, dim]) => (
             <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', color: dim ? 'var(--text-3)' : 'inherit' }}><span>{k}</span><span>{inr(v)}</span></div>
           ))}
           <div className="itin-total"><span>Total</span><span>{inr(it.grand_total)}</span></div>
-          <div className="itin-margin">Your margin <b>{inr(it.margin_amount)}</b></div>
+          {it.margin_amount !== undefined && <div className="itin-margin">Your margin <b>{inr(it.margin_amount)}</b></div>}
           <p style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 0 }}>Customers never see cost or margin. Taxes follow current rules; have your CA confirm the TCS base.</p>
         </div>
       </div>

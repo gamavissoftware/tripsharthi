@@ -19,7 +19,7 @@ const UNIT_LABEL = Object.fromEntries(UNITS.map(([k, v]) => [k, v]))
 const dayStr = (plus = 0) => new Date(new Date().getTime() + plus * 864e5).toISOString().slice(0, 10)
 const todayStr = () => dayStr(0)
 const rateState = (r) => { const t = todayStr(); return r.valid_to && r.valid_to < t ? 'expired' : r.valid_from && r.valid_from > t ? 'future' : 'ok' }
-const money = (r) => (r.currency && r.currency !== 'INR' ? fmt(r.cost_amount, r.currency) : inr(r.cost_amount))
+const money = (r) => (r.cost_amount === undefined ? '—' : r.currency && r.currency !== 'INR' ? fmt(r.cost_amount, r.currency) : inr(r.cost_amount))     // agents are not sent rate costs
 const BLANK_S = { name: '', type: 'hotel', city: '', phone: '', whatsapp: '', email: '', gstin: '', contact_name: '', payment_terms: '', notes: '' }
 const BLANK_R = { supplier_id: '', service_name: '', service_type: 'hotel', unit: 'per_night', currency: 'INR', price: '', destination_id: '', valid_from: '', valid_to: '' }
 const th = { padding: '10px 14px', textAlign: 'left', color: 'var(--text-3)', fontSize: 12, textTransform: 'uppercase', whiteSpace: 'nowrap' }

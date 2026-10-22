@@ -104,15 +104,33 @@ class ItinerariesController extends TravelBaseController
         return $dayId ? $this->ok((new ItineraryDayModel())->setTenant($tid)->find($dayId), 201) : $this->fail($m->errors(), 422);
     }
 
+    /**
+     * A line added by an agent: the cost is taken from the chosen rate card (never from the browser), or left at zero for the owner to price.
+     * @param array<string,mixed> $in
+     * @return array<string,mixed>
+     */
+    private function agentItemPrice(int $tid, array $in): array
+    {
+        unset($in['unit_cost'], $in['cost_amount'], $in['cost_currency'], $in['unit_cost_fx'], $in['supplier_id']);
+        $rate = ! empty($in['rate_id']) ? (new \App\Models\SupplierRateModel())->setTenant($tid)->find((int) $in['rate_id']) : null;
+        if (! $rate) { unset($in['rate_id']); return $in; }
+        $in['supplier_id'] = $rate['supplier_id'];
+        if (($rate['currency'] ?? 'INR') === 'INR') { $in['unit_cost'] = (int) $rate['cost_amount']; }
+        else { $in['cost_currency'] = $rate['currency']; $in['unit_cost_fx'] = (int) $rate['cost_amount']; }
+        return $in;
+    }
+
     /** POST /itineraries/:id/items */
     public function addItem($id = null)
     {
         $tid = CurrentUser::tenantId();
         if (! $this->model()->find((int) $id)) { return $this->failNotFound('Itinerary not found.'); }
-        try {
-            $item = (new ItineraryService())->addItem($tid, (int) $id, array_intersect_key($this->body(), array_flip([
+        $in = array_intersect_key($this->body(), array_flip([
                 'day_id', 'type', 'title', 'details', 'supplier_id', 'rate_id', 'quantity', 'nights', 'unit_cost', 'cost_amount', 'cost_currency', 'unit_cost_fx', 'is_optional', 'position', 'meta',
-            ])));
+            ]));
+        if (! CurrentUser::isPrivileged()) { $in = $this->agentItemPrice($tid, $in); }     // agents never see or set what a service costs: it comes from the rate card
+        try {
+            $item = (new ItineraryService())->addItem($tid, (int) $id, $in);
         } catch (\RuntimeException $e) {
             return $this->fail($e->getMessage(), 422);
         }
@@ -127,7 +145,9 @@ class ItinerariesController extends TravelBaseController
         if (! $it) { return $this->failNotFound('Itinerary not found.'); }
         if (! in_array($it['status'], ['draft', 'sent', 'viewed'], true)) { return $this->fail('This quote is ' . $it['status'] . ' and can no longer be changed. Duplicate it as a new version.', 409); }
         try {
-            return $this->ok((new ItineraryService())->updateItem($tid, (int) $id, (int) $itemId, $this->body()));
+            $in = $this->body();
+            if (! CurrentUser::isPrivileged()) { $in = array_diff_key($in, array_flip(['unit_cost', 'unit_cost_fx', 'cost_currency', 'cost_amount', 'supplier_id'])); }   // an agent can change what a line IS, not what it costs
+            return $this->ok((new ItineraryService())->updateItem($tid, (int) $id, (int) $itemId, $in));
         } catch (\InvalidArgumentException $e) { return $this->failNotFound($e->getMessage());
         } catch (\RuntimeException $e) { return $this->fail($e->getMessage(), 422); }
     }
