@@ -1,15 +1,26 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { View, Text, FlatList, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native'
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { chatApi } from '../api'
-import { c } from '../theme'
+import { c, sp, radius, type } from '../theme'
+import { Avatar, Icon, Empty, ErrorBox, SkeletonList, Pill, Chip } from '../ui'
 import OfflineBanner from '../OfflineBanner'
 
-const when = (s) => { if (!s) return ''; const d = new Date(String(s).replace(' ', 'T') + 'Z'); const today = new Date(); return d.toDateString() === today.toDateString() ? d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) }
+const parse = (s) => new Date(String(s).replace(' ', 'T') + 'Z')
+const when = (s) => {
+  if (!s) return ''
+  const d = parse(s), now = new Date()
+  if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+  const y = new Date(now.getTime() - 86400000)
+  if (d.toDateString() === y.toDateString()) return 'Yesterday'
+  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+}
 
 export default function ChatsScreen({ navigation, onUnread }) {
   const [res, setRes] = useState(null)
   const [err, setErr] = useState('')
+  const [q, setQ] = useState('')
+  const [only, setOnly] = useState('all')
   const [refreshing, setRefreshing] = useState(false)
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false }, [])
@@ -25,40 +36,53 @@ export default function ChatsScreen({ navigation, onUnread }) {
   // Refresh on focus and every 15 s while this tab is showing.
   useFocusEffect(useCallback(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t) }, [load]))
 
-  const rows = res?.data || []
+  const all = res?.data || []
+  const unread = all.filter(x => Number(x.unread_count) > 0).length
+  const rows = all.filter(x => {
+    if (only === 'unread' && !(Number(x.unread_count) > 0)) return false
+    if (only === 'open' && x.send_mode !== 'free_form') return false
+    const t = q.trim().toLowerCase()
+    return !t || String(x.contact_name || '').toLowerCase().includes(t) || String(x.wa_number || '').includes(t)
+  })
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
+      <View style={{ padding: sp.l, paddingBottom: 0 }}>
+        <View style={s.search}><Icon name="search" size={18} color={c.faint} /><TextInput value={q} onChangeText={setQ} placeholder="Search chats" placeholderTextColor={c.faint} style={{ flex: 1, fontSize: 15, color: c.text, paddingVertical: 2 }} autoCapitalize="none" /></View>
+        <View style={{ flexDirection: 'row', gap: 8, paddingVertical: sp.m }}>
+          <Chip label="All" active={only === 'all'} onPress={() => setOnly('all')} count={all.length} />
+          <Chip label="Unread" active={only === 'unread'} onPress={() => setOnly('unread')} count={unread} />
+          <Chip label="Can reply now" active={only === 'open'} onPress={() => setOnly('open')} />
+        </View>
+      </View>
       <OfflineBanner stale={res?.stale} at={res?.at} />
-      {!!err && <Text style={{ color: c.danger, padding: 16 }}>{err}</Text>}
-      <FlatList
-        data={rows} keyExtractor={x => String(x.id)}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} />}
-        ListEmptyComponent={res ? <Text style={{ textAlign: 'center', color: c.sub, marginTop: 40 }}>No conversations yet.</Text> : null}
-        contentContainerStyle={{ padding: 12, gap: 8 }}
-        renderItem={({ item: x }) => {
-          const open = x.send_mode === 'free_form'
-          return (
-            <TouchableOpacity style={s.card} onPress={() => navigation.navigate('Chat', { id: x.id, name: x.contact_name || x.wa_number })}>
-              <View style={s.row}>
-                <Text style={[s.name, Number(x.unread_count) > 0 && { fontWeight: '800' }]} numberOfLines={1}>{x.contact_name || x.wa_number}</Text>
-                <Text style={s.time}>{when(x.last_message_at)}</Text>
-              </View>
-              <View style={s.row}>
-                <Text style={s.sub} numberOfLines={1}>{x.wa_number}{x.status === 'resolved' ? ' · resolved' : ''}{x.assigned_agent_name ? ` · ${x.assigned_agent_name}` : ''}</Text>
-                <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 11, color: open ? c.ok : c.sub }}>{open ? '● reply open' : '○ templates only'}</Text>
-                  {Number(x.unread_count) > 0 && <Text style={s.badge}>{x.unread_count}</Text>}
+      {!!err && <View style={{ paddingHorizontal: sp.l }}><ErrorBox text={err} onRetry={load} /></View>}
+      {!res && !err ? <SkeletonList n={5} /> : (
+        <FlatList data={rows} keyExtractor={x => String(x.id)} contentContainerStyle={{ paddingBottom: 40 }} showsVerticalScrollIndicator={false}
+          onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
+          ListEmptyComponent={res ? <Empty icon="chatbubbles" title={q || only !== 'all' ? 'No chats match' : 'No conversations yet'} text={q || only !== 'all' ? 'Try another filter.' : 'When customers message your WhatsApp number, their chats appear here.'} /> : null}
+          renderItem={({ item: x }) => {
+            const open = x.send_mode === 'free_form', un = Number(x.unread_count) > 0, name = x.contact_name || x.wa_number
+            return (
+              <TouchableOpacity activeOpacity={0.7} style={s.row} onPress={() => navigation.navigate('Chat', { id: Number(x.id), name })}>
+                <Avatar name={name} size={48} color={un ? c.primary : c.sub} />
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={[s.name, un && { fontWeight: '800' }]} numberOfLines={1}>{name}</Text>
+                    <Text style={[s.time, un && { color: c.primary, fontWeight: '700' }]}>{when(x.last_message_at)}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 8 }}>
+                    <Text style={[type.small, { flex: 1 }, un && { color: c.text }]} numberOfLines={1}>{x.status === 'resolved' ? 'Resolved · ' : ''}{x.assigned_agent_name ? `${x.assigned_agent_name} · ` : ''}{x.wa_number}</Text>
+                    {!open && <Icon name="time-outline" size={14} color={c.faint} />}
+                    {un && <View style={s.badge}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 11.5 }}>{x.unread_count}</Text></View>}
+                  </View>
                 </View>
-              </View>
-            </TouchableOpacity>)
-        }}
-      />
-    </View>
-  )
+              </TouchableOpacity>)
+          }} />)}
+    </View>)
 }
 const s = StyleSheet.create({
-  card: { backgroundColor: c.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: c.border, gap: 4 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  name: { fontSize: 16, fontWeight: '600', color: c.text, flex: 1 }, time: { color: c.sub, fontSize: 12 }, sub: { color: c.sub, flex: 1 },
-  badge: { backgroundColor: c.primary, color: '#fff', fontWeight: '800', fontSize: 12, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 999, overflow: 'hidden' },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: sp.l, backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, borderColor: c.line },
+  name: { flex: 1, fontSize: 16, fontWeight: '600', color: c.text }, time: { fontSize: 12, color: c.faint, marginLeft: 8 },
+  badge: { backgroundColor: c.primary, minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
 })

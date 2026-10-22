@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store'
+import { getItem, setItem, deleteItem } from './storage'
 import { API_URL } from './config'
 import { cached, cacheClear } from './cache'
 import { friendlyError } from './logic'
@@ -8,9 +8,9 @@ let token = null
 let onUnauthorized = () => {}
 
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn }
-export async function loadToken() { token = await SecureStore.getItemAsync(KEY); return token }
-export async function saveToken(t) { token = t; await SecureStore.setItemAsync(KEY, t) }
-export async function clearToken() { token = null; await SecureStore.deleteItemAsync(KEY) }
+export async function loadToken() { token = await getItem(KEY); return token }
+export async function saveToken(t) { token = t; await setItem(KEY, t) }
+export async function clearToken() { token = null; await deleteItem(KEY) }
 
 const TIMEOUT_MS = 20000   // a dead connection must fail (and fall back to saved data) instead of spinning forever
 
@@ -21,7 +21,7 @@ async function request(method, path, body) {
   try {
     res = await fetch(`${API_URL}/api/v1${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json', 'X-TS-Client': 'mobile', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: body ? JSON.stringify(body) : undefined,
       signal: ctl.signal,
     })
@@ -60,7 +60,7 @@ export const api = {
   createTrip: (b) => request('POST', '/trips', b).then(r => r.data),
   bookings: () => request('GET', '/bookings').then(r => r.data),
   booking: (id) => request('GET', `/bookings/${id}`).then(r => r.data),
-  markPaid: (paymentId, mode) => request('POST', `/bookings/payments/${paymentId}/paid`, { mode }).then(r => r.data),
+  markPaid: (paymentId, mode, reference) => request('POST', `/bookings/payments/${paymentId}/paid`, { mode, ...(reference ? { reference } : {}) }).then(r => r.data),
   paymentLink: (paymentId) => request('POST', `/bookings/payments/${paymentId}/link`).then(r => r.data),
   remind: (paymentId) => request('POST', `/bookings/payments/${paymentId}/remind`).then(r => r.data),
   dashboard: () => request('GET', '/bookings/dashboard').then(r => r.data),
@@ -97,4 +97,24 @@ export const pushApi = {
 }
 export const contactApi = {
   get: (id) => request('GET', `/contacts/${id}`).then(r => r.data),
+  // q searches name / number / e-mail; the server pages 25 at a time
+  listC: (q, page = 1) => cached(`contacts:${q || ''}:${page}`, () => request('GET', `/contacts?per_page=25&page=${page}${q ? `&q=${encodeURIComponent(q)}` : ''}`).then(r => ({ rows: r.data, pager: r.pager }))),
+  summaryC: () => cached('contacts:summary', () => request('GET', '/contacts/summary').then(r => r.data)),
+  create: (b) => request('POST', '/contacts', b).then(r => r.data),
+  trips: (id) => request('GET', `/trips?contact_id=${id}`).then(r => r.data),
+}
+
+// ---- the dashboard, tasks, meetings, departures, reports: the same figures the web app shows ----
+export const biz = {
+  me: () => request('GET', '/auth/me').then(r => r.user),
+  // owners/admins may pass a user id to look at one person; agents are always limited to their own numbers by the server
+  homeC: (userId) => cached(`home:${userId || 'all'}`, () => request('GET', `/home${userId ? `?user=${userId}` : ''}`).then(r => r.data)),
+  tasksC: (status = 'open') => cached(`tasks:${status}`, () => request('GET', `/tasks?status=${status}`).then(r => r.data)),
+  completeTask: (id) => request('POST', `/tasks/${id}/complete`).then(r => r.data),
+  createTask: (b) => request('POST', '/tasks', b).then(r => r.data),
+  meetingsC: (from, to) => cached(`meetings:${from}:${to}`, () => request('GET', `/meetings?from=${from}&to=${to}`).then(r => r.data)),
+  departuresC: () => cached('departures', () => request('GET', '/departures').then(r => r.data)),
+  bookingsC: () => cached('bookings', () => request('GET', '/bookings').then(r => r.data)),
+  tripsSearchC: (q, status) => cached(`tripsq:${q}:${status || 'all'}`, () => request('GET', `/trips?q=${encodeURIComponent(q)}${status && status !== 'all' ? `&status=${status}` : ''}`).then(r => r.data)),
+  reportC: (from, to) => cached(`report:${from}:${to}`, () => request('GET', `/travel-reports?from=${from}&to=${to}`).then(r => r.data)),
 }

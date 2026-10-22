@@ -2,7 +2,7 @@
   "expo": {
     "name": "TripSarthi",
     "slug": "tripsarthi",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -52,7 +52,8 @@
         {
           "faceIDPermission": "Unlock TripSarthi with Face ID so your customers' details stay private."
         }
-      ]
+      ],
+      "expo-font"
     ],
     "scheme": "tripsarthi",
     "extra": {

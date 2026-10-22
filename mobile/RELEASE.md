@@ -21,6 +21,14 @@ Tick things off in order. 👤 = only the owner can do it (accounts, payments, l
   **This matters:** without it the app talks to `http://localhost:8731` and nothing works on a real phone.
 - [ ] Run `eas build:configure` once; it validates `eas.json` against the installed EAS CLI.
 
+## 2a. Push notifications for Android: the exact steps (about 10 minutes, your Google account)
+1. https://console.firebase.google.com -> Add project (name TripSarthi; Google Analytics can stay off).
+2. Project overview -> Add app -> Android. Package name `com.gamavis.tripsarthi` (exactly). Register the app, download `google-services.json`, finish the wizard.
+3. Put the file in `mobile/google-services.json` (it is git-ignored) and run: `cd mobile && eas env:create --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret --environment preview --environment production`.
+4. Firebase console -> Project settings -> Service accounts -> **Generate new private key** (a JSON file). Do not commit or e-mail it.
+5. Expo dashboard (expo.dev) -> your project `tripsarthi` -> Credentials -> Android -> `com.gamavis.tripsarthi` -> FCM V1 service account key -> upload that JSON.
+6. Build again (`eas build --platform android --profile preview`), install it, open Settings -> Turn on notifications -> Send me a test.
+
 ## 2. Push notification credentials
 - [ ] 👤 **iOS:** `eas credentials` and let EAS create the APNs key and provisioning profile (needs the Apple Developer account from step 0).
 - [ ] 👤 **Android:** create a Firebase project, add an Android app with your package name, download `google-services.json`, set `expo.android.googleServicesFile` in `app.json`, and upload an **FCM V1 service-account key** with `eas credentials`.

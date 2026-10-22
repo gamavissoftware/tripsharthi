@@ -1,12 +1,13 @@
 import { View, Text } from 'react-native'
 import { ageLabel } from './logic'
-import { c } from './theme'
+import { Icon } from './ui'
 
-/** Shown whenever the screen is displaying SAVED data instead of live data — never pass stale data off as current. */
+/** Shown whenever the screen is displaying SAVED data instead of live data: never pass stale data off as current. */
 export default function OfflineBanner({ stale, at }) {
   if (!stale) return null
   return (
-    <View style={{ backgroundColor: '#fef3c7', paddingVertical: 6, paddingHorizontal: 12 }}>
-      <Text style={{ color: '#92400e', fontSize: 12.5 }}>Offline — showing saved data{at ? ` from ${ageLabel(at)}` : ''}. Pull down to retry.</Text>
+    <View style={{ backgroundColor: '#fff4de', paddingVertical: 8, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Icon name="cloud-offline" size={16} color="#b45309" />
+      <Text style={{ color: '#92400e', fontSize: 12.5, flex: 1 }}>Offline. Showing saved data{at ? ` from ${ageLabel(at)}` : ''}. Pull down to retry.</Text>
     </View>)
 }

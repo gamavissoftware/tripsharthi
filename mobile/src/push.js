@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications'
 import * as Device from 'expo-device'
 import Constants from 'expo-constants'
-import * as SecureStore from 'expo-secure-store'
+import { getItem, setItem, deleteItem } from './storage'
 import { Platform } from 'react-native'
 import { pushApi } from './api'
 
@@ -38,13 +38,13 @@ export async function permissionState() {
   return p.canAskAgain === false || p.status === 'denied' ? 'denied' : 'undetermined'
 }
 
-export async function wasPrompted() { return (await SecureStore.getItemAsync(PROMPTED_KEY)) === '1' }
-export async function markPrompted() { await SecureStore.setItemAsync(PROMPTED_KEY, '1') }
+export async function wasPrompted() { return (await getItem(PROMPTED_KEY)) === '1' }
+export async function markPrompted() { await setItem(PROMPTED_KEY, '1') }
 
 /**
  * Get this phone's Expo push token and register it with the server.
  * @param {{ask?:boolean}} opts ask=true shows the OS permission dialog (only after OUR explanation — see PushPrompt).
- * @returns {Promise<{state:'registered'|'denied'|'undetermined'|'simulator'|'no_project'|'error', token?:string, error?:string}>}
+ * @returns {Promise<{state:'registered'|'denied'|'undetermined'|'simulator'|'no_project'|'no_fcm'|'error', token?:string, error?:string}>}
  */
 export async function registerForPush({ ask = false } = {}) {
   try {
@@ -60,18 +60,21 @@ export async function registerForPush({ ask = false } = {}) {
     if (!projectId) return { state: 'no_project' }
     const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
     await pushApi.registerDevice({ expo_token: token, platform: Platform.OS, device_name: Device.deviceName || Device.modelName || null, app_version: Constants.expoConfig?.version || null })
-    await SecureStore.setItemAsync(TOKEN_KEY, token)
+    await setItem(TOKEN_KEY, token)
     return { state: 'registered', token }
   } catch (e) {
-    return { state: 'error', error: e?.message || String(e) }
+    const m = e?.message || String(e)
+    // an Android build made without Firebase cannot get a push token: say so in plain words
+    if (/FirebaseApp|google-services|FCM|firebase/i.test(m)) return { state: 'no_fcm' }
+    return { state: 'error', error: m }
   }
 }
 
 /** On sign-out: stop this phone receiving the account's alerts (best effort — the server also moves tokens on next login). */
 export async function unregisterPush() {
   try {
-    const t = await SecureStore.getItemAsync(TOKEN_KEY)
-    if (t) { await pushApi.unregisterDevice(t); await SecureStore.deleteItemAsync(TOKEN_KEY) }
+    const t = await getItem(TOKEN_KEY)
+    if (t) { await pushApi.unregisterDevice(t); await deleteItem(TOKEN_KEY) }
     await Notifications.setBadgeCountAsync(0)
   } catch { /* offline: the server drops the token on the next account switch or when Expo reports it dead */ }
 }

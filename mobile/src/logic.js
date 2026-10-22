@@ -142,4 +142,73 @@ function friendlyError({ status, code, message, data } = {}) {
   return raw || `Something went wrong (${status}).`
 }
 
-module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError }
+// ---- display helpers (pure) ----
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+/** Rupees from paise with Indian grouping: 12345678 -> "₹1,23,457". */
+function inrFull(paise) { const rs = Math.round(Number(paise || 0) / 100); return (rs < 0 ? '-' : '') + '₹' + Math.abs(rs).toLocaleString('en-IN') }
+
+/** Compact rupees for tiles: ₹2.78 Cr, ₹1.9 L, ₹45K, ₹900. Negative values keep their sign. */
+function inrShort(paise) {
+  const rs = Number(paise || 0) / 100, a = Math.abs(rs), sign = rs < 0 ? '-' : ''
+  const f = (n, d) => String(Number(n.toFixed(d)))
+  if (a >= 1e7) return sign + '₹' + f(a / 1e7, 2) + ' Cr'
+  if (a >= 1e5) return sign + '₹' + f(a / 1e5, 2) + ' L'
+  if (a >= 1e3) return sign + '₹' + f(a / 1e3, 1) + 'K'
+  return sign + '₹' + Math.round(a)
+}
+
+/** Change against last month as a whole percent; null when there is nothing to compare with. */
+function deltaPct(value, prev) {
+  const v = Number(value), p = Number(prev)
+  if (!Number.isFinite(v) || !Number.isFinite(p)) return null
+  if (p === 0) return v === 0 ? 0 : null
+  return Math.round(((v - p) / Math.abs(p)) * 100)
+}
+
+/** "30 Oct" / "30 Oct 2027" (year only when it is not the current year) from "2026-10-30" or "2026-10-30 09:00:00". */
+function fmtDay(s, now = new Date()) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(s || ''))
+  if (!m) return ''
+  const label = Number(m[3]) + ' ' + MONTHS[Number(m[2]) - 1]
+  return Number(m[1]) === now.getFullYear() ? label : label + ' ' + m[1]
+}
+
+/** Whole days from today (India date) to a "YYYY-MM-DD": 0 today, negative = past. */
+function daysFrom(dateStr, todayStr) {
+  const a = Date.UTC(...String(dateStr).slice(0, 10).split('-').map((x, i) => (i === 1 ? Number(x) - 1 : Number(x))))
+  const b = Date.UTC(...String(todayStr).slice(0, 10).split('-').map((x, i) => (i === 1 ? Number(x) - 1 : Number(x))))
+  return Math.round((a - b) / 86400000)
+}
+
+/** "today" / "tomorrow" / "in 5 days" / "2 days ago" for a due date. */
+function dueLabel(dateStr, todayStr) {
+  if (!dateStr) return ''
+  const n = daysFrom(dateStr, todayStr)
+  if (n === 0) return 'today'
+  if (n === 1) return 'tomorrow'
+  if (n === -1) return 'yesterday'
+  return n > 0 ? 'in ' + n + ' days' : Math.abs(n) + ' days ago'
+}
+
+/** Today in India as "YYYY-MM-DD" regardless of the phone's time zone. */
+function indiaToday(now = new Date()) { return new Date(now.getTime() + 330 * 60000).toISOString().slice(0, 10) }
+
+/** "Good morning / afternoon / evening" by India time. */
+function greeting(now = new Date()) {
+  const h = new Date(now.getTime() + 330 * 60000).getUTCHours()
+  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
+}
+
+/** Up to two capital letters for an avatar. */
+function initials(name) {
+  const w = String(name || '').trim().split(/\s+/).filter(Boolean)
+  if (!w.length) return '?'
+  return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : '')).toUpperCase()
+}
+
+/** Percent of `part` in `whole`, 0-100, safe for zero. */
+function pctOf(part, whole) { const w = Number(whole); return w > 0 ? Math.max(0, Math.min(100, Math.round((Number(part) / w) * 100))) : 0 }
+
+module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf }

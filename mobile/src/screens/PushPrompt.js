@@ -1,5 +1,8 @@
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
-import { c } from '../theme'
+import { c, sp, radius, type, shadow } from '../theme'
+import { Icon, Btn } from '../ui'
+
+const ITEMS = [['person-add', 'A new lead arrives from your ads or website'], ['chatbubble-ellipses', 'A customer replies on WhatsApp'], ['eye', 'A customer opens or accepts your quote'], ['cash', 'A payment comes in or goes overdue']]
 
 /**
  * OUR explanation, shown BEFORE the one-shot OS permission dialog. iOS only lets an app ask once; asking cold ("Allow
@@ -10,22 +13,20 @@ export default function PushPrompt({ visible, onEnable, onLater }) {
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onLater}>
       <View style={s.backdrop}>
         <View style={s.card}>
-          <Text style={{ fontSize: 40, textAlign: 'center' }}>🔔</Text>
-          <Text style={s.h}>Never miss a lead</Text>
-          <Text style={s.p}>Turn on notifications to hear the moment:</Text>
-          {['A new lead arrives from your ads or website', 'A customer replies on WhatsApp', 'A customer opens or accepts your quote', 'A payment comes in or goes overdue'].map(t => <Text key={t} style={s.li}>•  {t}</Text>)}
-          <Text style={[s.p, { marginTop: 8 }]}>Replying within minutes makes a big difference to who books. You can choose exactly what you get, and set quiet hours, in Settings.</Text>
-          <TouchableOpacity style={s.btn} onPress={onEnable}><Text style={s.btnT}>Turn on notifications</Text></TouchableOpacity>
-          <TouchableOpacity style={{ padding: 12, alignItems: 'center' }} onPress={onLater}><Text style={{ color: c.sub }}>Not now</Text></TouchableOpacity>
+          <View style={s.bell}><Icon name="notifications" size={34} color={c.primary} /></View>
+          <Text style={[type.h1, { fontSize: 23, textAlign: 'center', marginTop: sp.m }]}>Never miss a lead</Text>
+          <Text style={[type.small, { textAlign: 'center', marginTop: 6, marginBottom: sp.l }]}>Hear the moment it happens:</Text>
+          {ITEMS.map(([i, t]) => <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 7 }}><View style={s.dot}><Icon name={i} size={16} color={c.primary} /></View><Text style={{ color: c.text, flex: 1, fontSize: 14.5 }}>{t}</Text></View>)}
+          <Text style={[type.small, { marginTop: sp.m, lineHeight: 18 }]}>Replying within minutes makes a big difference to who books. You choose exactly what you get and can set quiet hours in Settings.</Text>
+          <Btn label="Turn on notifications" icon="notifications" onPress={onEnable} style={{ marginTop: sp.l }} />
+          <TouchableOpacity style={{ padding: 14, alignItems: 'center' }} onPress={onLater}><Text style={{ color: c.sub, fontWeight: '600' }}>Not now</Text></TouchableOpacity>
         </View>
       </View>
-    </Modal>
-  )
+    </Modal>)
 }
 const s = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,.5)', justifyContent: 'center', padding: 24 },
-  card: { backgroundColor: '#fff', borderRadius: 20, padding: 22 },
-  h: { fontSize: 22, fontWeight: '800', textAlign: 'center', color: c.text, marginVertical: 6 },
-  p: { color: c.sub, marginBottom: 4 }, li: { color: c.text, paddingVertical: 2 },
-  btn: { backgroundColor: c.primary, padding: 15, borderRadius: 12, alignItems: 'center', marginTop: 14 }, btnT: { color: '#fff', fontWeight: '700', fontSize: 16 },
+  backdrop: { flex: 1, backgroundColor: 'rgba(10,31,68,0.55)', justifyContent: 'center', padding: 22 },
+  card: { backgroundColor: '#fff', borderRadius: 26, padding: 24, ...shadow },
+  bell: { alignSelf: 'center', width: 72, height: 72, borderRadius: 36, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' },
+  dot: { width: 34, height: 34, borderRadius: 11, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' },
 })

@@ -1,51 +1,69 @@
-import { useState, useEffect } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Linking, Alert, StyleSheet } from 'react-native'
-import { contactApi, api } from '../api'
-import { c } from '../theme'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { View, Text, Linking, Alert } from 'react-native'
+import { contactApi, api, inr } from '../api'
+import { c, sp, type } from '../theme'
+import { Screen, Card, Pill, Btn, Row, Avatar, Skeleton, ErrorBox, Section, ok } from '../ui'
+import { fmtDay } from '../logic'
 
 const digits = (s) => String(s || '').replace(/\D/g, '')
+const TIER = { hot: 'danger', warm: 'warn', cold: 'info' }
 
-/** Where a "new lead" / "customer replied" notification lands: who it is, and one tap to call or WhatsApp them. */
+/** Who it is, one tap to call or WhatsApp, and every enquiry they have made. Where a "new lead" or "customer replied" notification lands. */
 export default function ContactScreen({ route, navigation }) {
   const { id } = route.params
   const [ct, setCt] = useState(null)
+  const [trips, setTrips] = useState([])
+  const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
-  useEffect(() => { contactApi.get(id).then(setCt).catch(e => Alert.alert('Could not load contact', e.message)) }, [id])
-  if (!ct) return <Text style={{ padding: 20 }}>Loading…</Text>
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
+  const load = useCallback(() => {
+    contactApi.get(id).then(x => { if (alive.current) { setErr(''); setCt(x) } }).catch(e => alive.current && setErr(e.message))
+    contactApi.trips(id).then(x => alive.current && setTrips(x)).catch(() => {})
+  }, [id])
+  useEffect(() => { load() }, [load])
+
+  if (!ct) return <Screen contentStyle={{ padding: sp.l, gap: sp.m }}>{err ? <ErrorBox text={err} onRetry={load} /> : <><Skeleton h={150} r={16} /><Skeleton h={150} r={16} /></>}</Screen>
 
   const phone = ct.wa_number
   async function createEnquiry() {
     setBusy(true)
-    try { const t = await api.createTrip({ title: `${ct.name || 'New'} enquiry`, contact_id: ct.id, destination_text: '' }); navigation.replace('Trip', { id: t.id }) }
+    try { const t = await api.createTrip({ title: `${ct.name || 'New'} enquiry`, contact_id: ct.id, destination_text: '' }); ok(); navigation.replace('Trip', { id: Number(t.id) }) }
     catch (e) { Alert.alert('Could not create enquiry', e.message) } finally { setBusy(false) }
   }
-  const Row = ({ k, v }) => v ? <View style={s.kv}><Text style={s.k}>{k}</Text><Text style={s.v}>{v}</Text></View> : null
+  const KV = ({ k, v }) => (v ? <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 9, borderBottomWidth: 0.5, borderColor: c.line }}><Text style={type.small}>{k}</Text><Text style={{ color: c.text, fontWeight: '600', flexShrink: 1, textAlign: 'right', marginLeft: 16 }}>{v}</Text></View> : null)
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 14, gap: 12 }}>
-      <View style={s.card}>
-        <Text style={s.h}>{ct.name || phone}</Text>
-        <Text style={{ color: c.sub }}>{[ct.lifecycle_stage, ct.source?.replace(/_/g, ' ')].filter(Boolean).join(' · ')}</Text>
-        {!!phone && (
-          <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-            <TouchableOpacity style={[s.btn, { backgroundColor: c.ok }]} onPress={() => Linking.openURL(`tel:${phone}`)}><Text style={s.btnT}>📞 Call</Text></TouchableOpacity>
-            <TouchableOpacity style={[s.btn, { backgroundColor: '#25D366' }]} onPress={() => Linking.openURL(`https://wa.me/${digits(phone)}`)}><Text style={s.btnT}>💬 WhatsApp</Text></TouchableOpacity>
-          </View>)}
-      </View>
-      <View style={s.card}>
-        <Text style={s.h2}>Details</Text>
-        <Row k="Phone" v={phone} /><Row k="Email" v={ct.email} /><Row k="City" v={[ct.city, ct.state].filter(Boolean).join(', ')} />
-        <Row k="Interested in" v={ct.requirement_type} /><Row k="Budget" v={ct.budget_amount ? String(ct.budget_amount) : ''} /><Row k="Timeline" v={ct.timeline} />
-        {!!ct.remarks && <Text style={{ marginTop: 8, color: c.text }}>{ct.remarks}</Text>}
-      </View>
-      <TouchableOpacity style={[s.btn, { backgroundColor: c.primary }]} disabled={busy} onPress={createEnquiry}><Text style={s.btnT}>{busy ? 'Creating…' : 'Create enquiry'}</Text></TouchableOpacity>
-    </ScrollView>
-  )
+    <Screen contentStyle={{ padding: sp.l, gap: sp.m }}>
+      <Card style={{ alignItems: 'center' }}>
+        <Avatar name={ct.name || phone} size={72} />
+        <Text style={[type.h1, { fontSize: 22, marginTop: sp.m, textAlign: 'center' }]}>{ct.name || phone}</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: sp.s, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {!!ct.lifecycle_stage && <Pill tone="info" text={ct.lifecycle_stage} />}
+          {!!ct.score_tier && <Pill tone={TIER[ct.score_tier] || 'neutral'} text={`${ct.score_tier} lead`} />}
+          {String(ct.opt_in) === '0' && <Pill tone="danger" icon="notifications-off" text="opted out of WhatsApp" />}
+        </View>
+        {!!phone && <View style={{ flexDirection: 'row', gap: 10, marginTop: sp.l, alignSelf: 'stretch' }}>
+          <Btn label="Call" icon="call" kind="ok" onPress={() => Linking.openURL(`tel:${phone}`)} style={{ flex: 1 }} />
+          <Btn label="WhatsApp" icon="logo-whatsapp" kind="green" onPress={() => Linking.openURL(`https://wa.me/${digits(phone)}`)} style={{ flex: 1 }} />
+        </View>}
+        {!!ct.email && <Btn label={ct.email} icon="mail-outline" kind="ghost" small onPress={() => Linking.openURL(`mailto:${ct.email}`)} style={{ marginTop: sp.s, alignSelf: 'stretch' }} />}
+      </Card>
+
+      <Card>
+        <Text style={[type.h3, { marginBottom: 4 }]}>Details</Text>
+        <KV k="Phone" v={phone} /><KV k="Second phone" v={ct.phone_secondary} /><KV k="City" v={[ct.city, ct.state].filter(Boolean).join(', ')} />
+        <KV k="Interested in" v={ct.requirement_type} /><KV k="Budget" v={ct.budget_amount ? String(ct.budget_amount) : ''} /><KV k="Timeline" v={ct.timeline} />
+        <KV k="Source" v={ct.source ? String(ct.source).replace(/_/g, ' ') : ''} /><KV k="Added" v={fmtDay(ct.created_at)} />
+        {Array.isArray(ct.tags) && ct.tags.length > 0 && <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>{ct.tags.map(tg => <Pill key={tg.id || tg.name} tone="neutral" text={tg.name} />)}</View>}
+        {!!ct.remarks && <Text style={{ marginTop: 10, color: c.text, lineHeight: 20 }}>{ct.remarks}</Text>}
+      </Card>
+
+      <Text style={[type.h2, { marginTop: sp.s }]}>Enquiries</Text>
+      <Card pad={false} style={{ paddingHorizontal: sp.l }}>
+        {trips.length === 0 && <Text style={[type.small, { paddingVertical: sp.l }]}>No enquiries yet for this customer.</Text>}
+        {trips.map((t, i) => <Row key={t.id} icon="airplane" tone={c.primary} title={t.title} last={i === trips.length - 1} sub={`${t.destination_text || 'Destination not set'}${t.start_date ? ' · ' + fmtDay(t.start_date) : ''}`} onPress={() => navigation.navigate('Trip', { id: Number(t.id) })} right={<Pill status={t.status} text={t.status} />} />)}
+      </Card>
+      <Btn label="New enquiry for this customer" icon="add-circle" onPress={createEnquiry} busy={busy} />
+    </Screen>)
 }
-const s = StyleSheet.create({
-  card: { backgroundColor: c.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: c.border },
-  h: { fontSize: 20, fontWeight: '800', color: c.text }, h2: { fontSize: 15, fontWeight: '800', marginBottom: 8, color: c.text },
-  kv: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: c.border },
-  k: { color: c.sub }, v: { color: c.text, fontWeight: '600', flexShrink: 1, textAlign: 'right' },
-  btn: { flex: 1, padding: 14, borderRadius: 12, alignItems: 'center' }, btnT: { color: '#fff', fontWeight: '700' },
-})

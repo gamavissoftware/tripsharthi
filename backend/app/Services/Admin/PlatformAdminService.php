@@ -118,7 +118,10 @@ final class PlatformAdminService
         if ($status !== 'active' && $tenantId === $adminTenantId) { throw new \DomainException('You cannot suspend or cancel your own workspace.'); }
         if ($status === 'suspended' && trim($reason) === '') { throw new \InvalidArgumentException('Give a reason — it is kept in the audit log.'); }
         $db->table('tenants')->where('id', $tenantId)->update(['status' => $status, 'updated_at' => date('Y-m-d H:i:s')]);
-        if ($status !== 'active') { $db->table('users')->where('tenant_id', $tenantId)->update(['api_token' => null, 'api_token_expires_at' => null]); }     // everyone is signed out at once
+        if ($status !== 'active') {      // everyone is signed out at once, on every device
+            $db->table('users')->where('tenant_id', $tenantId)->update(['api_token' => null, 'api_token_expires_at' => null]);
+            $db->query('DELETE ut FROM user_tokens ut JOIN users u ON u.id = ut.user_id WHERE u.tenant_id = ?', [$tenantId]);
+        }
         AuditLogger::log('admin.tenant.status', 'tenant', $tenantId, ['status' => $t['status']], ['status' => $status, 'reason' => mb_substr($reason, 0, 300)], $tenantId, $adminId);
         return $this->tenant($tenantId);
     }

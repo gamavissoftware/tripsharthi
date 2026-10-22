@@ -39,3 +39,11 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# push notification credentials: NEVER commit these (the repository is public)
+google-services.json
+*service-account*.json
+*.p8
+*.p12
+*.jks
+*.mobileprovision

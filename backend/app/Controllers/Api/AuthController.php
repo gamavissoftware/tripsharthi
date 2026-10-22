@@ -28,6 +28,12 @@ class AuthController extends ResourceController
     // POST /api/v1/auth/login
     // ------------------------------------------------------------------
 
+    /** The phone app says so with a header; anything else is the web app. Only used to label the session. */
+    private function clientKind(): string
+    {
+        return strtolower($this->request->getHeaderLine('X-TS-Client')) === 'mobile' ? 'mobile' : 'web';
+    }
+
     public function login(): ResponseInterface
     {
         $rules = [
@@ -68,7 +74,7 @@ class AuthController extends ResourceController
             $t = db_connect()->table('tenants')->select('status')->where('id', (int) (is_array($user) ? $user['tenant_id'] : $user->tenant_id))->get()->getRowArray();
             if ($t !== null && $t['status'] !== 'active') { return $this->failForbidden('This workspace is ' . $t['status'] . '. Please contact TripSarthi support.'); }
         }
-        $rawToken = $userModel->setToken($userId);
+        $rawToken = $userModel->setToken($userId, $this->clientKind(), $this->request->getIPAddress(), (string) $this->request->getUserAgent());
 
         return $this->respond([
             'success' => true,
@@ -160,7 +166,7 @@ class AuthController extends ResourceController
             catch (\Throwable $e) { log_message('error', 'partner attribution failed: ' . $e->getMessage()); }
         }
 
-        $rawToken = $userModel->setToken((int) $userId);
+        $rawToken = $userModel->setToken((int) $userId, $this->clientKind(), $this->request->getIPAddress(), (string) $this->request->getUserAgent());
         $user     = $userModel->setTenant((int) $tenantId)->find((int) $userId);
 
         // Send welcome email (fire-and-forget — don't fail registration if email fails)
@@ -187,7 +193,8 @@ class AuthController extends ResourceController
             return $this->respond(['success' => true, 'message' => 'Support session ended.']);
         }
         $userModel = new UserModel();
-        $userModel->revokeToken(CurrentUser::id());
+        // only THIS device signs out; the same person's other devices stay signed in
+        $userModel->revokeToken(CurrentUser::id(), (string) preg_replace('/^Bearer\s+/i', '', $this->request->getHeaderLine('Authorization')));
         CurrentUser::reset();
 
         return $this->respond(['success' => true, 'message' => 'Logged out.']);
@@ -295,6 +302,7 @@ class AuthController extends ResourceController
             'password_hash' => password_hash($this->request->getJsonVar('new_password'), PASSWORD_DEFAULT),
         ]);
 
+        $userModel->revokeOthers($userId, (string) preg_replace('/^Bearer\s+/i', '', $this->request->getHeaderLine('Authorization')));   // other devices must sign in again with the new password
         return $this->respond(['success' => true, 'message' => 'Password updated successfully.']);
     }
 
@@ -355,8 +363,9 @@ class AuthController extends ResourceController
         $userId = is_array($user) ? (int) $user['id'] : (int) $user->id;
         $userModel->update($userId, [
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
-            'api_token'     => null, // invalidate all existing sessions
+            'api_token'     => null,
         ]);
+        $userModel->revokeToken($userId);   // a reset signs the person out EVERYWHERE
 
         return $this->respond([
             'success' => true,

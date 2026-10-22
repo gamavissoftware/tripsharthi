@@ -1,53 +1,100 @@
-import { useState, useEffect, useCallback } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, Alert, Share, Platform, StyleSheet } from 'react-native'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { View, Text, Alert, Share, Linking, TextInput } from 'react-native'
 import { api, inr } from '../api'
-import { c } from '../theme'
+import { c, sp, type } from '../theme'
+import { Screen, Card, Section, Pill, Btn, Row, Progress, Sheet, Input, Chip, Icon, Skeleton, ErrorBox, ok } from '../ui'
+import { fmtDay, inrFull, pctOf, indiaToday, dueLabel } from '../logic'
 
-export default function BookingScreen({ route }) {
+const MODES = [['upi', 'UPI', 'phone-portrait'], ['bank', 'Bank transfer', 'business'], ['cash', 'Cash', 'cash'], ['card', 'Card', 'card']]
+const SVC = { confirmed: 'ok', booked: 'ok', to_book: 'warn', requested: 'info', cancelled: 'danger' }
+
+export default function BookingScreen({ route, navigation }) {
   const [b, setB] = useState(null)
-  const load = useCallback(() => api.booking(route.params.id).then(setB).catch(e => Alert.alert('Could not load', e.message)), [route.params.id])
+  const [err, setErr] = useState('')
+  const [pay, setPay] = useState(null)             // the payment being marked paid
+  const [mode, setMode] = useState('upi')
+  const [ref, setRef] = useState('')
+  const [busy, setBusy] = useState('')
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
+  const load = useCallback(() => api.booking(route.params.id).then(x => { if (alive.current) { setErr(''); setB(x) } }).catch(e => alive.current && setErr(e.message)), [route.params.id])
   useEffect(() => { load() }, [load])
-  if (!b) return <Text style={{ padding: 20 }}>Loading…</Text>
+  const today = indiaToday()
 
-  const sendLink = (p) => api.paymentLink(p.id).then(l => Share.share({ message: `Payment link for ${b.booking_ref} – ${p.label}: ${l.short_url}` })).catch(e => Alert.alert('Could not create link', e.message))
-  const remind = (p) => api.remind(p.id).then(() => { Alert.alert('Reminder sent', 'The customer was reminded on WhatsApp.'); load() }).catch(e => Alert.alert('Reminder not sent', e.message))
-  // Android alerts hold at most THREE buttons: with Cancel as a fourth, "Cash" silently disappeared. Android gets the three modes and
-  // is dismissed with the back button / a tap outside; iOS also gets an explicit Cancel.
-  const markPaid = (p) => {
-    const modes = ['upi', 'bank', 'cash'].map(mode => ({ text: mode.toUpperCase(), onPress: () => api.markPaid(p.id, mode).then(load).catch(e => Alert.alert('Failed', e.message)) }))
-    Alert.alert('Paid how?', `${p.label} · ${inr(p.amount)}`, Platform.OS === 'ios' ? [...modes, { text: 'Cancel', style: 'cancel' }] : modes, { cancelable: true })
+  if (!b) return <Screen contentStyle={{ padding: sp.l, gap: sp.m }}>{err ? <ErrorBox text={err} onRetry={load} /> : <><Skeleton h={130} r={16} /><Skeleton h={200} r={16} /></>}</Screen>
+
+  const sendLink = async (p) => { setBusy('l' + p.id); try { const l = await api.paymentLink(p.id); await Share.share({ message: `Payment link for ${b.booking_ref} – ${p.label}: ${l.short_url}` }) } catch (e) { Alert.alert('Could not create link', e.message) } finally { setBusy('') } }
+  const remind = async (p) => { setBusy('r' + p.id); try { await api.remind(p.id); ok(); Alert.alert('Reminder sent', 'The customer was reminded on WhatsApp.'); load() } catch (e) { Alert.alert('Reminder not sent', e.message) } finally { setBusy('') } }
+  async function markPaid() {
+    setBusy('paid')
+    try { await api.markPaid(pay.id, mode, ref.trim() || undefined); ok(); setPay(null); setRef(''); setMode('upi'); load() }
+    catch (e) { Alert.alert('Could not record it', e.message) } finally { setBusy('') }
   }
+  const due = Number(b.due_amount)
+  const portal = b.portal_token ? `https://app.tripsarthi.com/#/trip/${b.portal_token}` : null
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 14, gap: 12 }}>
-      <View style={s.card}>
-        <Text style={s.h}>{b.booking_ref}</Text><Text style={{ color: c.sub }}>{b.title}</Text>
-        <Text style={{ marginTop: 8, color: c.text }}>Total {inr(b.total_amount)} · Paid {inr(b.paid_amount)} · <Text style={{ color: b.due_amount > 0 ? c.danger : c.ok, fontWeight: '800' }}>Due {inr(b.due_amount)}</Text></Text>
-      </View>
-      <View style={s.card}>
-        <Text style={s.h2}>Payments</Text>
-        {b.payments.map(p => (
-          <View key={p.id} style={s.row}>
-            <View style={{ flex: 1 }}><Text style={{ fontWeight: '700', color: c.text }}>{p.label}</Text><Text style={{ color: c.sub }}>Due {p.due_date} · {p.status}</Text></View>
-            <Text style={{ fontWeight: '800', marginRight: 8 }}>{inr(p.amount)}</Text>
-            {p.status !== 'paid' && p.status !== 'waived' && (
-              <View style={{ flexDirection: 'row', gap: 6 }}>
-                <TouchableOpacity style={s.ghost} onPress={() => sendLink(p)}><Text>🔗</Text></TouchableOpacity>
-                <TouchableOpacity style={s.ghost} onPress={() => remind(p)}><Text>💬</Text></TouchableOpacity>
-                <TouchableOpacity style={s.pay} onPress={() => markPaid(p)}><Text style={{ color: '#fff', fontWeight: '700' }}>Paid</Text></TouchableOpacity>
-              </View>)}
-          </View>))}
-      </View>
-      <View style={s.card}>
-        <Text style={s.h2}>Supplier services</Text>
-        {b.services.map(x => <View key={x.id} style={s.row}><Text style={{ flex: 1, color: c.text }}>{x.title}</Text><Text style={{ color: x.status === 'confirmed' ? c.ok : c.warn, fontWeight: '700' }}>{x.status.replace('_', ' ')}</Text></View>)}
-      </View>
-    </ScrollView>
-  )
+    <Screen contentStyle={{ padding: sp.l, gap: sp.m }}>
+      <Card>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Text style={{ fontSize: 12.5, fontWeight: '800', color: c.primary, letterSpacing: 0.5, flex: 1 }}>{b.booking_ref}</Text>
+          <Pill status={b.status} text={b.status} />
+        </View>
+        <Text style={[type.h2, { marginTop: 6 }]}>{b.title}</Text>
+        <Text style={[type.small, { marginTop: 4 }]}>{b.travel_start ? `${fmtDay(b.travel_start)}${b.travel_end ? ' → ' + fmtDay(b.travel_end) : ''} · ${dueLabel(b.travel_start, today)}` : 'Dates to be confirmed'}</Text>
+        <View style={{ marginTop: sp.l }}>
+          <Progress pct={pctOf(b.paid_amount, b.total_amount)} color={due > 0 ? c.orange : c.ok} height={10} />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
+            <Stat label="Total" value={inrFull(b.total_amount)} />
+            <Stat label="Paid" value={inrFull(b.paid_amount)} color={c.ok} />
+            <Stat label="Due" value={inrFull(due)} color={due > 0 ? c.danger : c.ok} right />
+          </View>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10, marginTop: sp.l }}>
+          {!!b.contact_id && <Btn label="Customer" icon="person-circle-outline" kind="ghost" small onPress={() => navigation.navigate('Contact', { id: Number(b.contact_id) })} style={{ flex: 1 }} />}
+          {!!b.trip_id && <Btn label="Enquiry" icon="airplane-outline" kind="ghost" small onPress={() => navigation.navigate('Trip', { id: Number(b.trip_id) })} style={{ flex: 1 }} />}
+          {!!portal && <Btn label="Portal link" icon="link" kind="ghost" small onPress={() => Share.share({ message: `Your trip details, payments and documents: ${portal}` })} style={{ flex: 1 }} />}
+        </View>
+      </Card>
+
+      <Text style={[type.h2, { marginTop: sp.s }]}>Payments</Text>
+      {(b.payments || []).map(p => {
+        const open = p.status !== 'paid' && p.status !== 'waived'
+        return (
+          <Card key={p.id}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1 }}><Text style={type.h3}>{p.label}</Text><Text style={[type.small, { marginTop: 2 }]}>{open ? `Due ${fmtDay(p.due_date)} · ${dueLabel(p.due_date, today)}` : p.paid_at ? `Paid ${fmtDay(p.paid_at)}${p.mode ? ' by ' + p.mode : ''}` : 'Settled'}</Text></View>
+              <View style={{ alignItems: 'flex-end', gap: 5 }}><Text style={{ fontSize: 17, fontWeight: '800', color: c.text }}>{inrFull(p.amount)}</Text><Pill status={p.status} text={p.status} /></View>
+            </View>
+            {open && <View style={{ flexDirection: 'row', gap: 8, marginTop: sp.m }}>
+              <Btn label="Link" icon="link" kind="ghost" small busy={busy === 'l' + p.id} onPress={() => sendLink(p)} style={{ flex: 1 }} />
+              <Btn label="Remind" icon="logo-whatsapp" kind="ghost" small busy={busy === 'r' + p.id} onPress={() => remind(p)} style={{ flex: 1 }} />
+              <Btn label="Paid" icon="checkmark-circle" kind="ok" small onPress={() => { setPay(p); setMode('upi'); setRef('') }} style={{ flex: 1.2 }} />
+            </View>}
+          </Card>)
+      })}
+
+      {(b.services || []).length > 0 && <>
+        <Text style={[type.h2, { marginTop: sp.s }]}>Supplier services</Text>
+        <Card pad={false} style={{ paddingHorizontal: sp.l }}>
+          {b.services.map((x, i, arr) => <Row key={x.id} icon={x.service_type === 'hotel' ? 'bed' : x.service_type === 'flight' ? 'airplane' : x.service_type === 'transfer' ? 'car' : 'ticket'} tone={c.primary} title={x.title} last={i === arr.length - 1}
+            sub={[x.service_date && fmtDay(x.service_date), x.confirmation_no && `Ref ${x.confirmation_no}`].filter(Boolean).join(' · ') || String(x.service_type).replace(/_/g, ' ')} right={<Pill tone={SVC[x.status] || 'neutral'} text={x.status} />} />)}
+        </Card></>}
+
+      <Sheet visible={!!pay} onClose={() => setPay(null)} title="Record a payment">
+        {!!pay && <>
+          <View style={{ backgroundColor: c.bg, borderRadius: 14, padding: sp.l, marginBottom: sp.l }}>
+            <Text style={type.small}>{pay.label} · {b.booking_ref}</Text><Text style={{ fontSize: 26, fontWeight: '800', color: c.text, marginTop: 2 }}>{inrFull(pay.amount)}</Text>
+          </View>
+          <Text style={[type.label, { marginBottom: 8 }]}>How was it paid?</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: sp.l }}>{MODES.map(([k, l, i]) => <Chip key={k} label={l} icon={i} active={mode === k} onPress={() => setMode(k)} />)}</View>
+          <Input label="Reference / UTR (optional)" value={ref} onChangeText={setRef} placeholder="e.g. UPI transaction id" autoCapitalize="characters" />
+          <Btn label="Mark as paid" icon="checkmark" kind="ok" onPress={markPaid} busy={busy === 'paid'} />
+        </>}
+      </Sheet>
+    </Screen>)
 }
-const s = StyleSheet.create({
-  card: { backgroundColor: c.card, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: c.border },
-  h: { fontSize: 18, fontWeight: '800', color: c.text }, h2: { fontSize: 15, fontWeight: '800', marginBottom: 8, color: c.text },
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border },
-  ghost: { borderWidth: 1, borderColor: c.border, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 10 },
-  pay: { backgroundColor: c.ok, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10 },
-})
+
+function Stat({ label, value, color, right }) {
+  return <View style={{ alignItems: right ? 'flex-end' : 'flex-start' }}><Text style={type.small}>{label}</Text><Text style={{ fontSize: 16, fontWeight: '800', color: color || c.text, marginTop: 1 }}>{value}</Text></View>
+}
