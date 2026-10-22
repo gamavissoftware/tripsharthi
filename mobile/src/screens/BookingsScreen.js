@@ -85,4 +85,4 @@ export default function BookingsScreen({ navigation }) {
         }} />
     </View>)
 }
-const s = StyleSheet.create({ search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border, marginTop: sp.m } })
+const s = StyleSheet.create({ search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border, marginTop: sp.m } })

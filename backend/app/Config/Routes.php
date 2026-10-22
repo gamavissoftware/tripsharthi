@@ -33,7 +33,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->post('auth/reset-password',  'Api\\AuthController::resetPassword');
 
     // --- Contacts (all protected) ---
-    $routes->group('contacts', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('contacts', ['filter' => ['auth', 'idempotent']], static function (RouteCollection $routes): void {
         $routes->get('',            'Api\ContactsController::index');
         $routes->get('export',      'Api\ContactsController::export');
         // Before the (:num) routes — a literal segment must not be read as an id.
@@ -101,7 +101,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     });
 
     // --- CRM: Tasks ---
-    $routes->group('tasks', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('tasks', ['filter' => ['auth', 'idempotent']], static function (RouteCollection $routes): void {
         $routes->get('',              'Api\TasksController::index');
         $routes->post('',             'Api\TasksController::create');
         $routes->put('(:num)',        'Api\TasksController::update/$1');
@@ -287,7 +287,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->put('(:segment)/(:num)',     'Api\TravelMasterController::save/$1/$2');
         $routes->delete('(:segment)/(:num)',  'Api\TravelMasterController::destroy/$1/$2');
     });
-    $routes->group('trips', ['filter' => ['auth', 'costhide']], static function (RouteCollection $routes): void {
+    $routes->group('trips', ['filter' => ['auth', 'costhide', 'idempotent']], static function (RouteCollection $routes): void {
         $routes->post('ai-parse',         'Api\TripsController::aiParse');
         $routes->get('',                  'Api\TripsController::index');
         $routes->post('',                 'Api\TripsController::create');

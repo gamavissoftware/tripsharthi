@@ -55,7 +55,7 @@ export default function FeaturesScreen({ navigation, route, user }) {
     </Screen>)
 }
 const s = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
   head: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: sp.l },
   ico: { width: 38, height: 38, borderRadius: 12, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' },
 })

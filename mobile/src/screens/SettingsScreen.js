@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { View, Text, Switch, TextInput, Linking, Alert, AppState, Platform } from 'react-native'
 import { pushApi } from '../api'
-import { c, sp, radius, type } from '../theme'
-import { Screen, Card, Section, Btn, Pill, Icon, Skeleton, ErrorBox } from '../ui'
+import { c, sp, radius, type, themeChoice, saveThemeChoice } from '../theme'
+import { lang, saveLang, tr } from '../i18n'
+import { Screen, Card, Section, Btn, Pill, Icon, Skeleton, ErrorBox, Chip } from '../ui'
 import { permissionState, registerForPush } from '../push'
 import { lockEnabled, lockAvailable, setLockEnabled } from '../lock'
 import DateField from '../DateField'
@@ -18,11 +19,13 @@ function Toggle({ title, hint, value, onChange, disabled }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, opacity: disabled ? 0.45 : 1 }}>
       <View style={{ flex: 1, paddingRight: 12 }}><Text style={{ color: c.text, fontWeight: '600', fontSize: 14.5 }}>{title}</Text>{!!hint && <Text style={[type.small, { marginTop: 2, lineHeight: 17 }]}>{hint}</Text>}</View>
-      <Switch value={!!value} onValueChange={onChange} disabled={disabled} trackColor={{ true: c.primary, false: '#d5dce8' }} thumbColor="#fff" />
+      <Switch value={!!value} onValueChange={onChange} disabled={disabled} trackColor={{ true: c.primary, false: c.border }} thumbColor="#fff" />
     </View>)
 }
 
 export default function SettingsScreen() {
+  const [look, setLook] = useState(themeChoice)
+  const [tongue, setTongue] = useState(lang)
   const [perm, setPerm] = useState('undetermined')
   const [reg, setReg] = useState(null)
   const [prefs, setPrefs] = useState(null)
@@ -79,10 +82,21 @@ export default function SettingsScreen() {
   return (
     <Screen contentStyle={{ padding: sp.l, gap: sp.m }}>
       <Card>
+        <Text style={type.h3}>{tr('Appearance')}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: sp.m }}>
+          {[['auto', 'Automatic (follow the phone)'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => <Chip key={k} label={l} active={look === k} onPress={() => { saveThemeChoice(k); setLook(k); Alert.alert(tr('Appearance'), tr('Close and reopen the app to apply this.')) }} />)}
+        </View>
+        <Text style={[type.h3, { marginTop: sp.l }]}>{tr('Language')}</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginTop: sp.m }}>
+          {[['en', 'English'], ['hi', 'हिन्दी']].map(([k, l]) => <Chip key={k} label={l} active={tongue === k} onPress={() => { saveLang(k); setTongue(k); Alert.alert(tr('Language'), tr('Close and reopen the app to apply this.')) }} />)}
+        </View>
+      </Card>
+
+      <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ width: 42, height: 42, borderRadius: 13, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Icon name="finger-print" size={22} color={c.primary} /></View>
           <View style={{ flex: 1 }}><Text style={type.h3}>Lock the app</Text><Text style={[type.small, { marginTop: 2, lineHeight: 17 }]}>{lock.can ? 'Ask for Face ID, fingerprint or your phone passcode when you open TripSarthi, so your customers’ details stay private.' : 'Set up Face ID, a fingerprint or a screen lock on this phone first.'}</Text></View>
-          <Switch value={lock.on} disabled={!lock.can && !lock.on} onValueChange={toggleLock} trackColor={{ true: c.primary, false: '#d5dce8' }} thumbColor="#fff" />
+          <Switch value={lock.on} disabled={!lock.can && !lock.on} onValueChange={toggleLock} trackColor={{ true: c.primary, false: c.border }} thumbColor="#fff" />
         </View>
       </Card>
 
@@ -135,4 +149,4 @@ export default function SettingsScreen() {
       </Card>
     </Screen>)
 }
-const st = { time: { borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingVertical: 11, width: 96, textAlign: 'center', fontSize: 17, fontWeight: '700', backgroundColor: '#fff', color: c.text } }
+const st = { time: { borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingVertical: 11, width: 96, textAlign: 'center', fontSize: 17, fontWeight: '700', backgroundColor: c.card, color: c.text } }

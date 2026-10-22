@@ -251,4 +251,20 @@ function fileSize(bytes) {
   return (Math.round((n / 1048576) * 10) / 10) + ' MB'
 }
 
-module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf, compareVersions, updateState, updateLink, mediaKind, fileSize }
+
+/** What to do with a saved-offline item whose send failed: keep it for later, wait for sign-in, or give up (the server said no). */
+function outboxVerdict(err) {
+  const st = err && err.status
+  if (st === 401) return 'auth'
+  if (st === undefined || st === null || st === 0 || st >= 500 || st === 429 || st === 408) return 'retry'
+  if (st === 409) return 'retry'          // the first copy of this very request is still being processed: ask again later
+  return 'drop'
+}
+
+/** A random key that makes a retried request count once on the server (Idempotency-Key header). */
+function newIdemKey(now = Date.now(), rnd = Math.random) {
+  return 'tp-' + now.toString(36) + '-' + Math.floor(rnd() * 1e12).toString(36) + Math.floor(rnd() * 1e12).toString(36)
+}
+
+module.exports = {
+  outboxVerdict, newIdemKey, shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf, compareVersions, updateState, updateLink, mediaKind, fileSize }

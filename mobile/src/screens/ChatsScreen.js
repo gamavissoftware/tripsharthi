@@ -81,8 +81,8 @@ export default function ChatsScreen({ navigation, onUnread }) {
     </View>)
 }
 const s = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: sp.l, backgroundColor: '#fff', borderBottomWidth: StyleSheet.hairlineWidth, borderColor: c.line },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, paddingHorizontal: sp.l, backgroundColor: c.card, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: c.line },
   name: { flex: 1, fontSize: 16, fontWeight: '600', color: c.text }, time: { fontSize: 12, color: c.faint, marginLeft: 8 },
   badge: { backgroundColor: c.primary, minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
 })

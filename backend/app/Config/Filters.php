@@ -48,6 +48,7 @@ class Filters extends BaseFilters
         // Role-based access: ['filter' => 'role:owner'] or 'role:owner,admin'
         'role'          => RoleFilter::class,
         'costhide'      => \App\Filters\CostHideFilter::class,
+        'idempotent'    => \App\Filters\IdempotencyFilter::class,
         // Platform (TripSarthi team) admin: users.is_platform_admin = 1
         'platformadmin' => \App\Filters\PlatformAdminFilter::class,
         // Separate admin app: only a live admin session (admin_sessions) is accepted

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated, Sty
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Haptics from 'expo-haptics'
+import { tr } from './i18n'
 import { c, sp, radius, shadow, type, STATUS } from './theme'
 import { deltaPct, initials, clampPct, targetStatus, toGoText, hasTarget, inrFull } from './logic'
 
@@ -22,7 +23,7 @@ export function Section({ title, action, onAction, children, style, hint }) {
   return (
     <View style={[{ marginTop: sp.xl }, style]}>
       <View style={s.secHead}>
-        <View style={{ flex: 1 }}><Text style={type.h2}>{title}</Text>{!!hint && <Text style={[type.small, { marginTop: 2 }]}>{hint}</Text>}</View>
+        <View style={{ flex: 1 }}><Text style={type.h2}>{tr(title)}</Text>{!!hint && <Text style={[type.small, { marginTop: 2 }]}>{hint}</Text>}</View>
         {!!action && <TouchableOpacity onPress={onAction} hitSlop={10}><Text style={{ color: c.primary, fontWeight: '700', fontSize: 13.5 }}>{action}</Text></TouchableOpacity>}
       </View>
       {children}
@@ -31,15 +32,15 @@ export function Section({ title, action, onAction, children, style, hint }) {
 
 /** tone: ok | warn | danger | info | teal | purple | neutral, or pass a status name (booked, overdue...) as `status`. */
 const TONES = {
-  ok: [c.okSoft, '#0f7a54'], warn: [c.warnSoft, '#b45309'], danger: [c.dangerSoft, '#b4232f'], info: [c.primarySoft, c.primary],
-  teal: [c.tealSoft, '#0e7c74'], purple: [c.purpleSoft, '#5846b8'], neutral: ['#eef2f8', '#475569'],
+  ok: [c.okSoft, c.ok], warn: [c.warnSoft, c.warn], danger: [c.dangerSoft, c.danger], info: [c.primarySoft, c.primary],
+  teal: [c.tealSoft, c.teal], purple: [c.purpleSoft, c.purple], neutral: [c.line, c.sub],
 }
 export function Pill({ text, tone = 'neutral', status, style, icon }) {
   const [bg, fg] = status ? (STATUS[status] || TONES.neutral) : TONES[tone] || TONES.neutral
   return (
     <View style={[s.pill, { backgroundColor: bg }, style]}>
       {!!icon && <Ionicons name={icon} size={11} color={fg} style={{ marginRight: 3 }} />}
-      <Text style={{ color: fg, fontSize: 11.5, fontWeight: '700' }} numberOfLines={1}>{String(text).replace(/_/g, ' ')}</Text>
+      <Text style={{ color: fg, fontSize: 11.5, fontWeight: '700' }} numberOfLines={1}>{tr(String(text).replace(/_/g, ' '))}</Text>
     </View>)
 }
 
@@ -56,7 +57,7 @@ export function Kpi({ icon, tone = c.primary, label, value, sub, delta, onPress,
   const inner = (
     <>
       <View style={[s.kIcon, { backgroundColor: tone + '1c' }]}><Ionicons name={icon} size={18} color={tone} /></View>
-      <Text style={s.kLabel} numberOfLines={1}>{label}</Text>
+      <Text style={s.kLabel} numberOfLines={1}>{tr(label)}</Text>
       <Text style={s.kValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
       {delta ? <Delta {...delta} /> : !!sub && <Text style={s.kSub} numberOfLines={1}>{sub}</Text>}
     </>)
@@ -72,7 +73,7 @@ export function Avatar({ name, size = 40, color = c.primary }) {
 
 export function Btn({ label, icon, onPress, kind = 'primary', busy, disabled, small, style, color }) {
   const kinds = {
-    primary: { bg: c.primary, fg: '#fff', bd: c.primary }, ghost: { bg: '#fff', fg: c.text, bd: c.border }, soft: { bg: c.primarySoft, fg: c.primary, bd: c.primarySoft },
+    primary: { bg: c.primary, fg: '#fff', bd: c.primary }, ghost: { bg: c.card, fg: c.text, bd: c.border }, soft: { bg: c.primarySoft, fg: c.primary, bd: c.primarySoft },
     danger: { bg: c.dangerSoft, fg: c.danger, bd: c.dangerSoft }, green: { bg: '#25D366', fg: '#fff', bd: '#25D366' }, ok: { bg: c.ok, fg: '#fff', bd: c.ok },
   }
   const k = kinds[kind]
@@ -82,16 +83,16 @@ export function Btn({ label, icon, onPress, kind = 'primary', busy, disabled, sm
       style={[s.btn, { backgroundColor: color || k.bg, borderColor: color || k.bd, paddingVertical: small ? 9 : 13, opacity: off ? 0.55 : 1 }, style]}>
       {busy ? <ActivityIndicator color={k.fg} size="small" /> : <>
         {!!icon && <Ionicons name={icon} size={small ? 15 : 17} color={k.fg} style={{ marginRight: label ? 6 : 0 }} />}
-        {!!label && <Text style={{ color: k.fg, fontWeight: '700', fontSize: small ? 13 : 14.5 }}>{label}</Text>}
+        {!!label && <Text style={{ color: k.fg, fontWeight: '700', fontSize: small ? 13 : 14.5 }}>{tr(label)}</Text>}
       </>}
     </TouchableOpacity>)
 }
 
 export function Chip({ label, active, onPress, count, icon }) {
   return (
-    <TouchableOpacity activeOpacity={0.8} onPress={() => { tap(); onPress() }} style={[s.chip, active && { backgroundColor: c.navy, borderColor: c.navy }]}>
+    <TouchableOpacity activeOpacity={0.8} onPress={() => { tap(); onPress() }} style={[s.chip, active && { backgroundColor: c.primaryDark, borderColor: c.primaryDark }]}>
       {!!icon && <Ionicons name={icon} size={14} color={active ? '#fff' : c.sub} style={{ marginRight: 5 }} />}
-      <Text style={{ color: active ? '#fff' : c.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+      <Text style={{ color: active ? '#fff' : c.text, fontWeight: '600', fontSize: 13 }}>{tr(label)}</Text>
       {count != null && <Text style={{ color: active ? '#cfe0f7' : c.faint, fontWeight: '700', fontSize: 12, marginLeft: 6 }}>{count}</Text>}
     </TouchableOpacity>)
 }
@@ -160,15 +161,15 @@ export function TargetBar({ label, p, money = true, daysLeft, compact = false })
 }
 
 export function GradientHeader({ children, style }) {
-  return <LinearGradient colors={[c.navy, c.navy2, '#0f5d9c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ paddingHorizontal: sp.l, paddingBottom: sp.xl }, style]}>{children}</LinearGradient>
+  return <LinearGradient colors={['#0a1f44', '#0d2c63', '#0f5d9c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[{ paddingHorizontal: sp.l, paddingBottom: sp.xl }, style]}>{children}</LinearGradient>
 }
 
 export function Empty({ icon = 'file-tray-outline', title, text, action, onAction }) {
   return (
     <View style={{ alignItems: 'center', padding: sp.xxl, paddingTop: 48 }}>
       <View style={{ width: 68, height: 68, borderRadius: 34, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center', marginBottom: sp.m }}><Ionicons name={icon} size={30} color={c.primary} /></View>
-      <Text style={[type.h3, { textAlign: 'center' }]}>{title}</Text>
-      {!!text && <Text style={[type.small, { textAlign: 'center', marginTop: 6, lineHeight: 18 }]}>{text}</Text>}
+      <Text style={[type.h3, { textAlign: 'center' }]}>{tr(title)}</Text>
+      {!!text && <Text style={[type.small, { textAlign: 'center', marginTop: 6, lineHeight: 18 }]}>{tr(text)}</Text>}
       {!!action && <Btn label={action} onPress={onAction} small style={{ marginTop: sp.l, paddingHorizontal: 22 }} />}
     </View>)
 }
@@ -242,7 +243,7 @@ export function Input({ label, error, style, hint, onFocus, ...p }) {
   const box = useRef(null)
   return (
     <View ref={box} style={[{ marginBottom: sp.m }, style]}>
-      {!!label && <Text style={[type.label, { marginBottom: 6 }]}>{label}</Text>}
+      {!!label && <Text style={[type.label, { marginBottom: 6 }]}>{tr(label)}</Text>}
       <TextInput placeholderTextColor={c.faint} {...p} onFocus={(e) => { if (reveal) reveal(box); if (onFocus) onFocus(e) }} style={[s.input, error && { borderColor: c.danger }, p.multiline && { minHeight: 84, textAlignVertical: 'top' }]} />
       {!!error ? <Text style={{ color: c.danger, fontSize: 12, marginTop: 4 }}>{error}</Text> : !!hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
     </View>)
@@ -289,10 +290,10 @@ const s = StyleSheet.create({
   kValue: { fontSize: 22, fontWeight: '800', color: c.text, marginTop: 2, letterSpacing: -0.4 },
   kSub: { fontSize: 11.5, color: c.faint, marginTop: 2 },
   btn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: radius.m, paddingHorizontal: 16, borderWidth: 1 },
-  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', borderWidth: 1, borderColor: c.border, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill },
+  chip: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderWidth: 1, borderColor: c.border, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
-  input: { backgroundColor: '#fff', borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: c.text },
-  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: sp.l, paddingBottom: sp.l },
+  input: { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, color: c.text },
+  sheet: { backgroundColor: c.card, borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: sp.l, paddingBottom: sp.l },
   fab: { position: 'absolute', right: 18, width: 58, height: 58, borderRadius: 29, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', ...shadow, elevation: 6 },
   rowIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
 })

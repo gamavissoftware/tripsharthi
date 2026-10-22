@@ -49,10 +49,10 @@ export default function DateField({ label, value, onChange, mode = 'date', minim
       </TouchableOpacity>
       {!!error ? <Text style={{ color: c.danger, fontSize: 12, marginTop: 4 }}>{error}</Text> : !!hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
       {Platform.OS === 'ios' && open && (
-        <View style={{ backgroundColor: '#fff', borderRadius: radius.m, marginTop: 6, borderWidth: 1, borderColor: c.border }}>
+        <View style={{ backgroundColor: c.card, borderRadius: radius.m, marginTop: 6, borderWidth: 1, borderColor: c.border }}>
           <DateTimePicker value={fromValue(value, mode)} mode={mode} display={mode === 'time' ? 'spinner' : 'inline'} minimumDate={minimumDate} is24Hour onChange={pick} />
           <TouchableOpacity onPress={() => setOpen(false)} style={{ alignItems: 'center', padding: 12 }}><Text style={{ color: c.primary, fontWeight: '800' }}>Done</Text></TouchableOpacity>
         </View>)}
     </View>)
 }
-const s = StyleSheet.create({ box: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 13 } })
+const s = StyleSheet.create({ box: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: radius.m, paddingHorizontal: 14, paddingVertical: 13 } })

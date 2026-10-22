@@ -92,3 +92,14 @@ test('a pace block is drawn only when there is a real target', () => {
   assert.equal(L.hasTarget({ status: 'ahead', target: 0 }), false)
   assert.equal(L.hasTarget(null), false)
 })
+
+test('outboxVerdict: keep for later on network trouble, drop when the server said no', () => {
+  assert.equal(L.outboxVerdict({ status: undefined }), 'retry')
+  assert.equal(L.outboxVerdict({ status: 503 }), 'retry')
+  assert.equal(L.outboxVerdict({ status: 429 }), 'retry')
+  assert.equal(L.outboxVerdict({ status: 401 }), 'auth')
+  assert.equal(L.outboxVerdict({ status: 422 }), 'drop')
+  assert.equal(L.outboxVerdict({ status: 403 }), 'drop')
+  assert.match(L.newIdemKey(), /^[A-Za-z0-9._-]{8,64}$/)
+  assert.notEqual(L.newIdemKey(), L.newIdemKey())
+})

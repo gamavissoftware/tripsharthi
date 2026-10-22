@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { View, Text, ScrollView, Alert } from 'react-native'
 import { useFocusEffect } from '@react-navigation/native'
 import { biz } from '../api'
+import { sendOrQueue } from '../outbox'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Chip, Empty, ErrorBox, SkeletonList, Fab, Sheet, Input, Btn, ok } from '../ui'
 import { indiaToday } from '../logic'
@@ -72,8 +73,10 @@ function NewTask({ visible, onClose, onSaved, dealId }) {
     if (title.trim().length < 2) { setErr('Say what needs doing'); return }
     setBusy(true); setErr('')
     try {
-      await biz.createTask({ title: title.trim(), type, priority: 'medium', due_at: `${custom || addDays(when)} 10:00:00`, ...(dealId ? { related_type: 'deal', related_id: dealId } : {}) })
-      ok(); setTitle(''); setCustom(''); setWhen(1); onSaved()
+      const r = await sendOrQueue('task', { title: title.trim(), type, priority: 'medium', due_at: `${custom || addDays(when)} 10:00:00`, ...(dealId ? { related_type: 'deal', related_id: dealId } : {}) }, title.trim())
+      ok(); setTitle(''); setCustom(''); setWhen(1)
+      if (r.queued) Alert.alert('Saved on your phone', 'No internet right now. This task will be added automatically as soon as you are back online.')
+      onSaved()
     } catch (e) { setErr(e.message) } finally { setBusy(false) }
   }
   return (

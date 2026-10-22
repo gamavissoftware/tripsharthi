@@ -76,6 +76,6 @@ export default function TripsScreen({ navigation }) {
 function Fact({ icon, text }) { return <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}><Icon name={icon} size={14} color={c.faint} /><Text style={{ color: c.sub, fontSize: 12.5, fontWeight: '600' }}>{text}</Text></View> }
 
 const s = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
   facts: { flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.line },
 })

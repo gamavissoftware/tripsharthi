@@ -2,10 +2,10 @@
   "expo": {
     "name": "TripSarthi",
     "slug": "tripsarthi",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.gamavis.tripsarthi",
@@ -39,6 +39,7 @@
     },
     "plugins": [
       "expo-secure-store",
+      ["expo-audio", { "microphonePermission": "TripSarthi uses the microphone only when you record a voice note to send to a customer." }],
       [
         "expo-notifications",
         {

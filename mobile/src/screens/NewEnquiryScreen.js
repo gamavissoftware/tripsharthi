@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { View, Text, Alert, Platform } from 'react-native'
 import { api } from '../api'
+import { sendOrQueue } from '../outbox'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Input, Btn, Chip, ok } from '../ui'
 import { validateEnquiry, indiaToday } from '../logic'
@@ -22,8 +23,10 @@ export default function NewEnquiryScreen({ navigation }) {
     if (Object.keys(e).length) return
     setBusy(true)
     try {
-      const r = await api.quickEnquiry({ ...f, adults: Number(f.adults), children: Number(f.children) || 0, nights: f.nights === '' ? undefined : Number(f.nights), budget_rs: f.budget_rs === '' ? undefined : Number(f.budget_rs) })
+      const q = await sendOrQueue('enquiry', { ...f, adults: Number(f.adults), children: Number(f.children) || 0, nights: f.nights === '' ? undefined : Number(f.nights), budget_rs: f.budget_rs === '' ? undefined : Number(f.budget_rs) }, f.name.trim())
       ok()
+      if (q.queued) { Alert.alert('Saved on your phone', 'No internet right now. This enquiry will be created automatically as soon as you are back online.'); navigation.goBack(); return }
+      const r = q.data
       if (r.existing) Alert.alert('Already open', 'This customer already has an open enquiry for this trip, so we opened it instead of creating a duplicate.')
       navigation.replace('Trip', { id: Number(r.trip.id) })
     } catch (er) { Alert.alert('Could not save', er.message) } finally { setBusy(false) }

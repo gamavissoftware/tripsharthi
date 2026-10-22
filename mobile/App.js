@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { useFonts } from 'expo-font'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { NavigationContainer } from '@react-navigation/native'
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { loadToken, clearToken, setUnauthorizedHandler, biz, appInfo, loadAdminToken, adminAuth, setAdminUnauthorizedHandler } from './src/api'
@@ -38,8 +38,11 @@ import PushPrompt from './src/screens/PushPrompt'
 import { navRef, openTarget, flushPending } from './src/nav'
 import { Notifications, registerForPush, unregisterPush, permissionState, wasPrompted, markPrompted, ensureChannels, setBadge } from './src/push'
 import { pushApi } from './src/api'
-import { c } from './src/theme'
+import { c, isDark } from './src/theme'
+import { tr } from './src/i18n'
 import { cacheClear } from './src/cache'
+import { outboxClear } from './src/outbox'
+import PendingBanner from './src/PendingBanner'
 import { lockEnabled, authenticate } from './src/lock'
 import { needsLock, updateState, updateLink } from './src/logic'
 
@@ -47,23 +50,24 @@ const Stack = createNativeStackNavigator()
 const Tabs = createBottomTabNavigator()
 
 const ICON = { Home: ['home', 'home-outline'], Enquiries: ['airplane', 'airplane-outline'], Chats: ['chatbubbles', 'chatbubbles-outline'], Bookings: ['briefcase', 'briefcase-outline'], More: ['grid', 'grid-outline'] }
-const headerOpts = { headerStyle: { backgroundColor: '#fff' }, headerShadowVisible: false, headerTitleStyle: { fontWeight: '800', color: c.text, fontSize: 18 }, headerTintColor: c.primary }
+const navTheme = { ...(isDark ? DarkTheme : DefaultTheme), colors: { ...(isDark ? DarkTheme : DefaultTheme).colors, primary: c.primary, background: c.bg, card: c.card, text: c.text, border: c.border, notification: c.danger } }
+const headerOpts = { headerStyle: { backgroundColor: c.card }, headerShadowVisible: false, headerTitleStyle: { fontWeight: '800', color: c.text, fontSize: 18 }, headerTintColor: c.primary }
 
 function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, update, onOpenAdmin }) {
   return (
     <Tabs.Navigator screenOptions={({ route }) => ({
       ...headerOpts,
       tabBarActiveTintColor: c.primary, tabBarInactiveTintColor: c.faint, tabBarLabelStyle: { fontSize: 11, fontWeight: '700' },
-      tabBarStyle: { borderTopColor: c.border, backgroundColor: '#fff', height: Platform.OS === 'ios' ? 86 : 70, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 28 : 10 },
+      tabBarStyle: { borderTopColor: c.border, backgroundColor: c.card, height: Platform.OS === 'ios' ? 86 : 70, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 28 : 10 },
       tabBarIcon: ({ focused, color }) => <Ionicons name={ICON[route.name][focused ? 0 : 1]} size={24} color={color} />,
     })}>
       <Tabs.Screen name="Home" options={{ headerShown: false }}>{(props) => <HomeScreen {...props} unread={unread} user={user} update={update} />}</Tabs.Screen>
-      <Tabs.Screen name="Enquiries" component={TripsScreen} options={{ title: 'Enquiries' }} />
-      <Tabs.Screen name="Chats" options={{ title: 'WhatsApp chats', tabBarLabel: 'Chats', tabBarBadge: chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
+      <Tabs.Screen name="Enquiries" component={TripsScreen} options={{ title: tr('Enquiries') }} />
+      <Tabs.Screen name="Chats" options={{ title: tr('WhatsApp chats'), tabBarLabel: tr('Chats'), tabBarBadge: chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
         {(props) => <ChatsScreen {...props} onUnread={setChatUnread} />}
       </Tabs.Screen>
-      <Tabs.Screen name="Bookings" component={BookingsScreen} options={{ title: 'Bookings' }} />
-      <Tabs.Screen name="More" options={{ title: 'More', tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
+      <Tabs.Screen name="Bookings" component={BookingsScreen} options={{ title: tr('Bookings') }} />
+      <Tabs.Screen name="More" options={{ title: tr('More'), tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
         {(props) => <MoreScreen {...props} user={user} unread={unread} onSignOut={onSignOut} onOpenAdmin={onOpenAdmin} />}
       </Tabs.Screen>
     </Tabs.Navigator>
@@ -93,7 +97,7 @@ export default function App() {
   const update = { state: updateState(version, info), link: updateLink(info), latest: info?.latest_version }
   const [fontsReady] = useFonts(Ionicons.font)
 
-  const signOut = useCallback(async () => { await unregisterPush(); await clearToken(); await cacheClear(); await adminAuth.logout(); setAdminAuthed(false); setAdminMode(false); setUnread(0); setChatUnread(0); setLocked(false); setUser(null); setAuthed(false) }, [])
+  const signOut = useCallback(async () => { await unregisterPush(); await clearToken(); await cacheClear(); await outboxClear(); await adminAuth.logout(); setAdminAuthed(false); setAdminMode(false); setUnread(0); setChatUnread(0); setLocked(false); setUser(null); setAuthed(false) }, [])
 
   // is there a newer version? asked at start and whenever the app comes back to the front
   useEffect(() => {
@@ -172,31 +176,34 @@ export default function App() {
   return (
     <SafeAreaProvider>
     <ErrorBoundary>
-    <NavigationContainer ref={navRef} onReady={flushPending}>
-      <StatusBar style="dark" />
+    <View style={{ flex: 1 }}>
+    <PendingBanner signedIn={authed} />
+    <View style={{ flex: 1 }}>
+    <NavigationContainer ref={navRef} onReady={flushPending} theme={navTheme}>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
       {adminMode && adminAuthed ? (
         <Stack.Navigator screenOptions={{ ...headerOpts, contentStyle: { backgroundColor: c.bg } }}>
-          <Stack.Screen name="AdminHome" options={{ title: 'TripSarthi admin' }}>{(props) => <AdminHomeScreen {...props} email={adminEmail || user?.email || ''} hasWorkspace={authed} onWorkspace={() => setAdminMode(false)} onSignOut={adminSignOut} />}</Stack.Screen>
-          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: 'TripSarthi admin' }} />
+          <Stack.Screen name="AdminHome" options={{ title: tr('TripSarthi admin') }}>{(props) => <AdminHomeScreen {...props} email={adminEmail || user?.email || ''} hasWorkspace={authed} onWorkspace={() => setAdminMode(false)} onSignOut={adminSignOut} />}</Stack.Screen>
+          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: tr('TripSarthi admin') }} />
         </Stack.Navigator>
       ) : authed ? (
         <Stack.Navigator screenOptions={{ ...headerOpts, contentStyle: { backgroundColor: c.bg } }}>
           <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} update={update} onOpenAdmin={openAdmin} />}</Stack.Screen>
-          <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Enquiry' }} />
-          <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Booking' }} />
-          <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Contact' }} />
-          <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
-          <Stack.Screen name="NewEnquiry" component={NewEnquiryScreen} options={{ title: 'New enquiry' }} />
-          <Stack.Screen name="Quote" component={QuoteScreen} options={{ title: 'Quote' }} />
-          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: 'TripSarthi' }} />
+          <Stack.Screen name="Trip" component={TripScreen} options={{ title: tr('Enquiry') }} />
+          <Stack.Screen name="Booking" component={BookingScreen} options={{ title: tr('Booking') }} />
+          <Stack.Screen name="Contact" component={ContactScreen} options={{ title: tr('Contact') }} />
+          <Stack.Screen name="Chat" component={ChatScreen} options={{ title: tr('Chat') }} />
+          <Stack.Screen name="NewEnquiry" component={NewEnquiryScreen} options={{ title: tr('New enquiry') }} />
+          <Stack.Screen name="Quote" component={QuoteScreen} options={{ title: tr('Quote') }} />
+          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: tr('TripSarthi') }} />
           <Stack.Screen name="Features" options={({ route }) => ({ title: route.params?.mode === 'settings' ? 'Channels & settings' : 'All features' })}>{(props) => <FeaturesScreen {...props} user={user} />}</Stack.Screen>
-          <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Tasks' }} />
-          <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: 'Contacts' }} />
-          <Stack.Screen name="Departures" component={DeparturesScreen} options={{ title: 'Group departures' }} />
-          <Stack.Screen name="Targets" component={TargetsScreen} options={{ title: 'Sales targets' }} />
-          <Stack.Screen name="Report" component={ReportScreen} options={{ title: 'Business report' }} />
-          <Stack.Screen name="Notifications" options={{ title: 'Notifications' }}>{(props) => <NotificationsScreen {...props} onUnread={setUnread} />}</Stack.Screen>
-          <Stack.Screen name="Settings" options={{ title: 'Settings' }}>{(props) => <SettingsScreen {...props} onSignOut={signOut} />}</Stack.Screen>
+          <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: tr('Tasks') }} />
+          <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: tr('Contacts') }} />
+          <Stack.Screen name="Departures" component={DeparturesScreen} options={{ title: tr('Group departures') }} />
+          <Stack.Screen name="Targets" component={TargetsScreen} options={{ title: tr('Sales targets') }} />
+          <Stack.Screen name="Report" component={ReportScreen} options={{ title: tr('Business report') }} />
+          <Stack.Screen name="Notifications" options={{ title: tr('Notifications') }}>{(props) => <NotificationsScreen {...props} onUnread={setUnread} />}</Stack.Screen>
+          <Stack.Screen name="Settings" options={{ title: tr('Settings') }}>{(props) => <SettingsScreen {...props} onSignOut={signOut} />}</Stack.Screen>
         </Stack.Navigator>
       ) : (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -220,6 +227,8 @@ export default function App() {
         onEnable={async () => { setAskPush(false); await markPrompted(); registerForPush({ ask: true }) }}
         onLater={async () => { setAskPush(false); await markPrompted() }} />
     </NavigationContainer>
+    </View>
+    </View>
     </ErrorBoundary>
     </SafeAreaProvider>
   )

@@ -77,8 +77,8 @@ export default function LoginScreen({ onLogin, onAdminLogin }) {
 
 const s = StyleSheet.create({
   logoWrap: { borderRadius: 22, padding: 4, backgroundColor: 'rgba(255,255,255,0.18)' },
-  card: { marginHorizontal: sp.l, backgroundColor: '#fff', borderRadius: radius.xl, padding: sp.xl, ...shadow, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  card: { marginHorizontal: sp.l, backgroundColor: c.card, borderRadius: radius.xl, padding: sp.xl, ...shadow, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
   field: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.bg, borderRadius: radius.m, borderWidth: 1, borderColor: c.border, paddingHorizontal: 14 },
   input: { flex: 1, paddingVertical: 14, fontSize: 15.5, color: c.text },
-  err: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#fff3f4', borderRadius: radius.m, padding: 12, marginTop: sp.m, borderWidth: 1, borderColor: '#f6c9ce' },
+  err: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: c.dangerSoft, borderRadius: radius.m, padding: 12, marginTop: sp.m, borderWidth: 1, borderColor: '#f6c9ce' },
 })

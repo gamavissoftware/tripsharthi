@@ -82,4 +82,4 @@ export default function WebPageScreen({ route, navigation }) {
         </View>)}
     </View>)
 }
-const s = StyleSheet.create({ loader: { position: 'absolute', top: 14, alignSelf: 'center', backgroundColor: '#fff', borderRadius: 20, padding: 10, elevation: 4, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6 } })
+const s = StyleSheet.create({ loader: { position: 'absolute', top: 14, alignSelf: 'center', backgroundColor: c.card, borderRadius: 20, padding: 10, elevation: 4, shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 6 } })

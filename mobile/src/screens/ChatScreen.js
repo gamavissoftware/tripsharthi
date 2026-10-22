@@ -7,6 +7,7 @@ import { c, sp, radius, type } from '../theme'
 import { composerMode, windowLabel, templateVarCount, mediaKind, fileSize } from '../logic'
 import { Icon, Sheet, Btn, Input, Empty, tap, useKeyboardHeight, Row, ok } from '../ui'
 import OfflineBanner from '../OfflineBanner'
+import VoiceBar from '../VoiceBar'
 
 const TICK = { sent: 'checkmark', delivered: 'checkmark-done', read: 'checkmark-done', failed: 'alert-circle', queued: 'time-outline' }
 const parse = (s) => new Date(String(s).replace(' ', 'T') + 'Z')
@@ -55,6 +56,7 @@ export default function ChatScreen({ route, navigation }) {
   const [attach, setAttach] = useState(false)       // choose photo / camera / document
   const [pending, setPending] = useState(null)      // a picked file waiting to be sent: { uri, name, mimeType, size, type }
   const [me, setMe] = useState(null)
+  const [recording, setRecording] = useState(false)  // a voice note is being recorded
   const listRef = useRef(null)
   const kb = useKeyboardHeight()
   const alive = useRef(true)
@@ -132,6 +134,17 @@ export default function ChatScreen({ route, navigation }) {
       else Alert.alert('Not sent', e.message)
     } finally { setSending(false) }
   }
+  async function sendVoice(file) {
+    setRecording(false); setSending(true)
+    try {
+      const up = await chatApi.uploadMedia(id, file)
+      await chatApi.sendMedia(id, { type: 'audio', media_id: up.media_id, filename: up.filename || file.name })
+      ok(); merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id))
+    } catch (e) {
+      if (e.code === 'WINDOW_CLOSED') { Alert.alert('Window closed', 'The 24-hour reply window just closed. Send a template instead.'); chatApi.one(id).then(setConv).catch(() => {}) }
+      else Alert.alert('Voice note not sent', e.message)
+    } finally { setSending(false) }
+  }
   // ---- conversation actions ----
   async function act(fn, done) { setMenu(false); try { await fn(); ok(); chatApi.one(id).then(setConv).catch(() => {}); if (done) Alert.alert(done) } catch (e) { Alert.alert('Could not do that', e.message) } }
   async function sendTemplate(tpl, vars) { await chatApi.sendTemplate(id, tpl, vars); merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id)); chatApi.one(id).then(setConv).catch(() => {}) }
@@ -178,20 +191,27 @@ export default function ChatScreen({ route, navigation }) {
             </View>)
         }} />
       {mode === 'text' && (
-        <View style={{ backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border }}>
+        <View style={{ backgroundColor: c.card, borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border }}>
           {pending && (
             <View style={s.pend}>
               <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Icon name={pending.type === 'image' ? 'image' : pending.type === 'video' ? 'videocam' : 'document-text'} size={20} color={c.primary} /></View>
               <View style={{ flex: 1 }}><Text style={{ color: c.text, fontWeight: '600' }} numberOfLines={1}>{pending.name}</Text><Text style={type.small}>{fileSize(pending.size) || pending.type}. Add a message below, or send as it is.</Text></View>
               <TouchableOpacity onPress={() => setPending(null)} hitSlop={12} accessibilityLabel="Remove the attachment"><Icon name="close-circle" size={24} color={c.faint} /></TouchableOpacity>
             </View>)}
+          {recording ? <VoiceBar onDone={sendVoice} onCancel={() => setRecording(false)} sending={sending} /> : (
           <View style={[s.bar, { borderTopWidth: 0 }]}>
             <TouchableOpacity onPress={() => setAttach(true)} disabled={!!stale || sending} hitSlop={8} style={s.clip} accessibilityLabel="Attach a photo or document"><Icon name="attach" size={24} color={c.sub} /></TouchableOpacity>
             <TextInput style={s.msg} placeholder={pending ? 'Add a caption (optional)' : 'Type a reply'} placeholderTextColor={c.faint} value={text} onChangeText={setText} multiline maxLength={4000} editable={!stale} />
-            <TouchableOpacity disabled={(!text.trim() && !pending) || sending || !!stale} style={[s.send, ((!text.trim() && !pending) || sending || !!stale) && { opacity: 0.45 }]} onPress={() => { tap(); pending ? sendFile() : sendText() }} accessibilityLabel="Send">
-              {sending ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="send" size={19} color="#fff" />}
-            </TouchableOpacity>
+            {!text.trim() && !pending && !sending ? (
+              <TouchableOpacity disabled={!!stale} style={[s.send, !!stale && { opacity: 0.45 }]} onPress={() => { tap(); setRecording(true) }} accessibilityLabel="Record a voice note">
+                <Icon name="mic" size={21} color="#fff" />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity disabled={sending || !!stale} style={[s.send, (sending || !!stale) && { opacity: 0.45 }]} onPress={() => { tap(); pending ? sendFile() : sendText() }} accessibilityLabel="Send">
+                {sending ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="send" size={19} color="#fff" />}
+              </TouchableOpacity>)}
           </View>
+          )}
         </View>)}
       {mode === 'template' && <View style={s.bar}><Btn label="Send an approved template" icon="document-text" onPress={() => setSheet(true)} disabled={!!stale} style={{ flex: 1 }} /></View>}
       {mode === 'resolved' && <View style={s.bar}><Text style={{ color: c.sub, flex: 1, textAlign: 'center' }}>This conversation is resolved. Reopen it from the web app to reply.</Text></View>}
@@ -217,8 +237,8 @@ const s = StyleSheet.create({
   win: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, paddingVertical: 9 },
   day: { alignSelf: 'center', backgroundColor: 'rgba(255,255,255,0.8)', borderRadius: 10, paddingHorizontal: 12, paddingVertical: 4, marginVertical: 10 },
   bubble: { maxWidth: '82%', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 18 },
-  in: { alignSelf: 'flex-start', backgroundColor: '#fff', borderBottomLeftRadius: 5 }, out: { alignSelf: 'flex-end', backgroundColor: c.primary, borderBottomRightRadius: 5 },
-  bar: { flexDirection: 'row', gap: 10, padding: 10, backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border, alignItems: 'flex-end' },
+  in: { alignSelf: 'flex-start', backgroundColor: c.card, borderBottomLeftRadius: 5 }, out: { alignSelf: 'flex-end', backgroundColor: c.primary, borderBottomRightRadius: 5 },
+  bar: { flexDirection: 'row', gap: 10, padding: 10, backgroundColor: c.card, borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border, alignItems: 'flex-end' },
   msg: { flex: 1, maxHeight: 120, borderWidth: 1, borderColor: c.border, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: c.bg, fontSize: 15, color: c.text },
   clip: { width: 42, height: 46, alignItems: 'center', justifyContent: 'center' },
   pend: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingBottom: 2 },

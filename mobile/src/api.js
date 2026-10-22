@@ -43,14 +43,14 @@ export async function clearToken() { token = null; await deleteItem(KEY) }
 
 const TIMEOUT_MS = 20000   // a dead connection must fail (and fall back to saved data) instead of spinning forever
 
-async function request(method, path, body) {
+export async function request(method, path, body, extraHeaders) {
   const ctl = new AbortController()
   const timer = setTimeout(() => ctl.abort(), TIMEOUT_MS)
   let res
   try {
     res = await fetch(`${API_URL}/api/v1${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', 'X-TS-Client': 'mobile', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json', 'X-TS-Client': 'mobile', ...(extraHeaders || {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: body ? JSON.stringify(body) : undefined,
       signal: ctl.signal,
     })

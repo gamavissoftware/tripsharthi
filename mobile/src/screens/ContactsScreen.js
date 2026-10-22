@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native'
+import { sendOrQueue } from '../outbox'
 import { useFocusEffect } from '@react-navigation/native'
 import { contactApi } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -82,8 +83,10 @@ function NewContact({ visible, onClose, onSaved }) {
     try {
       const digits = f.phone.replace(/\D/g, '').replace(/^0+/, '')
       const wa = f.phone.trim().startsWith('+') ? digits : (digits.length === 10 ? '91' + digits : digits)
-      const ct = await contactApi.create({ name: f.name.trim(), wa_number: wa, email: f.email.trim() || undefined, source: 'manual' })
-      ok(); setF({ name: '', phone: '', email: '' }); onSaved(ct)
+      const r = await sendOrQueue('contact', { name: f.name.trim(), wa_number: wa, email: f.email.trim() || undefined, source: 'manual' }, f.name.trim())
+      ok(); setF({ name: '', phone: '', email: '' })
+      if (r.queued) Alert.alert('Saved on your phone', 'No internet right now. This contact will be added automatically as soon as you are back online.')
+      onSaved(r.queued ? null : r.data)
     } catch (er) { setErrs({ phone: er.message }) } finally { setBusy(false) }
   }
   return (
@@ -96,6 +99,6 @@ function NewContact({ visible, onClose, onSaved }) {
 }
 
 const s = StyleSheet.create({
-  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff', borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
-  mini: { flex: 1, backgroundColor: '#fff', borderRadius: radius.m, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
+  search: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: c.card, borderRadius: radius.l, paddingHorizontal: 14, paddingVertical: 11, borderWidth: 1, borderColor: c.border },
+  mini: { flex: 1, backgroundColor: c.card, borderRadius: radius.m, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border },
 })

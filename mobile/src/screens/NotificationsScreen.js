@@ -62,7 +62,7 @@ export default function NotificationsScreen({ onUnread }) {
     </View>)
 }
 const s = StyleSheet.create({
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
+  card: { backgroundColor: c.card, borderRadius: 16, padding: 14, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   unread: { backgroundColor: '#f5f9ff', borderColor: '#cfe0f5' }, ico: { width: 38, height: 38, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.primary, marginTop: 6 },
 })

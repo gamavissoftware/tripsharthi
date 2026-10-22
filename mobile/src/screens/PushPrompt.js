@@ -26,7 +26,7 @@ export default function PushPrompt({ visible, onEnable, onLater }) {
 }
 const s = StyleSheet.create({
   backdrop: { flex: 1, backgroundColor: 'rgba(10,31,68,0.55)', justifyContent: 'center', padding: 22 },
-  card: { backgroundColor: '#fff', borderRadius: 26, padding: 24, ...shadow },
+  card: { backgroundColor: c.card, borderRadius: 26, padding: 24, ...shadow },
   bell: { alignSelf: 'center', width: 72, height: 72, borderRadius: 36, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' },
   dot: { width: 34, height: 34, borderRadius: 11, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' },
 })

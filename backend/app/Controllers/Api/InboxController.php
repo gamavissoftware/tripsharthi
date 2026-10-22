@@ -407,6 +407,10 @@ class InboxController extends ResourceController
             $mime = $docMimeByExt[$ext];
         }
 
+        // Voice notes recorded on a phone are m4a / aac / ogg files that PHP often names 'audio/x-m4a' or 'video/mp4'; WhatsApp only knows the standard names.
+        $audioByExt = ['m4a' => 'audio/mp4', 'aac' => 'audio/aac', 'ogg' => 'audio/ogg', 'opus' => 'audio/ogg', 'amr' => 'audio/amr', 'mp3' => 'audio/mpeg'];
+        if (isset($audioByExt[$ext]) && (str_starts_with($mime, 'audio/') || in_array($mime, ['video/mp4', 'application/octet-stream', 'video/3gpp', 'application/ogg'], true))) { $mime = $audioByExt[$ext]; }
+
         $isAllowed = str_starts_with($mime, 'image/')
             || str_starts_with($mime, 'video/')
             || str_starts_with($mime, 'audio/')
