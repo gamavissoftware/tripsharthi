@@ -55,7 +55,7 @@ def footer(p=''):
   <div class="wrap foot-in">
     <div class="fbrand"><a class="brand light" href="{p}index.html"><img src="{p}assets/brand/mark-96.png" alt="" width="40" height="40"><span>Trip<b>Sarthi</b></span></a><p>Your Travel Business. Simplified.<br>CRM, WhatsApp automation, GST billing and ads for Indian travel agencies.</p>
       <address class="faddr">{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}</address></div>
-    <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a></div>
+    <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a><p class="app-dl" data-appdl="dark" hidden></p></div>
     <div><p class="fh">Solutions</p>{sol}</div>
     <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}partners.html">Partner programme</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
     <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><a class="fwa" href="https://wa.me/{WHATSAPP}" rel="noopener">{ico('chat')} Chat on WhatsApp</a></div>

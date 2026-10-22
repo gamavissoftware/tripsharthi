@@ -137,3 +137,37 @@
     Object.keys(inputs).forEach(function (k) { inputs[k].addEventListener('input', run); }); run();
   }
 })();
+
+/* "Get the app": buttons appear ONLY when the TripSarthi team has saved a store link (admin app -> Mobile app). No link = nothing is drawn. */
+(function () {
+  'use strict';
+  var holders = document.querySelectorAll('[data-appdl]');
+  if (!holders.length) return;
+  var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+  var API = window.TRIPSARTHI_API_URL || (local ? 'http://localhost:8731/api/v1' : 'https://app.tripsarthi.com/api/v1');
+  var KEY = 'ts_mobile_app', TTL = 5 * 60 * 1000;
+  function cached() { try { var c = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return c && Date.now() - c.at < TTL ? c.d : null; } catch (e) { return null; } }
+  function load() {
+    var c = cached(); if (c) return Promise.resolve(c);
+    return fetch(API + '/public/mobile-app', { headers: { Accept: 'application/json' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      var d = j && j.data; if (d) { try { sessionStorage.setItem(KEY, JSON.stringify({ at: Date.now(), d: d })); } catch (e) { /* storage blocked */ } } return d;
+    });
+  }
+  function link(url, label, dark) {
+    var a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = label;
+    a.style.cssText = 'display:inline-block;padding:8px 14px;border-radius:10px;font-weight:600;text-decoration:none;font-size:14px;' + (dark ? 'color:#fff;border:1px solid rgba(255,255,255,.35)' : 'color:#0a1f44;border:1px solid rgba(10,31,68,.25);background:rgba(255,255,255,.7)');
+    return a;
+  }
+  load().then(function (d) {
+    if (!d || !d.available) return;
+    holders.forEach(function (h) {
+      var dark = h.getAttribute('data-appdl') === 'dark', t = document.createElement('span');
+      t.textContent = dark ? 'Get the app' : 'Get the app:'; t.style.cssText = dark ? 'font-weight:700;font-size:13px;opacity:.8' : 'font-weight:600';
+      h.appendChild(t);
+      if (d.android) h.appendChild(link(d.android, 'Android', dark));
+      if (d.ios) h.appendChild(link(d.ios, 'iPhone', dark));
+      h.style.cssText = dark ? 'margin:12px 0 0;display:flex;flex-direction:column;gap:6px;align-items:flex-start' : 'margin:14px 0 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-size:14px';
+      h.hidden = false;
+    });
+  }).catch(function () { /* the app buttons are a nicety: never break the page */ });
+})();

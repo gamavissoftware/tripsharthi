@@ -49,6 +49,9 @@ export const admin = {
   testRazorpay:       ()        => api.post('/admin/payments/razorpay/test', {}).then(unwrap),
   clearRazorpay:      ()        => api.delete('/admin/payments/razorpay').then(unwrap),
 
+  // Phone-app download links shown on the login screen and the website (nothing shows until one is saved)
+  mobileApp:          ()        => api.get('/admin/mobile-app').then(unwrap),
+  saveMobileApp:      (b)       => api.put('/admin/mobile-app', b).then(unwrap),
   // Mail server for TripSarthi's own e-mails (password is write-only)
   mail:               ()        => api.get('/admin/mail').then(unwrap),
   saveMail:           (b)       => api.put('/admin/mail', b).then(unwrap),

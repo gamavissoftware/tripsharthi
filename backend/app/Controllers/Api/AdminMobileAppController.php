@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers\Api;
+
+use App\Services\Admin\MobileAppLinks;
+use App\Services\Auth\CurrentUser;
+
+/** /api/v1/admin/mobile-app - the store links shown on the login screen and the website (filter: adminauth). 422 with plain words, never 401. */
+class AdminMobileAppController extends TravelBaseController
+{
+    public function current() { return $this->ok(MobileAppLinks::status()); }
+
+    public function save()
+    {
+        $b = $this->body();
+        try { return $this->ok(MobileAppLinks::save($b, CurrentUser::id())); }
+        catch (\InvalidArgumentException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage()], 422); }
+    }
+}

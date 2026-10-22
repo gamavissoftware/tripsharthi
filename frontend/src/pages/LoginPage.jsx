@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import AppDownload from '../components/AppDownload'
 import { api, saveToken } from '../api/client'
 import AuthBrandPanel from '../components/AuthBrandPanel'
 import { toast } from '../components/Toast'
@@ -108,6 +109,8 @@ export default function LoginPage({ onLogin, onShowRegister, onShowForgot }) {
               </button>
             </p>
           )}
+
+          <AppDownload />
         </div>
       </div>
     </div>

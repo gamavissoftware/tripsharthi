@@ -442,6 +442,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     $routes->post('public/email/unsubscribe', 'Public\EmailUnsubscribeController::apply');
 
     // Website contact form (public, throttled; see Public\ContactController)
+    $routes->get('public/mobile-app', 'Public\MobileAppController::links');
     $routes->post('public/contact', 'Public\ContactController::submit');
     $routes->options('public/contact', static function (): void {});   // CORS preflight from the marketing site (origins come from CORS_ORIGIN)
     // Website live chat (visitor side) + CORS preflight for the marketing site
@@ -508,6 +509,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('support/(:num)/reply',                      'Api\AdminSupportController::reply/$1');
         $routes->post('support/(:num)/note',                       'Api\AdminSupportController::note/$1');
         $routes->put('support/(:num)',                             'Api\AdminSupportController::update/$1');
+        $routes->get('mobile-app',                                 'Api\AdminMobileAppController::current');
+        $routes->put('mobile-app',                                 'Api\AdminMobileAppController::save');
         $routes->get('mail',                                       'Api\AdminMailController::current');
         $routes->put('mail',                                       'Api\AdminMailController::save');
         $routes->post('mail/test',                                 'Api\AdminMailController::test');
