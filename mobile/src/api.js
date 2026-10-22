@@ -9,6 +9,8 @@ let onUnauthorized = () => {}
 
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn }
 export async function loadToken() { token = await getItem(KEY); return token }
+/** The signed-in token, for the web pages shown inside the app (they sign in with the same session). */
+export const getToken = () => token
 export async function saveToken(t) { token = t; await setItem(KEY, t) }
 export async function clearToken() { token = null; await deleteItem(KEY) }
 

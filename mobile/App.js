@@ -17,6 +17,8 @@ import ContactsScreen from './src/screens/ContactsScreen'
 import DeparturesScreen from './src/screens/DeparturesScreen'
 import ReportScreen from './src/screens/ReportScreen'
 import MoreScreen from './src/screens/MoreScreen'
+import WebPageScreen from './src/screens/WebPageScreen'
+import FeaturesScreen from './src/screens/FeaturesScreen'
 import TripScreen from './src/screens/TripScreen'
 import TargetsScreen from './src/screens/TargetsScreen'
 import BookingScreen from './src/screens/BookingScreen'
@@ -146,6 +148,8 @@ export default function App() {
           <Stack.Screen name="Chat" component={ChatScreen} options={{ title: 'Chat' }} />
           <Stack.Screen name="NewEnquiry" component={NewEnquiryScreen} options={{ title: 'New enquiry' }} />
           <Stack.Screen name="Quote" component={QuoteScreen} options={{ title: 'Quote' }} />
+          <Stack.Screen name="Web" component={WebPageScreen} options={{ title: 'TripSarthi' }} />
+          <Stack.Screen name="Features" options={({ route }) => ({ title: route.params?.mode === 'settings' ? 'Channels & settings' : 'All features' })}>{(props) => <FeaturesScreen {...props} user={user} />}</Stack.Screen>
           <Stack.Screen name="Tasks" component={TasksScreen} options={{ title: 'Tasks' }} />
           <Stack.Screen name="Contacts" component={ContactsScreen} options={{ title: 'Contacts' }} />
           <Stack.Screen name="Departures" component={DeparturesScreen} options={{ title: 'Group departures' }} />

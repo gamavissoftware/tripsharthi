@@ -65,6 +65,7 @@ async function request(method, path, body = null) {
     if (res.status === 401) {
       localStorage.removeItem(TOKEN_KEY)
       window.dispatchEvent(new CustomEvent('tp:unauthorized'))
+      try { if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'unauthorized' })) } catch { /* not inside the phone app */ }
     }
 
     // Enrich plan-limit errors with a user-friendly message

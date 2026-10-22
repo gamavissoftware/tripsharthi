@@ -510,3 +510,9 @@ button.sdc-chip { cursor: pointer; } button.sdc-chip:hover { background: color-m
 input.is-invalid, select.is-invalid, textarea.is-invalid { border-color: var(--danger) !important; background-color: color-mix(in srgb, var(--danger) 6%, var(--surface, #fff)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent) !important; }
 .ff-auto { display: flex; align-items: flex-start; gap: 5px; font-size: .78rem; line-height: 1.35; color: var(--danger); font-weight: 500; animation: ff-in .18s ease; }
 .ff-auto::before { content: "!"; flex: none; width: 13px; height: 13px; border-radius: 50%; background: var(--danger); color: #fff; font-size: 9px; font-weight: 800; display: grid; place-items: center; margin-top: 1px; }
+
+/* Inside the phone app (WebView): only the page, edge to edge, with room for the phone's own bars. */
+.app-shell.embedded { min-height: 100vh; background: var(--bg); }
+.app-shell.embedded .app-main { padding: 0; }
+.app-shell.embedded .page { padding: 12px 12px 40px; }
+.app-shell.embedded .page-header { margin-top: 0; }

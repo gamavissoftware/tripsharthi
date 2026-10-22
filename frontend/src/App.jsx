@@ -89,6 +89,7 @@ import GuideButton        from './components/GuideButton'
 import AdsReportPage      from './pages/AdsReportPage'
 import PublicQuotePage    from './pages/PublicQuotePage'
 import SupportSessionBar from './components/SupportSessionBar'
+import { isEmbedded } from './lib/embedded'
 import { isImpersonating } from './lib/impersonation'
 import PublicPortalPage   from './pages/PublicPortalPage'
 import DunningSettingsPage from './pages/DunningSettingsPage'
@@ -335,13 +336,14 @@ function Layout({ user, onLogout }) {
     setCollapsed(c => { const n = !c; try { localStorage.setItem('ts_nav_collapsed', n ? '1' : '0') } catch { /* private mode */ } return n })
   }
   const initials = (user?.name ?? 'U').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+  const embedded = isEmbedded()      // inside the phone app: no web menu or top bar, the phone provides them
   return (
-    <div className="app-shell cx">
-      <SupportSessionBar />
-      <Sidebar user={user} onLogout={onLogout} open={navOpen} onNavigate={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />
-      {navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
+    <div className={'app-shell cx' + (embedded ? ' embedded' : '')}>
+      {!embedded && <SupportSessionBar />}
+      {!embedded && <Sidebar user={user} onLogout={onLogout} open={navOpen} onNavigate={() => setNavOpen(false)} collapsed={collapsed} onToggleCollapse={toggleCollapsed} />}
+      {!embedded && navOpen && <div className="nav-backdrop" onClick={() => setNavOpen(false)} />}
       <main className="app-main">
-        <header className="app-topbar">
+        {!embedded && <header className="app-topbar">
           <button className="topbar-menu" aria-label="Open menu" onClick={() => setNavOpen(true)}><Menu size={20} /></button>
           <button className="topbar-collapse" aria-label={collapsed ? 'Expand menu' : 'Collapse menu'} title={collapsed ? 'Expand menu' : 'Collapse menu'} onClick={toggleCollapsed}>
             {collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -352,8 +354,8 @@ function Layout({ user, onLogout }) {
             <NotificationBell />
             {user && <NavLink to="/settings/profile" className="topbar-user" title={user.name}><span className="avatar" style={{ width: 30, height: 30 }}>{initials}</span></NavLink>}
           </div>
-        </header>
-        <OnboardingBanner user={user} />
+        </header>}
+        {!embedded && <OnboardingBanner user={user} />}
         <Routes>
           <Route path="/"                       element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard"              element={<HomeDashboardPage user={user} />} />

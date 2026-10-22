@@ -29,6 +29,13 @@ export default function MoreScreen({ navigation, user, unread = 0, onSignOut }) 
         </Card>
       </Section>
 
+      <Section title="Everything in TripSarthi" hint="Manage the whole business from your phone, no browser needed">
+        <Card pad={false} style={{ marginHorizontal: sp.l, paddingHorizontal: sp.l }}>
+          <Row icon="apps" tone={c.teal} title="All features" sub="Deals, accounts, meetings, templates, campaigns, imports, reports and more" onPress={() => navigation.navigate('Features', { mode: 'features' })} />
+          <Row icon="git-compare" tone={c.purple} title="Channels & settings" sub={manager ? 'WhatsApp, integrations, ad platforms, webhooks, payments, team, billing' : 'Your profile, notifications and help'} onPress={() => navigation.navigate('Features', { mode: 'settings' })} last />
+        </Card>
+      </Section>
+
       {manager && (
         <Section title="Business">
           <Card pad={false} style={{ marginHorizontal: sp.l, paddingHorizontal: sp.l }}>
@@ -40,7 +47,7 @@ export default function MoreScreen({ navigation, user, unread = 0, onSignOut }) 
         <Card pad={false} style={{ marginHorizontal: sp.l, paddingHorizontal: sp.l }}>
           <Row icon="notifications" tone={c.primary} title="Notifications" sub="Leads, replies, payments" onPress={go('Notifications')}
             right={unread > 0 ? <View style={{ backgroundColor: c.orange, minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{unread > 99 ? '99+' : unread}</Text></View> : undefined} />
-          <Row icon="settings" tone={c.navy} title="Settings" sub="Push, app lock, quiet hours" onPress={go('Settings')} />
+          <Row icon="phone-portrait" tone={c.navy} title="App settings" sub="Push alerts, app lock, quiet hours" onPress={go('Settings')} />
           <Row icon="help-buoy" tone={c.teal} title="Help and support" sub="tripsarthi.com/contact" onPress={() => Linking.openURL('https://tripsarthi.com/contact.html').catch(() => Alert.alert('Could not open the link'))} last />
         </Card>
       </Section>
