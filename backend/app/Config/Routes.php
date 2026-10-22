@@ -443,6 +443,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
 
     // Website contact form (public, throttled; see Public\ContactController)
     $routes->get('public/mobile-app', 'Public\MobileAppController::links');
+    $routes->post('public/app-error', 'Public\AppErrorController::report');
+    $routes->options('public/app-error', static function (): void {});
     $routes->post('public/contact', 'Public\ContactController::submit');
     $routes->options('public/contact', static function (): void {});   // CORS preflight from the marketing site (origins come from CORS_ORIGIN)
     // Website live chat (visitor side) + CORS preflight for the marketing site

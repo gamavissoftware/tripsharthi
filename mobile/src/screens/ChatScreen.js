@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, StyleSheet, ActivityIndicator } from 'react-native'
-import { chatApi } from '../api'
+import { View, Text, FlatList, TextInput, TouchableOpacity, Platform, Alert, StyleSheet, ActivityIndicator, Image, Linking } from 'react-native'
+import * as ImagePicker from 'expo-image-picker'
+import * as DocumentPicker from 'expo-document-picker'
+import { chatApi, biz } from '../api'
 import { c, sp, radius, type } from '../theme'
-import { composerMode, windowLabel, templateVarCount } from '../logic'
-import { Icon, Sheet, Btn, Input, Empty, tap, useKeyboardHeight } from '../ui'
+import { composerMode, windowLabel, templateVarCount, mediaKind, fileSize } from '../logic'
+import { Icon, Sheet, Btn, Input, Empty, tap, useKeyboardHeight, Row, ok } from '../ui'
 import OfflineBanner from '../OfflineBanner'
 
 const TICK = { sent: 'checkmark', delivered: 'checkmark-done', read: 'checkmark-done', failed: 'alert-circle', queued: 'time-outline' }
@@ -49,10 +51,18 @@ export default function ChatScreen({ route, navigation }) {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const [sheet, setSheet] = useState(false)
+  const [menu, setMenu] = useState(false)          // assign / resolve / open on the web
+  const [attach, setAttach] = useState(false)       // choose photo / camera / document
+  const [pending, setPending] = useState(null)      // a picked file waiting to be sent: { uri, name, mimeType, size, type }
+  const [me, setMe] = useState(null)
   const listRef = useRef(null)
   const kb = useKeyboardHeight()
   const alive = useRef(true)
   useEffect(() => { navigation.setOptions({ title: name }); return () => { alive.current = false } }, [navigation, name])
+  useEffect(() => { biz.me().then(setMe).catch(() => {}) }, [])
+  useEffect(() => {
+    navigation.setOptions({ headerRight: () => <TouchableOpacity onPress={() => setMenu(true)} hitSlop={12} accessibilityLabel="Conversation options"><Icon name="ellipsis-vertical" size={22} color={c.primary} /></TouchableOpacity> })
+  }, [navigation])
 
   const merge = useCallback((incoming) => setMsgs(cur => { const m = new Map(cur.map(x => [x.id, x])); incoming.forEach(x => m.set(x.id, x)); return [...m.values()].sort((a, b) => a.id - b.id) }), [])
 
@@ -93,6 +103,37 @@ export default function ChatScreen({ route, navigation }) {
       else Alert.alert('Not sent', e.message)
     } finally { setSending(false) }
   }
+  // ---- attachments ----
+  const take = (a) => setPending({ uri: a.uri, name: a.fileName || a.name || 'file', mimeType: a.mimeType || a.type || 'application/octet-stream', size: a.fileSize || a.size, type: mediaKind(a.mimeType || a.type) })
+  async function pickPhoto(camera) {
+    setAttach(false)
+    try {
+      const perm = camera ? await ImagePicker.requestCameraPermissionsAsync() : { granted: true }
+      if (!perm.granted) { Alert.alert('Camera is off', 'Allow the camera for TripSarthi in your phone settings to take a photo.'); return }
+      const r = camera ? await ImagePicker.launchCameraAsync({ quality: 0.7 }) : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images', 'videos'], quality: 0.7 })
+      if (!r.canceled && r.assets && r.assets[0]) take(r.assets[0])
+    } catch (e) { Alert.alert('Could not open it', e.message) }
+  }
+  async function pickDocument() {
+    setAttach(false)
+    try { const r = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true }); if (!r.canceled && r.assets && r.assets[0]) take(r.assets[0]) } catch (e) { Alert.alert('Could not open it', e.message) }
+  }
+  async function sendFile() {
+    if (!pending || sending) return
+    if (pending.size && pending.size > 16 * 1048576) { Alert.alert('File is too big', 'WhatsApp allows files up to 16 MB. Choose a smaller one.'); return }
+    setSending(true)
+    try {
+      const up = await chatApi.uploadMedia(id, pending)
+      await chatApi.sendMedia(id, { type: pending.type, media_id: up.media_id, caption: text.trim(), filename: up.filename || pending.name })
+      setPending(null); setText(''); ok()
+      merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id))
+    } catch (e) {
+      if (e.code === 'WINDOW_CLOSED') { Alert.alert('Window closed', 'The 24-hour reply window just closed. Send a template instead.'); chatApi.one(id).then(setConv).catch(() => {}) }
+      else Alert.alert('Not sent', e.message)
+    } finally { setSending(false) }
+  }
+  // ---- conversation actions ----
+  async function act(fn, done) { setMenu(false); try { await fn(); ok(); chatApi.one(id).then(setConv).catch(() => {}); if (done) Alert.alert(done) } catch (e) { Alert.alert('Could not do that', e.message) } }
   async function sendTemplate(tpl, vars) { await chatApi.sendTemplate(id, tpl, vars); merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id)); chatApi.one(id).then(setConv).catch(() => {}) }
 
   // day separators between messages from different days
@@ -117,7 +158,16 @@ export default function ChatScreen({ route, navigation }) {
               {!!m._day && <View style={s.day}><Text style={{ color: c.sub, fontSize: 11.5, fontWeight: '700' }}>{m._day}</Text></View>}
               <View style={[s.bubble, out ? s.out : s.in]}>
                 {m.type === 'template' && <Text style={{ fontSize: 10, fontWeight: '800', letterSpacing: 0.6, color: out ? '#d4e6fa' : c.faint, marginBottom: 3 }}>TEMPLATE</Text>}
-                {m.type !== 'text' && m.type !== 'template' && !m.body && <Text style={{ color: out ? '#fff' : c.sub, fontStyle: 'italic' }}>[{m.type}]</Text>}
+                {m.media_url && m.type === 'image' && (
+                  <TouchableOpacity activeOpacity={0.85} onPress={() => Linking.openURL(chatApi.mediaUrl(m.media_url)).catch(() => {})} accessibilityLabel="Open photo">
+                    <Image source={{ uri: chatApi.mediaUrl(m.media_url) }} style={{ width: 220, height: 220, borderRadius: 12, backgroundColor: '#dfe6f1', marginBottom: m.body ? 6 : 0 }} resizeMode="cover" />
+                  </TouchableOpacity>)}
+                {m.media_url && m.type !== 'image' && m.type !== 'text' && m.type !== 'template' && (
+                  <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(chatApi.mediaUrl(m.media_url)).catch(() => {})} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }} accessibilityLabel={`Open ${m.type}`}>
+                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: out ? 'rgba(255,255,255,0.2)' : c.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Icon name={m.type === 'audio' ? 'play' : m.type === 'video' ? 'videocam' : 'document-text'} size={20} color={out ? '#fff' : c.primary} /></View>
+                    <Text style={{ color: out ? '#fff' : c.text, fontWeight: '600', flexShrink: 1 }} numberOfLines={2}>{m.type === 'audio' ? 'Voice message' : m.type === 'video' ? 'Video' : (m.filename || m.body || 'Document')}</Text>
+                  </TouchableOpacity>)}
+                {m.type !== 'text' && m.type !== 'template' && !m.body && !m.media_url && <Text style={{ color: out ? '#fff' : c.sub, fontStyle: 'italic' }}>[{m.type}]</Text>}
                 {!!m.body && <Text style={{ color: out ? '#fff' : c.text, fontSize: 15, lineHeight: 20 }}>{m.body}</Text>}
                 <View style={{ flexDirection: 'row', alignSelf: 'flex-end', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <Text style={{ fontSize: 10.5, color: out ? '#cfe2f8' : c.faint }}>{tm(m.created_at)}</Text>
@@ -128,13 +178,39 @@ export default function ChatScreen({ route, navigation }) {
             </View>)
         }} />
       {mode === 'text' && (
-        <View style={s.bar}>
-          <TextInput style={s.msg} placeholder="Type a reply" placeholderTextColor={c.faint} value={text} onChangeText={setText} multiline maxLength={4000} editable={!stale} />
-          <TouchableOpacity disabled={!text.trim() || sending || !!stale} style={[s.send, (!text.trim() || sending || !!stale) && { opacity: 0.45 }]} onPress={() => { tap(); sendText() }} accessibilityLabel="Send"><Icon name="send" size={19} color="#fff" /></TouchableOpacity>
+        <View style={{ backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border }}>
+          {pending && (
+            <View style={s.pend}>
+              <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: c.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Icon name={pending.type === 'image' ? 'image' : pending.type === 'video' ? 'videocam' : 'document-text'} size={20} color={c.primary} /></View>
+              <View style={{ flex: 1 }}><Text style={{ color: c.text, fontWeight: '600' }} numberOfLines={1}>{pending.name}</Text><Text style={type.small}>{fileSize(pending.size) || pending.type}. Add a message below, or send as it is.</Text></View>
+              <TouchableOpacity onPress={() => setPending(null)} hitSlop={12} accessibilityLabel="Remove the attachment"><Icon name="close-circle" size={24} color={c.faint} /></TouchableOpacity>
+            </View>)}
+          <View style={[s.bar, { borderTopWidth: 0 }]}>
+            <TouchableOpacity onPress={() => setAttach(true)} disabled={!!stale || sending} hitSlop={8} style={s.clip} accessibilityLabel="Attach a photo or document"><Icon name="attach" size={24} color={c.sub} /></TouchableOpacity>
+            <TextInput style={s.msg} placeholder={pending ? 'Add a caption (optional)' : 'Type a reply'} placeholderTextColor={c.faint} value={text} onChangeText={setText} multiline maxLength={4000} editable={!stale} />
+            <TouchableOpacity disabled={(!text.trim() && !pending) || sending || !!stale} style={[s.send, ((!text.trim() && !pending) || sending || !!stale) && { opacity: 0.45 }]} onPress={() => { tap(); pending ? sendFile() : sendText() }} accessibilityLabel="Send">
+              {sending ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="send" size={19} color="#fff" />}
+            </TouchableOpacity>
+          </View>
         </View>)}
       {mode === 'template' && <View style={s.bar}><Btn label="Send an approved template" icon="document-text" onPress={() => setSheet(true)} disabled={!!stale} style={{ flex: 1 }} /></View>}
       {mode === 'resolved' && <View style={s.bar}><Text style={{ color: c.sub, flex: 1, textAlign: 'center' }}>This conversation is resolved. Reopen it from the web app to reply.</Text></View>}
       <TemplateSheet visible={sheet} onClose={() => setSheet(false)} onSend={sendTemplate} />
+      <Sheet visible={attach} onClose={() => setAttach(false)} title="Send a file">
+        <Row icon="images" tone={c.primary} title="Photo or video" sub="From your gallery" onPress={() => pickPhoto(false)} />
+        <Row icon="camera" tone={c.teal} title="Take a photo" sub="Use the camera" onPress={() => pickPhoto(true)} />
+        <Row icon="document-text" tone={c.orange} title="Document" sub="PDF, Word, Excel and more (up to 16 MB)" onPress={pickDocument} last />
+      </Sheet>
+      <Sheet visible={menu} onClose={() => setMenu(false)} title="This conversation">
+        {conv && conv.assigned_user_id && me && String(conv.assigned_user_id) === String(me.id)
+          ? <Row icon="person-remove" tone={c.warn} title="Unassign from me" onPress={() => act(() => chatApi.assign(id, 0), 'Unassigned.')} />
+          : <Row icon="person-add" tone={c.primary} title="Assign to me" sub="So your team knows you are handling it" onPress={() => me && act(() => chatApi.assign(id, Number(me.id)), 'Assigned to you.')} />}
+        {conv && conv.status === 'resolved'
+          ? <Row icon="refresh-circle" tone={c.ok} title="Reopen" sub="Move it back to open chats" onPress={() => act(() => chatApi.reopen(id), 'Reopened.')} />
+          : <Row icon="checkmark-circle" tone={c.ok} title="Mark as resolved" sub="Done with this customer for now" onPress={() => act(() => chatApi.resolve(id), 'Marked as resolved.')} />}
+        {!!conv?.contact_id && <Row icon="person-circle" tone={c.purple} title="Open the contact" onPress={() => { setMenu(false); navigation.navigate('Contact', { id: Number(conv.contact_id) }) }} />}
+        <Row icon="open-outline" tone={c.navy} title="Full inbox (notes, AI, more)" sub="The complete WhatsApp inbox, inside the app" onPress={() => { setMenu(false); navigation.navigate('Web', { path: '/inbox', title: 'WhatsApp inbox' }) }} last />
+      </Sheet>
     </View>)
 }
 const s = StyleSheet.create({
@@ -144,6 +220,8 @@ const s = StyleSheet.create({
   in: { alignSelf: 'flex-start', backgroundColor: '#fff', borderBottomLeftRadius: 5 }, out: { alignSelf: 'flex-end', backgroundColor: c.primary, borderBottomRightRadius: 5 },
   bar: { flexDirection: 'row', gap: 10, padding: 10, backgroundColor: '#fff', borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.border, alignItems: 'flex-end' },
   msg: { flex: 1, maxHeight: 120, borderWidth: 1, borderColor: c.border, borderRadius: 22, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: c.bg, fontSize: 15, color: c.text },
+  clip: { width: 42, height: 46, alignItems: 'center', justifyContent: 'center' },
+  pend: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, paddingBottom: 2 },
   send: { backgroundColor: c.primary, width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
   tpl: { backgroundColor: c.bg, borderRadius: radius.m, padding: 14, borderWidth: 1, borderColor: c.border, marginBottom: sp.s },
 })

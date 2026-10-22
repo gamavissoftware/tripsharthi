@@ -21,7 +21,12 @@ export default function FeaturesScreen({ navigation, route, user }) {
     navigation.navigate('Web', { path: i.path, title: i.label })
   }
   const Item = ({ i, last, sub }) => (
-    <Row icon={i.icon} tone={c.primary} title={i.label} sub={sub} last={last} onPress={() => go(i)} right={i.native ? <Text style={{ fontSize: 11, fontWeight: '800', color: c.ok }}>IN APP</Text> : undefined} />
+    <Row icon={i.icon} tone={c.primary} title={i.label} sub={sub} last={last} onPress={() => go(i)}
+      right={i.native ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Text style={{ fontSize: 11, fontWeight: '800', color: c.ok }}>IN APP</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('Web', { path: i.path, title: i.label })} hitSlop={10} accessibilityLabel={`Open the full ${i.label} screen`} style={{ padding: 6, borderRadius: 10, backgroundColor: c.primarySoft }}><Icon name="open-outline" size={17} color={c.primary} /></TouchableOpacity>
+        </View>) : undefined} />
   )
   return (
     <Screen contentStyle={{ padding: sp.l }}>
@@ -46,7 +51,7 @@ export default function FeaturesScreen({ navigation, route, user }) {
             {isOpen && <View style={{ paddingHorizontal: sp.l, borderTopWidth: StyleSheet.hairlineWidth, borderColor: c.line }}>{g.items.map((i, n) => <Item key={i.path} i={i} last={n === g.items.length - 1} />)}</View>}
           </Card>)
       })}
-      <Text style={[type.small, { textAlign: 'center', marginTop: sp.xl, lineHeight: 18 }]}>Screens marked IN APP are built for the phone. The others open the full TripSarthi screen right here in the app, already signed in.</Text>
+      <Text style={[type.small, { textAlign: 'center', marginTop: sp.xl, lineHeight: 18 }]}>Screens marked IN APP are built for the phone; tap the small arrow beside one to open its full version. All the others open the full TripSarthi screen right here in the app, already signed in.</Text>
     </Screen>)
 }
 const s = StyleSheet.create({

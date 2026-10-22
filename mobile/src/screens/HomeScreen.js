@@ -7,6 +7,7 @@ import { c, sp, radius, type } from '../theme'
 import { Screen, GradientHeader, Card, Section, Kpi, Pill, Row, Progress, Bars, Icon, Chip, TargetBar, ErrorBox, Skeleton, Empty, ok } from '../ui'
 import { inrShort, inrFull, fmtDay, dueLabel, indiaToday, greeting, pctOf } from '../logic'
 import OfflineBanner from '../OfflineBanner'
+import { UpdateBanner } from '../components'
 
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const monthLabel = (ym) => MONTH[Number(String(ym).slice(5, 7)) - 1] || ''
@@ -14,13 +15,14 @@ const SOURCE = { google_lead_forms: 'Google lead forms', meta_lead_ads: 'Meta le
 const srcName = (k) => SOURCE[k] || String(k || 'Other').replace(/_/g, ' ').replace(/^./, m => m.toUpperCase())
 const STAGE = { enquiry: c.primary, quoted: c.orange, negotiating: c.purple, booked: c.ok }
 
-export default function HomeScreen({ navigation, unread = 0, user }) {
+export default function HomeScreen({ navigation, unread = 0, user, update }) {
   const insets = useSafeAreaInsets()
   const [d, setD] = useState(null)
   const [meta, setMeta] = useState({ stale: false, at: null })
   const [err, setErr] = useState('')
   const [refreshing, setRefreshing] = useState(false)
   const [focus, setFocus] = useState(null)               // managers: one person's id; null = everyone
+  const [hideUpdate, setHideUpdate] = useState(false)
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false }, [])
 
@@ -90,6 +92,7 @@ export default function HomeScreen({ navigation, unread = 0, user }) {
   return (
     <Screen header={header} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}>
       <OfflineBanner stale={meta.stale} at={meta.at} />
+      {update?.state === 'available' && !hideUpdate && <UpdateBanner link={update.link} version={update.latest} onDismiss={() => setHideUpdate(true)} />}
       {!!err && <View style={{ padding: sp.l }}><ErrorBox text={err} onRetry={load} /></View>}
 
       {manager && d.team?.length > 1 && (

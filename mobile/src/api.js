@@ -41,6 +41,21 @@ async function request(method, path, body) {
   return data
 }
 
+/** Multipart upload of one picked file ({ uri, name, mimeType }): fetch builds the form boundary itself. */
+async function upload(path, file) {
+  const form = new FormData()
+  form.append('file', { uri: file.uri, name: file.name || 'file', type: file.mimeType || 'application/octet-stream' })
+  const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 90000)       // big photos on slow data need longer than a normal call
+  let res
+  try { res = await fetch(`${API_URL}/api/v1${path}`, { method: 'POST', headers: { 'X-TS-Client': 'mobile', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: form, signal: ctl.signal }) }
+  catch (e) { throw Object.assign(new Error(friendlyError({ message: e && e.name === 'AbortError' ? 'timed out' : e && e.message })), { status: undefined }) }
+  finally { clearTimeout(timer) }
+  const data = await res.json().catch(() => ({}))
+  if (res.status === 401) { await clearToken(); await cacheClear(); onUnauthorized() }
+  if (!res.ok || data.success === false) throw Object.assign(new Error(friendlyError({ status: res.status, message: data.error || data.message || (data.messages && Object.values(data.messages).find(v => typeof v === 'string')), data })), { status: res.status })
+  return data
+}
+
 export const api = {
   login: (email, password) => request('POST', '/auth/login', { email, password }),
   // Reads go through the offline cache: { data, stale, at }. Writes below never do.
@@ -78,6 +93,13 @@ export const chatApi = {
   sendText: (id, body) => request('POST', `/inbox/${id}/messages`, { type: 'text', body }).then(r => r.data),
   sendTemplate: (id, tpl, variables) => request('POST', `/inbox/${id}/messages`, { type: 'template', template_id: tpl.id, template_name: tpl.name, language: tpl.language || 'en', variables }).then(r => r.data),
   markRead: (id) => request('PATCH', `/inbox/${id}/mark-read`),
+  assign: (id, userId) => request('PATCH', `/inbox/${id}/assign`, { user_id: userId || 0 }),
+  resolve: (id) => request('PATCH', `/inbox/${id}/resolve`),
+  reopen: (id) => request('PATCH', `/inbox/${id}/reopen`),
+  // a picked file: first it goes to WhatsApp (returns a media id), then it is sent as a message
+  uploadMedia: (id, file) => upload(`/inbox/${id}/upload-media`, file),
+  sendMedia: (id, m) => request('POST', `/inbox/${id}/messages`, { type: m.type, media_id: m.media_id, caption: m.caption || undefined, filename: m.filename }).then(r => r.data),
+  mediaUrl: (mediaId) => `${API_URL}/api/v1/inbox/media/${encodeURIComponent(mediaId)}?token=${encodeURIComponent(token || '')}`,
   approvedTemplates: () => cached('tpl:approved', () => request('GET', '/templates?meta_status=approved').then(r => r.data)),
 }
 
@@ -119,4 +141,11 @@ export const biz = {
   bookingsC: () => cached('bookings', () => request('GET', '/bookings').then(r => r.data)),
   tripsSearchC: (q, status) => cached(`tripsq:${q}:${status || 'all'}`, () => request('GET', `/trips?q=${encodeURIComponent(q)}${status && status !== 'all' ? `&status=${status}` : ''}`).then(r => r.data)),
   reportC: (from, to) => cached(`report:${from}:${to}`, () => request('GET', `/travel-reports?from=${from}&to=${to}`).then(r => r.data)),
+}
+
+// ---- app info (public) and crash reports ----
+export const appInfo = {
+  /** { latest_version, min_version, android, ios, available } or null when the server cannot be reached */
+  get: () => fetch(`${API_URL}/api/v1/public/mobile-app`, { headers: { Accept: 'application/json' } }).then(r => (r.ok ? r.json() : null)).then(j => (j && j.data) || null).catch(() => null),
+  report: (p) => fetch(`${API_URL}/api/v1/public/app-error`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(p) }).catch(() => {}),
 }

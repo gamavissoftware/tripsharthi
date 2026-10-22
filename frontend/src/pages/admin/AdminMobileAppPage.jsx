@@ -7,9 +7,9 @@ import { Kpi } from './AdminUi'
 /** Where to download the phone app. Saving a link makes the "Get the app" buttons appear on the customer login screen and on tripsarthi.com. */
 export default function AdminMobileAppPage() {
   const [st, setSt] = useState(null)
-  const [f, setF] = useState({ android: '', ios: '' })
+  const [f, setF] = useState({ android: '', ios: '', latest_version: '', min_version: '' })
   const [busy, setBusy] = useState(false)
-  const fill = (d) => setF({ android: d.android || '', ios: d.ios || '' })
+  const fill = (d) => setF({ android: d.android || '', ios: d.ios || '', latest_version: d.latest_version || '', min_version: d.min_version || '' })
   useEffect(() => { admin.mobileApp().then(d => { setSt(d); fill(d) }).catch(e => toast.error('Could not load', e.message)) }, [])
 
   async function save(e) {
@@ -47,8 +47,31 @@ export default function AdminMobileAppPage() {
           <input id="ma-ios" className="form-input" type="url" inputMode="url" placeholder="https://apps.apple.com/in/app/…" value={f.ios} onChange={set('ios')} autoComplete="off" />
           <small style={{ color: 'var(--text-3)' }}>The App Store page, or a TestFlight invitation link (testflight.apple.com).</small>
         </div>
+        <div className="form-group" style={{ margin: 0, display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 14 }}>
+          <div>
+            <label className="form-label" htmlFor="ma-latest">Newest app version</label>
+            <input id="ma-latest" className="form-input" placeholder="e.g. 1.2.0" value={f.latest_version} onChange={set('latest_version')} autoComplete="off" />
+            <small style={{ color: 'var(--text-3)' }}>People on an older version see "A new version is available" with a button to download it.</small>
+          </div>
+          <div>
+            <label className="form-label" htmlFor="ma-min">Oldest version allowed</label>
+            <input id="ma-min" className="form-input" placeholder="e.g. 1.1.0" value={f.min_version} onChange={set('min_version')} autoComplete="off" />
+            <small style={{ color: 'var(--text-3)' }}>Older than this, the app asks for an update before it can be used. Leave empty for never.</small>
+          </div>
+        </div>
         <div><button className="btn btn-primary" disabled={busy}><Link2 size={15} aria-hidden="true" /> {busy ? 'Saving…' : 'Save links'}</button></div>
       </form>
+
+      <div className="card card-body" style={{ marginTop: 14, maxWidth: 980 }}>
+        <h3 style={{ margin: '0 0 4px' }}>Problems reported by the app <small style={{ color: 'var(--text-3)', fontWeight: 400 }}>(last 14 days)</small></h3>
+        {(st.errors || []).length === 0
+          ? <p style={{ color: 'var(--text-3)', margin: '6px 0 0' }}>None. When the app crashes on someone's phone it reports here, grouped so a problem seen 40 times is one line.</p>
+          : <div style={{ overflowX: 'auto' }}><table className="data-table" style={{ width: '100%' }}>
+            <thead><tr><th>What happened</th><th>Version</th><th>Screen</th><th>Times</th><th>People</th><th>Last seen</th></tr></thead>
+            <tbody>{st.errors.map((e, i) => (
+              <tr key={i} title={e.stack || ''}><td style={{ maxWidth: 360, wordBreak: 'break-word' }}>{e.message}</td><td>{e.app_version || '-'}</td><td>{e.screen || '-'}</td><td><b>{e.times}</b></td><td>{e.people}</td><td>{String(e.last_at).slice(0, 16)}</td></tr>))}</tbody>
+          </table></div>}
+      </div>
     </div>
   )
 }

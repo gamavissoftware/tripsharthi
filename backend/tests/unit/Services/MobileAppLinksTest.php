@@ -23,7 +23,7 @@ final class MobileAppLinksTest extends CIUnitTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        db_connect()->table('platform_settings')->whereIn('setting_key', [MobileAppLinks::ANDROID, MobileAppLinks::IOS])->delete();
+        db_connect()->table('platform_settings')->whereIn('setting_key', [MobileAppLinks::ANDROID, MobileAppLinks::IOS, MobileAppLinks::LATEST, MobileAppLinks::MIN])->delete();
     }
 
     public function testNothingIsAvailableUntilALinkIsSaved(): void
@@ -79,5 +79,22 @@ final class MobileAppLinksTest extends CIUnitTestCase
         \App\Services\Admin\PlatformSettings::set(MobileAppLinks::ANDROID, 'javascript:alert(1)', 1);   // e.g. edited straight in the database
         $this->assertNull(MobileAppLinks::publicView()['android']);
         $this->assertFalse(MobileAppLinks::publicView()['available']);
+    }
+
+    public function testVersionsAreOptionalAndMustLookLikeAVersion(): void
+    {
+        $v = MobileAppLinks::publicView();
+        $this->assertNull($v['latest_version']);
+        $this->assertNull($v['min_version']);
+        $r = MobileAppLinks::save(['latest_version' => '1.4.0', 'min_version' => '1.2.0'], 1);
+        $this->assertSame('1.4.0', $r['latest_version']);
+        $this->assertSame('1.2.0', $r['min_version']);
+        $this->assertFalse($r['available'], 'versions alone do not make the download buttons appear');
+        foreach (['1.4', 'latest', '1.4.0-beta', '9999.1.1'] as $bad) {
+            try { MobileAppLinks::save(['latest_version' => $bad], 1); $this->fail('accepted ' . $bad); } catch (\InvalidArgumentException $e) { $this->assertStringContainsString('1.2.0', $e->getMessage()); }
+        }
+        $r = MobileAppLinks::save(['latest_version' => '', 'min_version' => ''], 1);
+        $this->assertNull($r['latest_version']);
+        $this->assertNull($r['min_version']);
     }
 }

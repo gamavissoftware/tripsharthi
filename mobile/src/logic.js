@@ -211,4 +211,44 @@ function initials(name) {
 /** Percent of `part` in `whole`, 0-100, safe for zero. */
 function pctOf(part, whole) { const w = Number(whole); return w > 0 ? Math.max(0, Math.min(100, Math.round((Number(part) / w) * 100))) : 0 }
 
-module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf }
+// ---- app updates ----
+
+/** -1 / 0 / 1 comparing "1.10.0" with "1.9.2" numerically (a string comparison would get 1.10 wrong). Unparseable = 0. */
+function compareVersions(a, b) {
+  const pa = String(a || '').split('.').map(Number), pb = String(b || '').split('.').map(Number)
+  if (pa.some(Number.isNaN) || pb.some(Number.isNaN)) return 0
+  for (let i = 0; i < 3; i++) { const x = pa[i] || 0, y = pb[i] || 0; if (x !== y) return x < y ? -1 : 1 }
+  return 0
+}
+
+/** What to tell this phone about updates: 'required' (older than the oldest allowed), 'available' (older than the newest), or 'none'. */
+function updateState(current, info) {
+  if (!info) return 'none'
+  if (info.min_version && compareVersions(current, info.min_version) < 0) return 'required'
+  if (info.latest_version && compareVersions(current, info.latest_version) < 0) return 'available'
+  return 'none'
+}
+
+/** The link to download the new version: the Android link the team saved (Play Store or a direct file). */
+function updateLink(info) { return (info && info.android) || null }
+
+// ---- chat attachments ----
+
+/** WhatsApp message type for a picked file, from its mime type: image | video | audio | document. */
+function mediaKind(mime) {
+  const m = String(mime || '').toLowerCase()
+  if (m.startsWith('image/')) return 'image'
+  if (m.startsWith('video/')) return 'video'
+  if (m.startsWith('audio/')) return 'audio'
+  return 'document'
+}
+
+/** Short size text for an attachment: "340 KB", "2.4 MB". */
+function fileSize(bytes) {
+  const n = Number(bytes)
+  if (!Number.isFinite(n) || n <= 0) return ''
+  if (n < 1024 * 1024) return Math.max(1, Math.round(n / 1024)) + ' KB'
+  return (Math.round((n / 1048576) * 10) / 10) + ' MB'
+}
+
+module.exports = { shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf, compareVersions, updateState, updateLink, mediaKind, fileSize }

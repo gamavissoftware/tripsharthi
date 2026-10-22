@@ -7,7 +7,10 @@ import { StatusBar } from 'expo-status-bar'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { loadToken, clearToken, setUnauthorizedHandler, biz } from './src/api'
+import { loadToken, clearToken, setUnauthorizedHandler, biz, appInfo } from './src/api'
+import Constants from 'expo-constants'
+import { ErrorBoundary, UpdateRequired } from './src/components'
+import { installGlobalErrorReporter } from './src/errors'
 import LoginScreen from './src/screens/LoginScreen'
 import HomeScreen from './src/screens/HomeScreen'
 import TripsScreen from './src/screens/TripsScreen'
@@ -36,7 +39,7 @@ import { pushApi } from './src/api'
 import { c } from './src/theme'
 import { cacheClear } from './src/cache'
 import { lockEnabled, authenticate } from './src/lock'
-import { needsLock } from './src/logic'
+import { needsLock, updateState, updateLink } from './src/logic'
 
 const Stack = createNativeStackNavigator()
 const Tabs = createBottomTabNavigator()
@@ -44,7 +47,7 @@ const Tabs = createBottomTabNavigator()
 const ICON = { Home: ['home', 'home-outline'], Enquiries: ['airplane', 'airplane-outline'], Chats: ['chatbubbles', 'chatbubbles-outline'], Bookings: ['briefcase', 'briefcase-outline'], More: ['grid', 'grid-outline'] }
 const headerOpts = { headerStyle: { backgroundColor: '#fff' }, headerShadowVisible: false, headerTitleStyle: { fontWeight: '800', color: c.text, fontSize: 18 }, headerTintColor: c.primary }
 
-function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user }) {
+function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, update }) {
   return (
     <Tabs.Navigator screenOptions={({ route }) => ({
       ...headerOpts,
@@ -52,7 +55,7 @@ function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user })
       tabBarStyle: { borderTopColor: c.border, backgroundColor: '#fff', height: Platform.OS === 'ios' ? 86 : 70, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 28 : 10 },
       tabBarIcon: ({ focused, color }) => <Ionicons name={ICON[route.name][focused ? 0 : 1]} size={24} color={color} />,
     })}>
-      <Tabs.Screen name="Home" options={{ headerShown: false }}>{(props) => <HomeScreen {...props} unread={unread} user={user} />}</Tabs.Screen>
+      <Tabs.Screen name="Home" options={{ headerShown: false }}>{(props) => <HomeScreen {...props} unread={unread} user={user} update={update} />}</Tabs.Screen>
       <Tabs.Screen name="Enquiries" component={TripsScreen} options={{ title: 'Enquiries' }} />
       <Tabs.Screen name="Chats" options={{ title: 'WhatsApp chats', tabBarLabel: 'Chats', tabBarBadge: chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
         {(props) => <ChatsScreen {...props} onUnread={setChatUnread} />}
@@ -76,9 +79,20 @@ export default function App() {
   const lockOn = useRef(false)
   const [askPush, setAskPush] = useState(false)
   const [user, setUser] = useState(null)
+  const [info, setInfo] = useState(null)        // newest / oldest allowed version, from the server
+  const version = Constants.expoConfig?.version || '0.0.0'
+  const update = { state: updateState(version, info), link: updateLink(info), latest: info?.latest_version }
   const [fontsReady] = useFonts(Ionicons.font)
 
   const signOut = useCallback(async () => { await unregisterPush(); await clearToken(); await cacheClear(); setUnread(0); setChatUnread(0); setLocked(false); setUser(null); setAuthed(false) }, [])
+
+  // is there a newer version? asked at start and whenever the app comes back to the front
+  useEffect(() => {
+    installGlobalErrorReporter()
+    appInfo.get().then(setInfo)
+    const sub = AppState.addEventListener('change', st => { if (st === 'active') appInfo.get().then(setInfo) })
+    return () => sub.remove()
+  }, [])
 
   useEffect(() => {
     setUnauthorizedHandler(() => setAuthed(false))
@@ -134,14 +148,16 @@ export default function App() {
     return () => { tap.remove(); arrive.remove(); token.remove() }
   }, [authed])
 
+  if (update.state === 'required') return <UpdateRequired link={update.link} />
   if (!ready || !fontsReady) return <View style={{ flex: 1, justifyContent: 'center', backgroundColor: c.bg }}><ActivityIndicator color={c.primary} /></View>
   return (
     <SafeAreaProvider>
+    <ErrorBoundary>
     <NavigationContainer ref={navRef} onReady={flushPending}>
       <StatusBar style="dark" />
       {authed ? (
         <Stack.Navigator screenOptions={{ ...headerOpts, contentStyle: { backgroundColor: c.bg } }}>
-          <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} />}</Stack.Screen>
+          <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} update={update} />}</Stack.Screen>
           <Stack.Screen name="Trip" component={TripScreen} options={{ title: 'Enquiry' }} />
           <Stack.Screen name="Booking" component={BookingScreen} options={{ title: 'Booking' }} />
           <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Contact' }} />
@@ -175,6 +191,7 @@ export default function App() {
         onEnable={async () => { setAskPush(false); await markPrompted(); registerForPush({ ask: true }) }}
         onLater={async () => { setAskPush(false); await markPrompted() }} />
     </NavigationContainer>
+    </ErrorBoundary>
     </SafeAreaProvider>
   )
 }
