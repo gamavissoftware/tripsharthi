@@ -93,6 +93,13 @@ export const api = {
   quickEnquiry: (b) => request('POST', '/trips/quick', b).then(r => r.data),
   aiItinerary: (tripId) => request('POST', `/trips/${tripId}/ai-itinerary`).then(r => r.data),
   itinerary: (id) => request('GET', `/itineraries/${id}`).then(r => r.data),
+  // quote lines: add (day_id omitted = "extras" outside any day), edit, remove; every one answers with the repriced quote on the next read
+  rateCards: () => cached('ratecards', () => Promise.all([request('GET', '/travel/rates'), request('GET', '/travel/suppliers').catch(() => ({ data: [] }))]).then(([r, sp]) => { const names = {}; (sp.data || []).forEach(x => { names[x.id] = x.name }); return (r.data || []).map(x => ({ ...x, supplier_name: names[x.supplier_id] || '' })) })),
+  createItinerary: (b) => request('POST', '/itineraries', b).then(r => r.data),
+  addDay: (itId, b) => request('POST', `/itineraries/${itId}/days`, b).then(r => r.data),
+  addItem: (itId, b) => request('POST', `/itineraries/${itId}/items`, b).then(r => r.data),
+  editItem: (itId, itemId, b) => request('PUT', `/itineraries/${itId}/items/${itemId}`, b).then(r => r.data),
+  removeItem: (itId, itemId) => request('DELETE', `/itineraries/${itId}/items/${itemId}`).then(r => r.data),
   updateItinerary: (id, b) => request('PUT', `/itineraries/${id}`, b).then(r => r.data),
   bookingC: (id) => cached(`booking:${id}`, () => request('GET', `/bookings/${id}`).then(r => r.data)),
   duesC: () => cached('dues', async () => { const [d, b] = await Promise.all([request('GET', '/bookings/dashboard').then(r => r.data), request('GET', '/bookings').then(r => r.data)]); return { dash: d, bookings: b } }),

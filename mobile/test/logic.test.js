@@ -103,3 +103,31 @@ test('outboxVerdict: keep for later on network trouble, drop when the server sai
   assert.match(L.newIdemKey(), /^[A-Za-z0-9._-]{8,64}$/)
   assert.notEqual(L.newIdemKey(), L.newIdemKey())
 })
+
+test('quote lines: suggested quantity, rate validity, totals, price parsing', () => {
+  assert.equal(L.suggestQty('per_pax', { adults: 2, children: 2 }), 4)
+  assert.equal(L.suggestQty('per_room', { adults: 3 }), 2)
+  assert.equal(L.suggestQty('per_night', { adults: 2 }), 1)
+  assert.equal(L.suggestQty('flat', { adults: 5 }), 1)
+  assert.equal(L.rateState({ valid_to: '2026-01-01' }, '2026-10-23'), 'expired')
+  assert.equal(L.rateState({ valid_from: '2027-01-01' }, '2026-10-23'), 'future')
+  assert.equal(L.rateState({}, '2026-10-23'), 'ok')
+  assert.equal(L.itemTotal('hotel', 450000, 2, 3), 2700000)
+  assert.equal(L.itemTotal('transfer', 450000, 2, 3), 900000)
+  assert.equal(L.rupeesToPaise('4,500.50'), 450050)
+  assert.equal(L.rupeesToPaise('0'), 0)
+  assert.equal(L.rupeesToPaise(''), null)
+  assert.equal(L.rupeesToPaise('-5'), null)
+  assert.equal(L.rupeesToPaise('1.234'), null)
+  assert.equal(L.itemTypeOf('spa'), 'other')
+})
+
+test('validateItem: title, quantity, nights and (for owners) price', () => {
+  assert.deepEqual(L.validateItem({ title: 'Villa', type: 'hotel', quantity: 1, nights: 3, price: '5000' }, { canCost: true }), {})
+  const e = L.validateItem({ title: ' ', type: 'hotel', quantity: 0, nights: 1.5, price: '' }, { canCost: true })
+  assert.ok(e.title && e.quantity && e.nights && e.price)
+  assert.deepEqual(L.validateItem({ title: 'Walk', type: 'activity', quantity: 2, price: '' }, { canCost: false }), {})   // an agent never types a price
+  assert.deepEqual(L.validateItem({ title: 'USD line', type: 'hotel', quantity: 1, nights: 2, price: '', priceLocked: true }, { canCost: true }), {})
+  assert.equal(L.itemWorking({ type: 'hotel', unit_cost: 450000, quantity: 2, nights: 3 }, 'per_room'), '₹4,500 per room × 2 × 3N')
+  assert.equal(L.itemWorking({ type: 'transfer', unit_cost: 450000, quantity: 1, nights: 1 }, ''), '')
+})

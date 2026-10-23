@@ -266,5 +266,58 @@ function newIdemKey(now = Date.now(), rnd = Math.random) {
   return 'tp-' + now.toString(36) + '-' + Math.floor(rnd() * 1e12).toString(36) + Math.floor(rnd() * 1e12).toString(36)
 }
 
+
+const ITEM_TYPES = ['hotel', 'transfer', 'sightseeing', 'activity', 'flight', 'visa', 'insurance', 'meal', 'other']
+const UNIT_LABEL = { per_night: 'per night', per_pax: 'per person', per_vehicle: 'per vehicle', per_day: 'per day', per_room: 'per room', flat: 'flat' }
+
+/** A rate card's service type as a quote-line type (anything unknown is "other"). */
+function itemTypeOf(serviceType) { return ITEM_TYPES.includes(serviceType) ? serviceType : 'other' }
+
+/** What to suggest in Quantity for a rate, from the trip's travellers (the agent can always change it). Same rule as the web builder. */
+function suggestQty(unit, trip) {
+  const adults = Number(trip && trip.adults) || 0, kids = Number(trip && trip.children) || 0
+  if (unit === 'per_pax') return Math.max(1, adults + kids)
+  if (unit === 'per_room' || unit === 'per_night') return Math.max(1, Math.ceil((adults || 1) / 2))
+  return 1
+}
+
+/** ok / expired / future, from the rate card's validity dates (YYYY-MM-DD). */
+function rateState(r, today = new Date().toISOString().slice(0, 10)) {
+  if (r.valid_to && String(r.valid_to).slice(0, 10) < today) return 'expired'
+  if (r.valid_from && String(r.valid_from).slice(0, 10) > today) return 'future'
+  return 'ok'
+}
+
+/** A line's total in paise: hotels multiply by nights as well. The server recomputes this; the phone only previews it. */
+function itemTotal(type, unitPaise, qty, nights) {
+  const q = Number(qty) || 0, n = Math.max(1, Number(nights) || 1)
+  return Math.round((Number(unitPaise) || 0) * (type === 'hotel' ? q * n : q))
+}
+
+/** Rupees typed in a box -> paise (null when it is not a valid non-negative amount). */
+function rupeesToPaise(v) {
+  const t = String(v == null ? '' : v).replace(/,/g, '').trim()
+  if (t === '' || !/^\d*\.?\d{0,2}$/.test(t) || t === '.') return null
+  return Math.round(parseFloat(t) * 100)
+}
+
+/** Check an add/edit line form. Returns { field: message }, empty when fine. canCost = owners/admins, who also set the price. */
+function validateItem(f, { canCost = false } = {}) {
+  const e = {}
+  if (!String(f.title || '').trim()) e.title = 'Give the service a title'
+  if (!(Number(f.quantity) > 0) || Number(f.quantity) > 9999) e.quantity = 'Enter a quantity of 1 or more'
+  if (f.type === 'hotel' && !(Number.isInteger(Number(f.nights)) && Number(f.nights) >= 1 && Number(f.nights) <= 365)) e.nights = 'Enter whole nights, 1 or more'
+  if (canCost && !f.priceLocked && rupeesToPaise(f.price) === null) e.price = 'Enter the price per unit (0 if not known yet)'
+  return e
+}
+
+/** "₹4,500 per night × 2 × 3N" under a line, or '' when there is nothing to explain. */
+function itemWorking(i, unit) {
+  const qty = Number(i.quantity) || 1, nights = Number(i.nights) || 1
+  if (!(Number(i.unit_cost) > 0) || (qty === 1 && !(i.type === 'hotel' && nights > 1))) return ''
+  return `₹${(Number(i.unit_cost) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}${unit && UNIT_LABEL[unit] ? ' ' + UNIT_LABEL[unit] : ''} × ${qty}${i.type === 'hotel' ? ` × ${nights}N` : ''}`
+}
+
 module.exports = {
+  ITEM_TYPES, UNIT_LABEL, itemTypeOf, suggestQty, rateState, itemTotal, rupeesToPaise, validateItem, itemWorking,
   outboxVerdict, newIdemKey, shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf, compareVersions, updateState, updateLink, mediaKind, fileSize }
