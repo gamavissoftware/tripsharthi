@@ -2,7 +2,7 @@
   "expo": {
     "name": "TripSarthi",
     "slug": "tripsarthi",
-    "version": "1.4.0",
+    "version": "1.4.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -39,7 +39,12 @@
     },
     "plugins": [
       "expo-secure-store",
-      ["expo-audio", { "microphonePermission": "TripSarthi uses the microphone only when you record a voice note to send to a customer." }],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "TripSarthi uses the microphone only when you record a voice note to send to a customer."
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -70,6 +75,12 @@
         "projectId": "2c64be72-530c-41f8-b620-3ec38b6932c7"
       }
     },
-    "owner": "gamavissoftware"
+    "owner": "gamavissoftware",
+    "runtimeVersion": "1",
+    "updates": {
+      "url": "https://u.expo.dev/2c64be72-530c-41f8-b620-3ec38b6932c7",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

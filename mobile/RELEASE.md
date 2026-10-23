@@ -86,3 +86,18 @@ Platform quirks
 - Android internal test build on your own phones: same day (needs only the Expo account and the Firebase files).
 - iOS test build: as fast as the Apple Developer enrolment (individual: about 1-2 days; organisation with D-U-N-S: often 1-3 weeks).
 - First public store release: about 2-4 weeks including accounts, privacy review, TestFlight and store review.
+
+
+## Over-the-air updates (added 2026-10-23, build 1.4.1+)
+`expo-updates` is built in. Fixes to JavaScript (screens, logic, text, styles, images) reach installed apps WITHOUT a new APK:
+```bash
+cd mobile
+npm test && npx expo export --platform android >/dev/null      # sanity check first
+eas update --channel preview --message "what changed"          # APK builds from the preview profile
+eas update --channel production --message "what changed"       # Play Store builds
+```
+The app checks when it opens and when it returns to the front (at most every 10 minutes), downloads quietly and shows "A quick update is ready. Tap to restart". Rules:
+- `runtimeVersion` in app.json is the string "1". An update only reaches builds with the SAME runtimeVersion. **Change it (to "2", ...) whenever native things change**: a new package with native code, a new permission, an Expo SDK upgrade, app icon / splash / plugins in app.json. Those changes need a new APK / AAB, and the new build then has the new runtimeVersion so it never gets an update meant for old code.
+- OTA changes do NOT change the version number shown in the app. Do not raise `latest_version` in admin -> Mobile app for an OTA-only fix (that banner asks people to install a new APK). Raise it only when a new APK exists.
+- Roll back by publishing the previous good code again (`eas update --channel preview --message "revert"`) or `eas update:rollback`.
+- Builds made BEFORE 1.4.1 (1.4.0 and older) have no updater: they need one last manual install of 1.4.1.

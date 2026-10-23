@@ -43,6 +43,7 @@ import { tr } from './src/i18n'
 import { cacheClear } from './src/cache'
 import { outboxClear } from './src/outbox'
 import PendingBanner from './src/PendingBanner'
+import OtaBanner from './src/OtaBanner'
 import { lockEnabled, authenticate } from './src/lock'
 import { needsLock, updateState, updateLink } from './src/logic'
 
@@ -177,6 +178,7 @@ export default function App() {
     <SafeAreaProvider>
     <ErrorBoundary>
     <View style={{ flex: 1 }}>
+    <OtaBanner signedIn={authed} />
     <PendingBanner signedIn={authed} />
     <View style={{ flex: 1 }}>
     <NavigationContainer ref={navRef} onReady={flushPending} theme={navTheme}>
