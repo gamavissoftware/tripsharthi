@@ -306,3 +306,50 @@ address{font-style:normal;color:#2c3f5c}
 .fine a,.faq p a,.center a:not(.btn),.cc a:not(.big):not(.btn){text-decoration:underline;text-underline-offset:3px}
 .nav .links a.hot{color:#b45f06;font-weight:600}
 .nav .links a.hot::after{content:"New";margin-left:6px;font:700 10px var(--head);letter-spacing:.06em;text-transform:uppercase;background:#fff1da;color:#b45f06;padding:2px 6px;border-radius:999px;vertical-align:2px}
+
+/* ===== Mobile app showcase (home + app.html) ===== */
+.appx{position:relative;overflow:hidden;padding:88px 0 72px;color:#fff;background:linear-gradient(160deg,#071a3a 0%,#0a2a5c 52%,#0a6cc4 130%)}
+.appx-bg .blob{position:absolute;border-radius:50%;filter:blur(70px);opacity:.5}
+.appx-bg .b1{width:420px;height:420px;background:#12a89e;top:-120px;right:-80px;opacity:.35}
+.appx-bg .b2{width:380px;height:380px;background:#f98f26;bottom:-160px;left:-100px;opacity:.22}
+.appx-grid{position:relative;display:grid;grid-template-columns:1.05fr 1fr;gap:48px;align-items:center}
+.appx-tag{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);font-size:13.5px;font-weight:700;margin-bottom:18px}
+.appx-tag .ico{width:16px;height:16px;color:#ffd08a}
+.appx h1,.appx h2{color:#fff;font-size:clamp(2rem,4.2vw,3.2rem);line-height:1.08}
+.appx .grad{background:linear-gradient(90deg,#5fe3d6,#ffc46b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.appx-lead{margin:18px 0 26px;font-size:1.12rem;color:#cfe0f7;max-width:34em}
+.appx-cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.appx-cta .soon{padding:12px 18px;border-radius:14px;background:rgba(255,255,255,.1);border:1px dashed rgba(255,255,255,.35);font-weight:600}
+.appx-btn{display:inline-flex;align-items:center;gap:12px;padding:12px 22px 12px 16px;border-radius:16px;background:#fff;color:#0a1f44;text-decoration:none;box-shadow:0 14px 34px rgba(0,0,0,.28);transition:transform .15s}
+.appx-btn:hover{transform:translateY(-2px)}
+.appx-btn .ico{width:28px;height:28px;color:#12a89e}
+.appx-btn span{display:grid;line-height:1.15;text-align:left}
+.appx-btn small{font-size:11.5px;color:#64748b;font-weight:600}
+.appx-btn b{font-size:1.1rem;font-family:var(--head)}
+.appx-btn.off{background:rgba(255,255,255,.1);color:#cfe0f7;box-shadow:none;border:1px solid rgba(255,255,255,.25);pointer-events:none}
+.appx-btn.off small{color:#9db6d8}.appx-btn.off .ico{color:#9db6d8}
+.appx-qr{display:flex;align-items:center;gap:14px;margin-top:26px;padding:12px 16px 12px 12px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);width:max-content;max-width:100%}
+.appx-qr img{background:#fff;border-radius:10px;padding:6px;width:96px;height:96px}
+.appx-qr p{display:grid;gap:2px;font-size:.92rem;color:#cfe0f7}.appx-qr b{color:#fff}
+.appx-stage{position:relative;height:540px;display:flex;justify-content:center;align-items:flex-end}
+.appx .ph{margin:0;position:absolute;bottom:0;border-radius:30px;border:7px solid #0a1f44;background:#0a1f44;box-shadow:0 40px 80px rgba(0,0,0,.45);overflow:hidden;width:224px}
+.appx .ph img{border-radius:23px;width:100%;height:auto}
+.appx .ph-c{z-index:3;width:250px;left:50%;transform:translateX(-50%);bottom:6px}
+.appx .ph-l{z-index:2;left:2%;transform:rotate(-7deg) translateY(14px)}
+.appx .ph-r{z-index:2;right:2%;transform:rotate(7deg) translateY(14px)}
+.appx .appx-f1{left:-4px;top:70px;bottom:auto;right:auto;z-index:5;height:auto}.appx .appx-f2{right:-4px;left:auto;top:210px;bottom:auto;z-index:5;height:auto}
+.appx-feats{position:relative;list-style:none;margin:56px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.appx-feats li{display:flex;gap:14px;padding:18px;border-radius:18px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px)}
+.appx-feats .ai{flex:none;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#12a89e,#0a6cc4)}
+.appx-feats .ai .ico{width:21px;height:21px;color:#fff}
+.appx-feats b{display:block;font-family:var(--head);font-size:1.02rem;margin-bottom:3px}
+.appx-feats span span,.appx-feats div>span{display:block;font-size:.93rem;color:#cfe0f7;line-height:1.5}
+.appx-duo{display:flex;justify-content:center;gap:28px;flex-wrap:wrap}
+.appx-duo figure{margin:0;text-align:center}
+.appx-duo img{width:230px;border-radius:30px;border:7px solid #0a1f44;box-shadow:var(--shadow-lg)}
+.appx-duo figcaption{margin-top:10px;font-weight:700;color:var(--muted)}
+.narrow{max-width:860px}
+@media(max-width:980px){.appx-grid{grid-template-columns:1fr;gap:34px}.appx-stage{height:500px}.appx-feats{grid-template-columns:1fr 1fr}}
+@media(max-width:620px){.appx{padding:64px 0 52px}.appx-feats{grid-template-columns:1fr}.appx-stage{height:430px}.appx .ph{width:150px;border-width:5px;border-radius:24px}.appx .ph-c{width:176px}.appx .ph img{border-radius:18px}.appx .appx-f1{left:0;top:30px}.appx-f2{display:none}.appx-btn{width:100%;justify-content:center}.appx-qr{display:none}}
+.appx .float{color:var(--ink)}.appx .float b{color:var(--ink)}
+.appx-feats div>span b{display:inline;font:inherit;margin:0;color:#fff;font-weight:700}

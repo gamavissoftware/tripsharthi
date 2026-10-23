@@ -29,7 +29,7 @@ def ver(path):
     except OSError: return ''
 
 
-NAV = [('features.html', 'Features'), ('solutions.html', 'Solutions'), ('pricing.html', 'Pricing'), ('partners.html', 'Partners'), ('blog/index.html', 'Blog'), ('about.html', 'About'), ('contact.html', 'Contact')]
+NAV = [('features.html', 'Features'), ('solutions.html', 'Solutions'), ('pricing.html', 'Pricing'), ('partners.html', 'Partners'), ('app.html', 'App'), ('blog/index.html', 'Blog'), ('about.html', 'About'), ('contact.html', 'Contact')]
 
 def header(cur='', p=''):
     def _link(h, t):
@@ -55,7 +55,7 @@ def footer(p=''):
   <div class="wrap foot-in">
     <div class="fbrand"><a class="brand light" href="{p}index.html"><img src="{p}assets/brand/mark-96.png" alt="" width="40" height="40"><span>Trip<b>Sarthi</b></span></a><p>Your Travel Business. Simplified.<br>CRM, WhatsApp automation, GST billing and ads for Indian travel agencies.</p>
       <address class="faddr">{COMPANY}<br>{'<br>'.join(ADDRESS_LINES)}</address></div>
-    <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a><p class="app-dl" data-appdl="dark" hidden></p></div>
+    <div><p class="fh">Product</p><a href="{p}features.html">Features</a><a href="{p}index.html#product">Product tour</a><a href="{p}pricing.html">Pricing</a><a href="{p}app.html">Mobile app</a><a href="{p}index.html#faq">FAQ</a><a href="{p}blog/index.html">Blog</a><p class="app-dl" data-appdl="dark" hidden></p></div>
     <div><p class="fh">Solutions</p>{sol}</div>
     <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}partners.html">Partner programme</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
     <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><a class="fwa" href="https://wa.me/{WHATSAPP}" rel="noopener">{ico('chat')} Chat on WhatsApp</a></div>
@@ -270,6 +270,47 @@ def partners_page():
     return page('partners.html', 'Partner Programme — Earn 20% Recurring Commission | TripSarthi', 'Refer Indian travel agencies to TripSarthi and earn 20% commission for 12 months. Personal referral link, live partner dashboard and UPI or bank payouts.', body, 'partners.html',
                 crumbs=[('Partners', SITE + '/partners.html')], faq=faq)
 
+def app_section(p='', full=False):
+    """The phone-app showcase: used on the home page and on app.html. Download buttons are filled in by site.js from the public API."""
+    def im(name, alt, w=780, h=1688, eager=False):
+        return f'<img src="{p}assets/img/{name}.webp" srcset="{p}assets/img/{name}-390.webp 390w, {p}assets/img/{name}.webp 780w" sizes="(max-width:700px) 44vw, 260px" width="{w}" height="{h}" alt="{alt}" loading="{"eager" if eager else "lazy"}">'
+    feats = [('chat', 'WhatsApp inbox in your pocket', 'Reply to customers, send photos, documents and <b>voice notes</b>, and assign chats to your team.'),
+             ('bell', 'Instant alerts', 'A push the moment a new lead arrives, a customer replies, a quote is viewed or a payment lands.'),
+             ('sparkles', 'Quote with AI in minutes', 'Draft a day-wise quote, set your markup and send it on WhatsApp before the customer cools off.'),
+             ('shield', 'Works with no signal', 'Save tasks, contacts and enquiries offline. They sync by themselves when you are back online.'),
+             ('chart', 'Your numbers, live', 'Revenue, collections, departures and your sales target, always one tap away.'),
+             ('check', 'Everything else, too', 'Every screen of TripSarthi is inside the app. Hindi and dark mode, plus a fingerprint or Face ID lock.')]
+    li = ''.join(f'<li><span class="ai">{ico(i)}</span><div><b>{t}</b><span>{d}</span></div></li>' for i, t, d in feats)
+    h = 'h1' if full else 'h2'
+    return f"""<section class="appx" id="app"><div class="appx-bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i></div>
+  <div class="wrap appx-grid">
+    <div class="appx-copy reveal">
+      <p class="appx-tag">{ico('sparkles')} New &middot; TripSarthi mobile app</p>
+      <{h}>Run your whole travel business <span class="grad">from your phone</span></{h}>
+      <p class="appx-lead">Enquiries, WhatsApp chats, quotes, bookings and payments due, with push alerts for every lead. Built for agents who are never at their desk.</p>
+      <div class="appx-cta" data-appcta><span class="soon">Android app &mdash; coming very soon</span></div>
+      <div class="appx-qr"><img src="{p}assets/img/app-qr.svg" width="96" height="96" alt="QR code that opens the TripSarthi app page on your phone" loading="lazy"><p><b>On a computer?</b><span>Scan with your phone camera to download.</span></p></div>
+    </div>
+    <div class="appx-stage reveal" aria-label="Screenshots of the TripSarthi mobile app">
+      <figure class="ph ph-l">{im('app-chat', 'WhatsApp chat with a customer inside the TripSarthi app')}</figure>
+      <figure class="ph ph-c">{im('app-home', 'TripSarthi app home screen with revenue, enquiries, quotes and cash collected', eager=True)}</figure>
+      <figure class="ph ph-r">{im('app-bookings', 'Bookings screen showing money to collect and trips leaving soon')}</figure>
+      <div class="float f1 appx-f1"><span class="dot wa">{ico('chat')}</span><div><b>New WhatsApp enquiry</b><small>Push alert · Bali honeymoon</small></div></div>
+      <div class="float f2 appx-f2"><span class="dot ok">{ico('check')}</span><div><b>₹30,981 received</b><small>Instalment 1 · receipt sent</small></div></div>
+    </div>
+  </div>
+  <div class="wrap"><ul class="appx-feats reveal">{li}</ul></div>
+</section>"""
+
+def app_page():
+    body = app_section('', full=True) + f"""<section class="section"><div class="wrap"><div class="head"><p class="kicker">Light or dark, English or Hindi</p><h2>Made for long days on the road</h2><p class="sub">Follows your phone&rsquo;s light or dark setting, speaks English or Hindi, and can lock itself behind your fingerprint.</p></div>
+  <div class="appx-duo reveal"><figure><img src="assets/img/app-home.webp" srcset="assets/img/app-home-390.webp 390w, assets/img/app-home.webp 780w" sizes="(max-width:700px) 42vw, 240px" width="780" height="1688" alt="TripSarthi app in light mode" loading="lazy"><figcaption>Light</figcaption></figure>
+  <figure><img src="assets/img/app-home-dark.webp" srcset="assets/img/app-home-dark-390.webp 390w, assets/img/app-home-dark.webp 780w" sizes="(max-width:700px) 42vw, 240px" width="780" height="1688" alt="TripSarthi app in dark mode" loading="lazy"><figcaption>Dark</figcaption></figure></div></div></section>
+<section class="section soft"><div class="wrap narrow"><div class="head"><p class="kicker">Install</p><h2>Install on Android in a minute</h2></div>
+  <ol class="flow reveal"><li><span class="n">1</span><h3>Download</h3><p>Tap <b>Download for Android</b> above on your phone.</p></li><li><span class="n">2</span><h3>Open the file</h3><p>If Android asks, allow installs from your browser for this one file.</p></li><li><span class="n">3</span><h3>Sign in</h3><p>Use the same e-mail and password as on the web. Everything is already there.</p></li></ol>
+  <p class="sub" style="text-align:center;margin-top:18px">iPhone version: coming soon. Until then the full web app works in Safari.</p></div></section>"""
+    return page('app.html', 'TripSarthi mobile app: travel CRM and WhatsApp on your phone', 'Download the TripSarthi app for Android: WhatsApp chats with voice notes, instant lead alerts, AI quotes, bookings and payments for Indian travel agents, even offline.', body, cur='app.html', crumbs=[('Mobile app', SITE + '/app.html')])
+
 def about_page():
     body = hero('About us', 'Built in India, for the people who <span class="grad">plan journeys</span>', 'TripSarthi is the workspace we wished every travel agency had — one calm place for enquiries, quotes, payments and paperwork.') + f'''
 <section class="section"><div class="wrap two"><div class="copy"><p class="kicker">Our story</p><h2>A <em>sarthi</em> is a companion on the road</h2>
@@ -403,6 +444,8 @@ def patch_index():
     s = re.sub(r'<a class="btn btn-glass btn-lg" id="demo"[^>]*>Book a demo</a>', '<a class="btn btn-glass btn-lg" id="demo" href="contact.html#demo">Book a demo</a>', s)
     s = re.sub(r'<script src="assets/js/(site|chat)\.js[^"]*" defer></script>\s*', '', s)
     s = s.replace('</body>', '<script src="assets/js/site.js' + ver('assets/js/site.js') + '" defer></script>\n<script src="assets/js/chat.js' + ver('assets/js/chat.js') + '" defer></script>\n</body>', 1)
+    s = re.sub(r'<!--APP-->.*?<!--/APP-->\s*', '', s, flags=re.S)
+    s = s.replace('<section class="section soft" id="faq">', '<!--APP-->' + app_section('') .replace('<h2>', '<h2>') + '<!--/APP-->\n<section class="section soft" id="faq">', 1)
     if 'id="solutions-links"' not in s:
         cards = ''.join(f'<a class="card rel" href="{x["slug"]}.html"><b>{x["nav"]}</b><span>{plain(x["lead"])[:120]}…</span></a>' for x in SOLUTIONS)
         block = f'<section class="section soft" id="solutions-links"><div class="wrap"><div class="head"><p class="kicker">Solutions</p><h2>Built for your kind of travel business</h2></div><div class="relgrid four reveal">{cards}</div></div></section>\n'
@@ -431,7 +474,7 @@ def ensure_variants():
     if not (shutil.which('cwebp') and shutil.which('dwebp')): print('cwebp/dwebp not found: skipping image variants'); return
     for f in glob.glob(os.path.join(ROOT, 'assets/img/*.webp')):
         name = os.path.basename(f)[:-5]
-        if name == 'og' or re.search(r'-(900|390)$', name): continue
+        if name == 'og' or name.startswith('app-') or re.search(r'-(900|390)$', name): continue
         w = 390 if name == 'portal' else 900
         out = os.path.join(ROOT, f'assets/img/{name}-{w}.webp')
         if os.path.exists(out) and os.path.getmtime(out) >= os.path.getmtime(f): continue
@@ -464,11 +507,11 @@ if __name__ == '__main__':
     ensure_variants()
     minify_css()
     patch_index()
-    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('partners.html', partners_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
+    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('partners.html', partners_page), ('app.html', app_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
     pages += [(f'{x["slug"]}.html', (lambda x=x: solution_page(x))) for x in SOLUTIONS] + [(f'blog/{a["slug"]}.html', (lambda a=a: article_page(a))) for a in ARTICLES]
     for f, fn in pages:
         write(f, fn())
-    urls = [('', '1.0', 'weekly'), ('features.html', '0.9', 'monthly'), ('solutions.html', '0.8', 'monthly'), ('pricing.html', '0.9', 'monthly'), ('partners.html', '0.8', 'monthly')] + [(f'{x["slug"]}.html', '0.8', 'monthly') for x in SOLUTIONS] + \
+    urls = [('', '1.0', 'weekly'), ('features.html', '0.9', 'monthly'), ('solutions.html', '0.8', 'monthly'), ('pricing.html', '0.9', 'monthly'), ('partners.html', '0.8', 'monthly'), ('app.html', '0.8', 'monthly')] + [(f'{x["slug"]}.html', '0.8', 'monthly') for x in SOLUTIONS] + \
            [('blog/index.html', '0.7', 'weekly')] + [(f'blog/{a["slug"]}.html', '0.7', 'monthly') for a in ARTICLES] + [('about.html', '0.6', 'yearly'), ('contact.html', '0.7', 'yearly'), ('privacy.html', '0.3', 'yearly'), ('terms.html', '0.3', 'yearly')]
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{SITE}/{u}</loc><lastmod>{TODAY}</lastmod><changefreq>{c}</changefreq><priority>{pr}</priority></url>\n' for u, pr, c in urls) + '</urlset>\n'
     open(os.path.join(ROOT, 'sitemap.xml'), 'w').write(sm); print('wrote sitemap.xml')

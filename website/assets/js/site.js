@@ -142,7 +142,7 @@
 (function () {
   'use strict';
   var holders = document.querySelectorAll('[data-appdl]');
-  if (!holders.length) return;
+  if (!holders.length && !document.querySelector('[data-appcta]')) return;
   var local = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
   var API = window.TRIPSARTHI_API_URL || (local ? 'http://localhost:8731/api/v1' : 'https://app.tripsarthi.com/api/v1');
   var KEY = 'ts_mobile_app', TTL = 5 * 60 * 1000;
@@ -158,7 +158,20 @@
     a.style.cssText = 'display:inline-block;padding:8px 14px;border-radius:10px;font-weight:600;text-decoration:none;font-size:14px;' + (dark ? 'color:#fff;border:1px solid rgba(255,255,255,.35)' : 'color:#0a1f44;border:1px solid rgba(10,31,68,.25);background:rgba(255,255,255,.7)');
     return a;
   }
+  var ICON = '<svg class="ico"><use href="#i-%s"/></svg>';
+  function bigBtn(href, small, label, icon, off) {
+    var a = document.createElement(off ? 'span' : 'a'); a.className = 'appx-btn' + (off ? ' off' : '');
+    if (!off) { a.href = href; a.target = '_blank'; a.rel = 'noopener noreferrer'; }
+    a.innerHTML = ICON.replace('%s', icon) + '<span><small></small><b></b></span>';
+    a.querySelector('small').textContent = small; a.querySelector('b').textContent = label; return a;
+  }
   load().then(function (d) {
+    document.querySelectorAll('[data-appcta]').forEach(function (h) {
+      if (!d || !d.available) return;
+      h.innerHTML = '';
+      if (d.android) h.appendChild(bigBtn(d.android, d.latest_version ? 'Free \u00b7 version ' + d.latest_version : 'Free download', 'Download for Android', 'download', false));
+      h.appendChild(d.ios ? bigBtn(d.ios, 'Free download', 'Download for iPhone', 'download', false) : bigBtn('', 'Coming soon', 'iPhone', 'download', true));
+    });
     if (!d || !d.available) return;
     holders.forEach(function (h) {
       var dark = h.getAttribute('data-appdl') === 'dark', t = document.createElement('span');
