@@ -318,6 +318,38 @@ function itemWorking(i, unit) {
   return `₹${(Number(i.unit_cost) / 100).toLocaleString('en-IN', { maximumFractionDigits: 2 })}${unit && UNIT_LABEL[unit] ? ' ' + UNIT_LABEL[unit] : ''} × ${qty}${i.type === 'hotel' ? ` × ${nights}N` : ''}`
 }
 
+
+const addMonthsIso = (iso, m) => { const d = new Date(String(iso).slice(0, 10) + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + m); return d.toISOString().slice(0, 10) }
+
+/**
+ * Is this traveller's passport fine for the trip? International trips need a number on file and a passport valid for 6 months AFTER the trip
+ * ends (most countries refuse entry otherwise). Returns { key, label, tone } where tone is a Pill tone.
+ */
+function passportStatus(t, { tripEnd, today = new Date().toISOString().slice(0, 10), international = true } = {}) {
+  const exp = t.passport_expiry ? String(t.passport_expiry).slice(0, 10) : ''
+  if (!t.has_passport && !exp) return international ? { key: 'missing', label: 'No passport', tone: 'warn' } : { key: 'none', label: 'No passport needed', tone: 'neutral' }
+  if (exp && exp < today) return { key: 'expired', label: 'Expired', tone: 'danger' }
+  if (exp && addMonthsIso(tripEnd || today, 6) > exp) return { key: 'short', label: 'Under 6 months', tone: 'warn' }
+  if (!t.has_passport) return { key: 'no_number', label: 'No number', tone: 'warn' }
+  if (!exp) return { key: 'no_expiry', label: 'No expiry date', tone: 'warn' }
+  return { key: 'ok', label: 'Passport OK', tone: 'ok' }
+}
+
+const DOC_STATUS = { pending: ['Missing', 'warn'], uploaded: ['Check it', 'info'], received: ['Received', 'ok'], not_applicable: ['Not needed', 'neutral'] }
+/** [label, Pill tone] for a checklist item (overdue pending items are shown as such). */
+function docStatus(i) { return i.overdue ? ['Overdue', 'danger'] : (DOC_STATUS[i.status] || [i.status, 'neutral']) }
+
+/** Checklist items grouped per traveller (booking-wide items under "Everyone"), in the order the travellers were added. */
+function groupChecklist(items, travelers) {
+  const by = new Map()
+  for (const i of items || []) { const k = Number(i.traveler_id) || 0; if (!by.has(k)) by.set(k, []); by.get(k).push(i) }
+  const out = []
+  for (const t of travelers || []) { if (by.has(Number(t.id))) { out.push({ traveler: t, name: t.full_name, items: by.get(Number(t.id)) }); by.delete(Number(t.id)) } }
+  for (const [k, list] of by) out.push({ traveler: null, name: k === 0 ? 'Everyone' : 'Traveller', items: list })
+  return out
+}
+
 module.exports = {
+  passportStatus, docStatus, groupChecklist,
   ITEM_TYPES, UNIT_LABEL, itemTypeOf, suggestQty, rateState, itemTotal, rupeesToPaise, validateItem, itemWorking,
   outboxVerdict, newIdemKey, shouldUseCache, ageLabel, needsLock, digits, validPhone, validateEnquiry, composerMode, windowLabel, templateVarCount, clampPct, targetStatus, toGoText, hasTarget, latestQuote, isFlatMarkup, quotePatch, friendlyError, inrFull, inrShort, deltaPct, fmtDay, daysFrom, dueLabel, indiaToday, greeting, initials, pctOf, compareVersions, updateState, updateLink, mediaKind, fileSize }

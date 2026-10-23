@@ -27,6 +27,7 @@ import { Sheet, Input, Btn } from './src/ui'
 import TripScreen from './src/screens/TripScreen'
 import TargetsScreen from './src/screens/TargetsScreen'
 import BookingScreen from './src/screens/BookingScreen'
+import DocumentsScreen from './src/screens/DocumentsScreen'
 import ContactScreen from './src/screens/ContactScreen'
 import NotificationsScreen from './src/screens/NotificationsScreen'
 import ChatsScreen from './src/screens/ChatsScreen'
@@ -193,6 +194,7 @@ export default function App() {
           <Stack.Screen name="Home" options={{ headerShown: false }}>{() => <Home unread={unread} setUnread={setUnread} chatUnread={chatUnread} setChatUnread={setChatUnread} onSignOut={signOut} user={user} update={update} onOpenAdmin={openAdmin} />}</Stack.Screen>
           <Stack.Screen name="Trip" component={TripScreen} options={{ title: tr('Enquiry') }} />
           <Stack.Screen name="Booking" component={BookingScreen} options={{ title: tr('Booking') }} />
+          <Stack.Screen name="Documents" component={DocumentsScreen} options={{ title: tr('Documents') }} />
           <Stack.Screen name="Contact" component={ContactScreen} options={{ title: tr('Contact') }} />
           <Stack.Screen name="Chat" component={ChatScreen} options={{ title: tr('Chat') }} />
           <Stack.Screen name="NewEnquiry" component={NewEnquiryScreen} options={{ title: tr('New enquiry') }} />

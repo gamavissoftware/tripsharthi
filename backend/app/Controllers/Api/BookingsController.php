@@ -114,6 +114,33 @@ class BookingsController extends TravelBaseController
         return $this->ok($row, 201);
     }
 
+    private function traveler(callable $fn)
+    {
+        try { return $this->ok($fn()); }
+        catch (\InvalidArgumentException $e) { return $this->fail($e->getMessage(), 422); }
+        catch (\OutOfBoundsException $e) { return $this->failNotFound($e->getMessage()); }
+        catch (\DomainException $e) { return $this->fail($e->getMessage(), 409); }
+    }
+
+    /** PATCH /bookings/travelers/:id - edit a traveller (a new passport_no is encrypted; blank keeps the old one). */
+    public function updateTraveler($id = null)
+    {
+        return $this->traveler(fn () => (new \App\Services\Travel\TravelerService())->update(CurrentUser::tenantId(), (int) $id, $this->body(), CurrentUser::id()));
+    }
+
+    /** DELETE /bookings/travelers/:id */
+    public function deleteTraveler($id = null)
+    {
+        return $this->traveler(function () use ($id) { (new \App\Services\Travel\TravelerService())->delete(CurrentUser::tenantId(), (int) $id, CurrentUser::id()); return ['deleted' => true]; });
+    }
+
+    /** GET /bookings/travelers/:id/passport - the number itself; audited, never cached. */
+    public function travelerPassport($id = null)
+    {
+        $this->response->setHeader('Cache-Control', 'private, no-store');
+        return $this->traveler(fn () => ['passport_no' => (new \App\Services\Travel\TravelerService())->passport(CurrentUser::tenantId(), (int) $id, CurrentUser::id())]);
+    }
+
     /** POST /bookings/:id/cancel { reason } */
     public function cancel($id = null)
     {

@@ -153,6 +153,24 @@ export const pushApi = {
   test: () => request('POST', '/mobile/push/test').then(r => r.data),
   log: () => request('GET', '/mobile/push/log').then(r => r.data),
 }
+// ---- travellers, passports and the document checklist ----
+export const docsApi = {
+  addTraveler: (bookingId, b) => request('POST', `/bookings/${bookingId}/travelers`, b).then(r => r.data),
+  updateTraveler: (id, b) => request('PATCH', `/bookings/travelers/${id}`, b).then(r => r.data),
+  deleteTraveler: (id) => request('DELETE', `/bookings/travelers/${id}`).then(r => r.data),
+  /** The passport number itself. The server writes every look to the audit log. */
+  passport: (id) => request('GET', `/bookings/travelers/${id}/passport`).then(r => r.data.passport_no),
+  checklist: (bookingId) => request('GET', `/checklists/bookings/${bookingId}`).then(r => r.data),
+  setItem: (itemId, status, notes) => request('PATCH', `/checklists/items/${itemId}`, { status, ...(notes != null ? { notes } : {}) }).then(r => r.data),
+  uploads: (itemId) => request('GET', `/portal/items/${itemId}/uploads`).then(r => r.data),
+  review: (uploadId, accept, reason) => request('POST', `/portal/uploads/${uploadId}/review`, { decision: accept ? 'accept' : 'reject', ...(reason ? { reason } : {}) }),
+  /** A picked photo / PDF attached by staff (counts as received at once). */
+  attach: (itemId, file) => upload(`/portal/items/${itemId}/staff-upload`, file),
+  portalLink: (bookingId) => request('POST', `/portal/bookings/${bookingId}/link`).then(r => r.data),
+  /** An <Image> source for an uploaded photo (needs the sign-in header; PDFs are opened on the web screen). */
+  fileSource: (uploadId) => ({ uri: `${API_URL}/api/v1/portal/uploads/${uploadId}/file`, headers: { Authorization: `Bearer ${token}`, 'X-TS-Client': 'mobile' } }),
+}
+
 export const contactApi = {
   get: (id) => request('GET', `/contacts/${id}`).then(r => r.data),
   // q searches name / number / e-mail; the server pages 25 at a time

@@ -151,4 +151,19 @@ final class PortalServiceTest extends CIUnitTestCase
         $this->expectException(\InvalidArgumentException::class);
         $this->svc()->readUpload(2, $id);                                                          // another tenant's staff cannot read it
     }
+
+    public function testStaffUploadIsAcceptedAtOnceAndFollowsTheSameFileRules(): void
+    {
+        $r = $this->svc()->staffUpload(1, $this->item1, $this->file("%PDF-1.4 passport scan"), 7);
+        $this->assertSame('received', $r['status']);
+        $item = db_connect()->table('booking_checklist_items')->where('id', $this->item1)->get()->getRowArray();
+        $this->assertSame('received', $item['status']);
+        $up = $this->svc()->uploadsForItem(1, $this->item1);
+        $this->assertCount(1, $up);
+        $this->assertSame('accepted', $up[0]['status']);
+        $this->assertSame('%PDF-1.4 passport scan', $this->svc()->readUpload(1, $up[0]['id'])['bytes']);      // stored encrypted, read back intact
+        try { $this->svc()->staffUpload(1, $this->item1, $this->file('MZ-not-a-document'), 7); $this->fail('an executable was accepted'); } catch (\InvalidArgumentException $e) { $this->assertStringContainsString('PDF, JPG or PNG', $e->getMessage()); }
+        try { $this->svc()->staffUpload(1, $this->item2 + 999, $this->file('%PDF-1'), 7); $this->fail('unknown item accepted'); } catch (\OutOfBoundsException $e) { $this->assertTrue(true); }
+        try { $this->svc()->staffUpload(2, $this->item1, $this->file('%PDF-1'), 7); $this->fail('another workspace attached to this item'); } catch (\OutOfBoundsException $e) { $this->assertTrue(true); }
+    }
 }

@@ -157,21 +157,47 @@ final class PortalService
         $today = (int) $db->query('SELECT COUNT(*) n FROM portal_uploads WHERE tenant_id = ? AND booking_id = ? AND created_at >= ?', [$tid, $b['id'], date('Y-m-d H:i:s', ($this->now ?? time()) - 86400)])->getRowArray()['n'];
         if ($today >= self::MAX_PER_BOOKING_PER_DAY) { throw new \DomainException('Upload limit reached for today. Please try again tomorrow.'); }
 
-        $rel = self::storageDir() . '/' . $tid . '/' . $b['id'] . '/' . bin2hex(random_bytes(16)) . '.enc';
-        $path = WRITEPATH . $rel;
-        if (! is_dir(dirname($path)) && ! @mkdir(dirname($path), 0750, true)) { throw new \RuntimeException('Could not store the file.'); }
-        if (file_put_contents($path, service('encrypter')->encrypt($bytes), LOCK_EX) === false) { throw new \RuntimeException('Could not store the file.'); }
-        $safeName = mb_substr(preg_replace('/[^\p{L}\p{N}._ -]+/u', '_', basename((string) $file['name'])) ?: ('upload.' . $ext), 0, 200);
-        $db->transStart();
-        $db->table('portal_uploads')->insert(['tenant_id' => $tid, 'booking_id' => $b['id'], 'checklist_item_id' => $itemId, 'original_name' => $safeName, 'mime' => self::TYPES[$ext], 'size' => strlen($bytes),
-            'path' => $rel, 'sha256' => hash('sha256', $bytes), 'status' => 'pending', 'created_at' => $this->stamp()]);
-        $db->table('booking_checklist_items')->where('id', $itemId)->update(['status' => 'uploaded', 'updated_at' => $this->stamp()]);
-        $db->transComplete();
-        if (! $db->transStatus()) { @unlink($path); throw new \RuntimeException('Could not save the upload.'); }
+        $this->store($tid, $b, $item, $itemId, $bytes, $ext, (string) $file['name'], false, null);
 
         $owner = (int) ($b['owner_id'] ?? 0);
         if ($owner > 0) { NotificationService::notify($tid, $owner, 'document_uploaded', "Customer uploaded \"{$item['label']}\" for {$b['booking_ref']} — please review.", '/bookings/' . $b['id']); }
         return ['status' => 'uploaded'];
+    }
+
+
+    /** Staff attach a document to a checklist item on the customer's behalf: same type / size / per-item rules, and it is accepted straight away. */
+    public function staffUpload(int $tenantId, int $itemId, array $file, ?int $userId): array
+    {
+        $db = db_connect();
+        $item = $db->table('booking_checklist_items')->where('tenant_id', $tenantId)->where('id', $itemId)->get()->getRowArray();
+        if (! $item) { throw new \OutOfBoundsException('Checklist item not found.'); }
+        $b = (new BookingModel())->withoutTenantScope()->where('tenant_id', $tenantId)->find((int) $item['booking_id']);
+        if (! $b) { throw new \OutOfBoundsException('Booking not found.'); }
+        if ((int) $file['size'] <= 0 || (int) $file['size'] > self::MAX_BYTES) { throw new \InvalidArgumentException('The file must be under 5 MB. Take the photo again at a lower quality, or send a PDF.'); }
+        $bytes = (string) file_get_contents($file['tmp_name']);
+        $ext = $this->sniff($bytes);
+        if ($ext === null) { throw new \InvalidArgumentException('Please attach a PDF, JPG or PNG file.'); }
+        if ((int) $db->table('portal_uploads')->where('checklist_item_id', $itemId)->countAllResults() >= self::MAX_PER_ITEM) { throw new \DomainException('Too many files for this item already.'); }
+        $this->store($tenantId, $b, $item, $itemId, $bytes, $ext, (string) $file['name'], true, $userId);
+        return ['status' => 'received'];
+    }
+
+    /** Encrypt and keep one file, record it, and move the checklist item. $accepted = staff upload (item becomes received) else awaiting review. */
+    private function store(int $tid, array $b, array $item, int $itemId, string $bytes, string $ext, string $clientName, bool $accepted, ?int $userId): void
+    {
+        $db = db_connect();
+        $rel = self::storageDir() . '/' . $tid . '/' . $b['id'] . '/' . bin2hex(random_bytes(16)) . '.enc';
+        $path = WRITEPATH . $rel;
+        if (! is_dir(dirname($path)) && ! @mkdir(dirname($path), 0750, true)) { throw new \RuntimeException('Could not store the file.'); }
+        if (file_put_contents($path, service('encrypter')->encrypt($bytes), LOCK_EX) === false) { throw new \RuntimeException('Could not store the file.'); }
+        $safeName = mb_substr(preg_replace('/[^\p{L}\p{N}._ -]+/u', '_', basename($clientName)) ?: ('upload.' . $ext), 0, 200);
+        $db->transStart();
+        $db->table('portal_uploads')->insert(['tenant_id' => $tid, 'booking_id' => $b['id'], 'checklist_item_id' => $itemId, 'original_name' => $safeName, 'mime' => self::TYPES[$ext], 'size' => strlen($bytes),
+            'path' => $rel, 'sha256' => hash('sha256', $bytes), 'status' => $accepted ? 'accepted' : 'pending', 'reviewed_by' => $accepted ? $userId : null, 'reviewed_at' => $accepted ? $this->stamp() : null, 'created_at' => $this->stamp()]);
+        $db->table('booking_checklist_items')->where('id', $itemId)->update($accepted ? ['status' => 'received', 'received_at' => $this->stamp(), 'updated_by' => $userId, 'updated_at' => $this->stamp()] : ['status' => 'uploaded', 'updated_at' => $this->stamp()]);
+        $db->transComplete();
+        if (! $db->transStatus()) { @unlink($path); throw new \RuntimeException('Could not save the upload.'); }
+
     }
 
     /** File type from CONTENT, never from the client's filename or declared type. */

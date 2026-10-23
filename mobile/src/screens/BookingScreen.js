@@ -3,7 +3,8 @@ import { View, Text, Alert, Share, Linking, TextInput } from 'react-native'
 import { api, inr } from '../api'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Section, Pill, Btn, Row, Progress, Sheet, Input, Chip, Icon, Skeleton, ErrorBox, ok } from '../ui'
-import { fmtDay, inrFull, pctOf, indiaToday, dueLabel } from '../logic'
+import { fmtDay, inrFull, pctOf, indiaToday, dueLabel, passportStatus } from '../logic'
+import TravellerSheet from '../TravellerSheet'
 
 const MODES = [['upi', 'UPI', 'phone-portrait'], ['bank', 'Bank transfer', 'business'], ['cash', 'Cash', 'cash'], ['card', 'Card', 'card']]
 const SVC = { confirmed: 'ok', booked: 'ok', to_book: 'warn', requested: 'info', cancelled: 'danger' }
@@ -15,6 +16,7 @@ export default function BookingScreen({ route, navigation }) {
   const [mode, setMode] = useState('upi')
   const [ref, setRef] = useState('')
   const [busy, setBusy] = useState('')
+  const [trv, setTrv] = useState(undefined)         // undefined = closed, null = adding, object = editing
   const alive = useRef(true)
   useEffect(() => () => { alive.current = false }, [])
   const load = useCallback(() => api.booking(route.params.id).then(x => { if (alive.current) { setErr(''); setB(x) } }).catch(e => alive.current && setErr(e.message)), [route.params.id])
@@ -81,7 +83,21 @@ export default function BookingScreen({ route, navigation }) {
             sub={[x.service_date && fmtDay(x.service_date), x.confirmation_no && `Ref ${x.confirmation_no}`].filter(Boolean).join(' · ') || String(x.service_type).replace(/_/g, ' ')} right={<Pill tone={SVC[x.status] || 'neutral'} text={x.status} />} />)}
         </Card></>}
 
-      <Btn label="Documents, travellers & invoices" icon="document-text-outline" kind="ghost" onPress={() => navigation.navigate('Web', { path: `/bookings/${b.id}`, title: b.booking_ref })} />
+      <Text style={[type.h2, { marginTop: sp.s }]}>Travellers</Text>
+      <Card pad={false} style={{ paddingHorizontal: sp.l }}>
+        {(b.travelers || []).length === 0 && <Text style={[type.small, { paddingVertical: sp.l }]}>No travellers added yet. Add them to get their passport and visa checklist.</Text>}
+        {(b.travelers || []).map((t, i, arr) => {
+          const ps = passportStatus(t, { tripEnd: b.travel_end || b.travel_start, today, international: Number(b.is_international) === 1 })
+          return <Row key={t.id} icon={t.pax_type === 'child' || t.pax_type === 'infant' ? 'happy' : 'person'} tone={c.primary} title={t.full_name} last={i === arr.length - 1} onPress={() => setTrv(t)}
+            sub={[t.pax_type, t.nationality].filter(Boolean).join(' · ')} right={<Pill tone={ps.tone} text={ps.label} />} />
+        })}
+      </Card>
+      <View style={{ flexDirection: 'row', gap: 10 }}>
+        <Btn label="Add traveller" icon="person-add" kind="soft" onPress={() => setTrv(null)} style={{ flex: 1 }} />
+        <Btn label="Documents" icon="document-text" kind="soft" onPress={() => navigation.navigate('Documents', { bookingId: b.id })} style={{ flex: 1 }} />
+      </View>
+      <Btn label="Invoices & more on the web screen" icon="open-outline" kind="ghost" onPress={() => navigation.navigate('Web', { path: `/bookings/${b.id}`, title: b.booking_ref })} />
+      <TravellerSheet visible={trv !== undefined} onClose={() => setTrv(undefined)} bookingId={b.id} traveler={trv || null} onSaved={() => { setTrv(undefined); load() }} />
 
       <Sheet visible={!!pay} onClose={() => setPay(null)} title="Record a payment">
         {!!pay && <>

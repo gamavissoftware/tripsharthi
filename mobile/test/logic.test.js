@@ -131,3 +131,22 @@ test('validateItem: title, quantity, nights and (for owners) price', () => {
   assert.equal(L.itemWorking({ type: 'hotel', unit_cost: 450000, quantity: 2, nights: 3 }, 'per_room'), '₹4,500 per room × 2 × 3N')
   assert.equal(L.itemWorking({ type: 'transfer', unit_cost: 450000, quantity: 1, nights: 1 }, ''), '')
 })
+
+test('passportStatus: missing, expired, short validity, ok', () => {
+  const opt = { tripEnd: '2026-12-10', today: '2026-10-23', international: true }
+  assert.equal(L.passportStatus({ has_passport: false }, opt).key, 'missing')
+  assert.equal(L.passportStatus({ has_passport: false }, { ...opt, international: false }).key, 'none')
+  assert.equal(L.passportStatus({ has_passport: true, passport_expiry: '2026-01-01' }, opt).key, 'expired')
+  assert.equal(L.passportStatus({ has_passport: true, passport_expiry: '2027-03-01' }, opt).key, 'short')       // under 6 months after the trip ends
+  assert.equal(L.passportStatus({ has_passport: true, passport_expiry: '2027-06-10' }, opt).key, 'ok')
+  assert.equal(L.passportStatus({ has_passport: true }, opt).key, 'no_expiry')
+  assert.equal(L.passportStatus({ has_passport: false, passport_expiry: '2031-01-01' }, opt).key, 'no_number')
+})
+
+test('docStatus and groupChecklist', () => {
+  assert.deepEqual(L.docStatus({ status: 'pending' }), ['Missing', 'warn'])
+  assert.deepEqual(L.docStatus({ status: 'pending', overdue: true }), ['Overdue', 'danger'])
+  assert.deepEqual(L.docStatus({ status: 'uploaded' }), ['Check it', 'info'])
+  const g = L.groupChecklist([{ id: 1, traveler_id: 7 }, { id: 2, traveler_id: 0 }, { id: 3, traveler_id: 7 }, { id: 4, traveler_id: 9 }], [{ id: 7, full_name: 'Asha' }, { id: 8, full_name: 'Ravi' }])
+  assert.deepEqual(g.map(x => [x.name, x.items.length]), [['Asha', 2], ['Everyone', 1], ['Traveller', 1]])
+})

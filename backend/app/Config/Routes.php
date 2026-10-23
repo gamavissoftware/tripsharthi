@@ -425,6 +425,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('items/(:num)/uploads',      'Api\PortalAdminController::uploads/$1');
         $routes->get('uploads/(:num)/file',       'Api\PortalAdminController::download/$1');
         $routes->post('uploads/(:num)/review',    'Api\PortalAdminController::review/$1');
+        $routes->post('items/(:num)/staff-upload', 'Api\PortalAdminController::staffUpload/$1');
     });
     $routes->group('departures', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->get('',                          'Api\DeparturesController::index');
@@ -598,6 +599,9 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->post('payments/(:num)/remind',   'Api\DunningController::remind/$1');
         $routes->get('payments/(:num)/reminders', 'Api\DunningController::reminders/$1');
         $routes->patch('services/(:num)',         'Api\BookingsController::updateService/$1');
+        $routes->patch('travelers/(:num)',        'Api\BookingsController::updateTraveler/$1');
+        $routes->delete('travelers/(:num)',       'Api\BookingsController::deleteTraveler/$1');
+        $routes->get('travelers/(:num)/passport', 'Api\BookingsController::travelerPassport/$1');
         $routes->get('(:num)',                    'Api\BookingsController::show/$1');
         $routes->post('(:num)/travelers',         'Api\BookingsController::addTraveler/$1');
         $routes->post('(:num)/cancel',            'Api\BookingsController::cancel/$1');

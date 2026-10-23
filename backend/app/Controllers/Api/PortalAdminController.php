@@ -15,6 +15,8 @@ class PortalAdminController extends TravelBaseController
     {
         try { return $this->ok($fn(), $code); }
         catch (\InvalidArgumentException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'invalid'], 422); }
+        catch (\OutOfBoundsException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'invalid'], 404); }
+        catch (\DomainException $e) { return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'conflict'], 409); }
         catch (\RuntimeException $e) { log_message('error', 'portal admin: ' . $e->getMessage()); return $this->respond(['success' => false, 'message' => $e->getMessage(), 'kind' => 'error'], 500); }
     }
 
@@ -46,6 +48,16 @@ class PortalAdminController extends TravelBaseController
         catch (\Throwable $e) { log_message('error', 'portal download: ' . $e->getMessage()); return $this->respond(['success' => false, 'message' => 'This file cannot be opened. Ask the customer to upload it again.', 'kind' => 'error'], 500); }
         return $this->response->setHeader('Content-Type', $f['mime'])->setHeader('Content-Disposition', 'inline; filename="' . preg_replace('/[^A-Za-z0-9._-]+/', '_', $f['name']) . '"')
             ->setHeader('X-Content-Type-Options', 'nosniff')->setHeader('Content-Security-Policy', 'sandbox')->setHeader('Cache-Control', 'private, no-store')->setBody($f['bytes']);
+    }
+
+    /** POST /portal/items/:id/staff-upload (multipart `file`): staff attach a document they received (WhatsApp, e-mail, in person). Counts as received at once. */
+    public function staffUpload($itemId = null)
+    {
+        $f = $this->request->getFile('file');
+        if (! $f || ! $f->isValid()) { return $this->respond(['success' => false, 'message' => 'Choose a file to attach.', 'kind' => 'invalid'], 422); }
+        return $this->guard(function () use ($itemId, $f) {
+            return (new PortalService())->staffUpload(CurrentUser::tenantId(), (int) $itemId, ['tmp_name' => $f->getTempName(), 'name' => $f->getClientName(), 'size' => (int) $f->getSize()], CurrentUser::id());
+        }, 201);
     }
 
     public function review($uploadId = null)
