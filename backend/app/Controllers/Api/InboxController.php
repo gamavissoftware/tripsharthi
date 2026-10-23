@@ -129,6 +129,12 @@ class InboxController extends ResourceController
         ]);
     }
 
+    // GET /api/v1/inbox/search?q=  - find a word in the messages of all conversations (3+ characters)
+    public function search(): ResponseInterface
+    {
+        return $this->respond(['success' => true, 'data' => MessageModel::searchText(CurrentUser::tenantId(), (string) $this->request->getGet('q'))]);
+    }
+
     // GET /api/v1/inbox/{id}
     public function show($id = null): ResponseInterface
     {

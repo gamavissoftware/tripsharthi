@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, Linking, Alert } from 'react-native'
+import { View, Linking, Alert } from 'react-native'
+import { Text } from '../T'
 import { contactApi, api, inr } from '../api'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Pill, Btn, Row, Avatar, Skeleton, ErrorBox, Section, ok } from '../ui'

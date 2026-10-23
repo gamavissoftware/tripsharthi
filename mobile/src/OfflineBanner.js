@@ -1,4 +1,5 @@
-import { View, Text } from 'react-native'
+import { View } from 'react-native'
+import { Text } from './T'
 import { ageLabel } from './logic'
 import { Icon } from './ui'
 import { c } from './theme'

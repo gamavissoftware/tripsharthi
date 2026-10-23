@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { View, Text, TouchableOpacity, TextInput, Platform, StyleSheet } from 'react-native'
+import { View, TouchableOpacity, TextInput, Platform, StyleSheet } from 'react-native'
+import { Text } from './T'
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker'
 import { Ionicons } from '@expo/vector-icons'
 import { c, sp, radius, type } from './theme'

@@ -897,8 +897,9 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
     });
 
     // --- Shared inbox (all protected) ---
-    $routes->group('inbox', ['filter' => 'auth'], static function (RouteCollection $routes): void {
+    $routes->group('inbox', ['filter' => ['auth', 'idempotent']], static function (RouteCollection $routes): void {
         $routes->get('',              'Api\InboxController::index');
+        $routes->get('search',        'Api\InboxController::search');
         $routes->get('(:num)',        'Api\InboxController::show/$1');
         $routes->get('(:num)/messages',  'Api\InboxController::messages/$1');
         $routes->post('(:num)/messages', 'Api\InboxController::sendMessage/$1');

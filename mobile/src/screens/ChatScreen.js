@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, Platform, Alert, StyleSheet, ActivityIndicator, Image, Linking } from 'react-native'
+import { View, FlatList, TextInput, TouchableOpacity, Platform, Alert, StyleSheet, ActivityIndicator, Image, Linking } from 'react-native'
+import { Text } from '../T'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
 import { chatApi, biz } from '../api'
@@ -8,6 +9,8 @@ import { composerMode, windowLabel, templateVarCount, mediaKind, fileSize } from
 import { Icon, Sheet, Btn, Input, Empty, tap, useKeyboardHeight, Row, ok } from '../ui'
 import OfflineBanner from '../OfflineBanner'
 import VoiceBar from '../VoiceBar'
+import VoicePlayer from '../VoicePlayer'
+import { sendOrQueueRaw, outboxItems, onOutboxChange } from '../outbox'
 
 const TICK = { sent: 'checkmark', delivered: 'checkmark-done', read: 'checkmark-done', failed: 'alert-circle', queued: 'time-outline' }
 const parse = (s) => new Date(String(s).replace(' ', 'T') + 'Z')
@@ -56,7 +59,9 @@ export default function ChatScreen({ route, navigation }) {
   const [attach, setAttach] = useState(false)       // choose photo / camera / document
   const [pending, setPending] = useState(null)      // a picked file waiting to be sent: { uri, name, mimeType, size, type }
   const [me, setMe] = useState(null)
-  const [recording, setRecording] = useState(false)  // a voice note is being recorded
+  const [recording, setRecording] = useState(false)
+  const [waiting, setWaiting] = useState([])           // replies saved on the phone while offline, for THIS chat
+  // a voice note is being recorded
   const listRef = useRef(null)
   const kb = useKeyboardHeight()
   const alive = useRef(true)
@@ -94,13 +99,20 @@ export default function ChatScreen({ route, navigation }) {
   }, [id, msgs, merge])
   useEffect(() => { if (msgs.length) setTimeout(() => listRef.current?.scrollToEnd({ animated: false }), 50) }, [msgs.length, kb])
 
+  useEffect(() => {
+    const read = () => outboxItems().then(a => setWaiting(a.filter(x => x.kind === 'chat' && x.path === `/inbox/${id}/messages`))).catch(() => {})
+    read(); return onOutboxChange(read)
+  }, [id])
   const mode = composerMode(conv)
   async function sendText() {
     const body = text.trim()
     if (!body || sending) return
     setSending(true)
-    try { await chatApi.sendText(id, body); setText(''); const m = await chatApi.messages(id, msgs[msgs.length - 1]?.id); merge(m) }
-    catch (e) {
+    try {
+      const r = await sendOrQueueRaw({ path: `/inbox/${id}/messages`, body: { type: 'text', body }, summary: `Chat reply: ${body.slice(0, 40)}`, kind: 'chat' })
+      setText('')
+      if (!r.queued) merge(await chatApi.messages(id, msgs[msgs.length - 1]?.id))
+    } catch (e) {
       if (e.code === 'WINDOW_CLOSED') { Alert.alert('Window closed', 'The 24-hour reply window just closed. Send a template instead.'); chatApi.one(id).then(setConv).catch(() => {}) }
       else Alert.alert('Not sent', e.message)
     } finally { setSending(false) }
@@ -163,6 +175,11 @@ export default function ChatScreen({ route, navigation }) {
           {!!conv.contact_id && <TouchableOpacity onPress={() => navigation.navigate('Contact', { id: Number(conv.contact_id) })} hitSlop={8}><Text style={{ color: c.primary, fontSize: 12.5, fontWeight: '800' }}>Contact →</Text></TouchableOpacity>}
         </View>)}
       <FlatList ref={listRef} data={data} keyExtractor={m => String(m.id)} contentContainerStyle={{ padding: 12, gap: 4 }} showsVerticalScrollIndicator={false}
+        ListFooterComponent={waiting.length ? <View>{waiting.map(w => (
+          <View key={w.id} style={[s.bubble, s.out, { opacity: 0.7, marginTop: 4 }]}>
+            <Text style={{ color: '#fff', fontSize: 15, lineHeight: 20 }}>{w.body && w.body.body}</Text>
+            <View style={{ flexDirection: 'row', alignSelf: 'flex-end', alignItems: 'center', gap: 4, marginTop: 3 }}><Icon name="time-outline" size={13} color="#cfe2f8" /><Text style={{ fontSize: 10.5, color: '#cfe2f8' }}>Waiting to send</Text></View>
+          </View>))}</View> : null}
         ListEmptyComponent={loaded ? <Empty icon="chatbubble-ellipses" title="No messages yet" text="Say hello once the customer writes in." /> : <View style={{ padding: sp.xl }}><ActivityIndicator color={c.primary} /></View>}
         renderItem={({ item: m }) => {
           const out = m.direction === 'out'
@@ -175,7 +192,8 @@ export default function ChatScreen({ route, navigation }) {
                   <TouchableOpacity activeOpacity={0.85} onPress={() => Linking.openURL(chatApi.mediaUrl(m.media_url)).catch(() => {})} accessibilityLabel="Open photo">
                     <Image source={{ uri: chatApi.mediaUrl(m.media_url) }} style={{ width: 220, height: 220, borderRadius: 12, backgroundColor: '#dfe6f1', marginBottom: m.body ? 6 : 0 }} resizeMode="cover" />
                   </TouchableOpacity>)}
-                {m.media_url && m.type !== 'image' && m.type !== 'text' && m.type !== 'template' && (
+                {m.media_url && m.type === 'audio' && <VoicePlayer uri={chatApi.mediaUrl(m.media_url)} out={out} />}
+                {m.media_url && m.type !== 'image' && m.type !== 'audio' && m.type !== 'text' && m.type !== 'template' && (
                   <TouchableOpacity activeOpacity={0.8} onPress={() => Linking.openURL(chatApi.mediaUrl(m.media_url)).catch(() => {})} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 }} accessibilityLabel={`Open ${m.type}`}>
                     <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: out ? 'rgba(255,255,255,0.2)' : c.primarySoft, alignItems: 'center', justifyContent: 'center' }}><Icon name={m.type === 'audio' ? 'play' : m.type === 'video' ? 'videocam' : 'document-text'} size={20} color={out ? '#fff' : c.primary} /></View>
                     <Text style={{ color: out ? '#fff' : c.text, fontWeight: '600', flexShrink: 1 }} numberOfLines={2}>{m.type === 'audio' ? 'Voice message' : m.type === 'video' ? 'Video' : (m.filename || m.body || 'Document')}</Text>
@@ -201,13 +219,13 @@ export default function ChatScreen({ route, navigation }) {
           {recording ? <VoiceBar onDone={sendVoice} onCancel={() => setRecording(false)} sending={sending} /> : (
           <View style={[s.bar, { borderTopWidth: 0 }]}>
             <TouchableOpacity onPress={() => setAttach(true)} disabled={!!stale || sending} hitSlop={8} style={s.clip} accessibilityLabel="Attach a photo or document"><Icon name="attach" size={24} color={c.sub} /></TouchableOpacity>
-            <TextInput style={s.msg} placeholder={pending ? 'Add a caption (optional)' : 'Type a reply'} placeholderTextColor={c.faint} value={text} onChangeText={setText} multiline maxLength={4000} editable={!stale} />
+            <TextInput style={s.msg} placeholder={pending ? 'Add a caption (optional)' : 'Type a reply'} placeholderTextColor={c.faint} value={text} onChangeText={setText} multiline maxLength={4000} />
             {!text.trim() && !pending && !sending ? (
               <TouchableOpacity disabled={!!stale} style={[s.send, !!stale && { opacity: 0.45 }]} onPress={() => { tap(); setRecording(true) }} accessibilityLabel="Record a voice note">
                 <Icon name="mic" size={21} color="#fff" />
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity disabled={sending || !!stale} style={[s.send, (sending || !!stale) && { opacity: 0.45 }]} onPress={() => { tap(); pending ? sendFile() : sendText() }} accessibilityLabel="Send">
+              <TouchableOpacity disabled={sending} style={[s.send, sending && { opacity: 0.45 }]} onPress={() => { tap(); pending ? sendFile() : sendText() }} accessibilityLabel="Send">
                 {sending ? <ActivityIndicator color="#fff" size="small" /> : <Icon name="send" size={19} color="#fff" />}
               </TouchableOpacity>)}
           </View>

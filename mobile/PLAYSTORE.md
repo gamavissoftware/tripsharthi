@@ -35,9 +35,7 @@ Google Play signs the app for you ("Play App Signing"); EAS keeps the upload key
 **Category:** Business. **Tags:** CRM, Travel. **Contact e-mail:** support address you want shown publicly. **Website:** https://tripsarthi.com
 
 ## 4. Graphics (YOU / design)
-- App icon 512x512 PNG: `mobile/assets/icon.png` (resize).
-- Feature graphic 1024x500: not made yet. Use the logo on the navy/blue gradient.
-- Phone screenshots (2-8, 1080x1920 or similar): take them on your phone from the **Home, Enquiries, Chat, Quote, Bookings, Tasks** screens using the demo workspace login (showcase@tripsarthi.test is dev-only; on live use your demo data).
+All made and ready in `mobile/store/play/`: `app-icon-512.png`, `feature-graphic-1024x500.png` and five phone screenshots (1080x1920: home, enquiries, chat, bookings, dark mode). They use the fictional showcase workspace, so no real customer appears. Re-make them with `node --experimental-websocket scripts/capture_mobile.mjs <dir> [light|dark]` plus the Pillow snippet in git history if the design changes. Google also wants 7-inch / 10-inch tablet screenshots only if you tick tablet support: we do not.
 
 ## 5. Policy forms (Play Console > App content)
 - **Privacy policy URL:** https://tripsarthi.com/privacy.html (the site's policy is still a DRAFT: have a lawyer finish it before publishing; it must mention the phone app, the microphone/camera/photos, push tokens and crash reports).
@@ -52,14 +50,14 @@ Google Play signs the app for you ("Play App Signing"); EAS keeps the upload key
 | Device or other IDs (push token) | Yes | Push notifications | No |
 | Crash logs / diagnostics | Yes | Fixing bugs | No |
 | Messages | Yes | WhatsApp chats of the user's business | No |
-- Users can request deletion: **Account deletion** - Play requires a web page for this. Add one (e.g. https://tripsarthi.com/delete-account) or an e-mail process; **not built yet**.
+- **Account deletion URL** (Play requires one): https://tripsarthi.com/delete-account.html (built: explains how to ask, what is deleted, what GST law makes us keep, 30-day timeline; requests arrive as website enquiries with the topic "Delete my account and data" or as a support request from inside the app). The app also links to it: More -> Delete my account & data. The team still deletes the data BY HAND today (there is no self-service button): write the runbook before launch.
 - **Permissions to explain:** camera and photos (attach in chat), microphone (voice notes), notifications, biometrics (app lock). Location is not used.
 - **Content rating:** answer the questionnaire honestly (business tool, no user-generated public content) - expect "Everyone".
 - Declare the app uses no financial-services features: it only records payments, it does not move money.
 
 ## 6. Before you press Publish
 - [ ] Privacy policy reviewed by a lawyer and live
-- [ ] Account deletion page/process live
+- [x] Account deletion page live (the by-hand deletion runbook still needs writing)
 - [ ] Test account for Google reviewers created
 - [ ] Internal test installed and checked on a real phone: sign in, push, voice note, offline task, Hindi, dark mode
 - [ ] Data-safety form matches the table above

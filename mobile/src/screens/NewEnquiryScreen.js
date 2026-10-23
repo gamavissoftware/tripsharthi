@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { View, Text, Alert, Platform } from 'react-native'
+import { View, Alert, Platform } from 'react-native'
+import { Text } from '../T'
 import { api } from '../api'
 import { sendOrQueue } from '../outbox'
 import { c, sp, type } from '../theme'

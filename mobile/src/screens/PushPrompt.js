@@ -1,4 +1,5 @@
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native'
+import { Modal, View, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text } from '../T'
 import { c, sp, radius, type, shadow } from '../theme'
 import { Icon, Btn } from '../ui'
 

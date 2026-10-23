@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { View, Text, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Linking, Image, StyleSheet } from 'react-native'
+import { View, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, Linking, Image, StyleSheet } from 'react-native'
+import { Text } from '../T'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api, saveToken, adminAuth } from '../api'
 import { c, sp, radius, type, shadow } from '../theme'

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text } from '../T'
 import { c, sp, radius, type } from '../theme'
 import { Screen, Card, Row, Icon, Empty } from '../ui'
 import { FEATURES, SETTINGS, visible, search } from '../webRoutes'

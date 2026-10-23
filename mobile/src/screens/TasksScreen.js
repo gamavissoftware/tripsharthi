@@ -1,8 +1,9 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, ScrollView, Alert } from 'react-native'
+import { View, ScrollView, Alert } from 'react-native'
+import { Text } from '../T'
 import { useFocusEffect } from '@react-navigation/native'
 import { biz } from '../api'
-import { sendOrQueue } from '../outbox'
+import { sendOrQueue, sendOrQueueRaw } from '../outbox'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Chip, Empty, ErrorBox, SkeletonList, Fab, Sheet, Input, Btn, ok } from '../ui'
 import { indiaToday } from '../logic'
@@ -37,7 +38,7 @@ export default function TasksScreen({ route }) {
   async function done(t) {
     if (t.status === 'done') return
     setRows(r => r.filter(x => x.id !== t.id))                       // optimistic: it leaves the list at once
-    try { await biz.completeTask(t.id); ok() } catch (e) { Alert.alert('Could not mark done', e.message); load() }
+    try { await sendOrQueueRaw({ path: `/tasks/${t.id}/complete`, summary: `Done: ${t.title}`, kind: 'task_done' }); ok() } catch (e) { Alert.alert('Could not mark done', e.message); load() }
   }
 
   return (

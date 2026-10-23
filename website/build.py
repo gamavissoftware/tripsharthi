@@ -60,7 +60,7 @@ def footer(p=''):
     <div><p class="fh">Company</p><a href="{p}about.html">About us</a><a href="{p}partners.html">Partner programme</a><a href="{p}contact.html">Contact</a><a href="{p}contact.html#demo">Book a demo</a><a data-app="signup" href="https://app.tripsarthi.com/#/register">Create free account</a><a data-app="login" href="https://app.tripsarthi.com/#/login">Log in</a></div>
     <div><p class="fh">Talk to us</p>{phones}<a href="mailto:{EMAIL}">{EMAIL}</a><a class="fwa" href="https://wa.me/{WHATSAPP}" rel="noopener">{ico('chat')} Chat on WhatsApp</a></div>
   </div>
-  <div class="wrap foot-bot"><span>© <span id="yr">2026</span> {COMPANY}. TripSarthi is a product of {COMPANY}.</span><nav class="flegal" aria-label="Legal"><a href="{p}privacy.html">Privacy policy</a><a href="{p}terms.html">Terms of service</a><a href="{p}contact.html">Contact</a></nav></div>
+  <div class="wrap foot-bot"><span>© <span id="yr">2026</span> {COMPANY}. TripSarthi is a product of {COMPANY}.</span><nav class="flegal" aria-label="Legal"><a href="{p}privacy.html">Privacy policy</a><a href="{p}terms.html">Terms of service</a><a href="{p}delete-account.html">Delete account</a><a href="{p}contact.html">Contact</a></nav></div>
   <div class="wrap foot-tm">WhatsApp, Meta, Google and Razorpay are trademarks of their respective owners.</div>
 </footer>"""
 
@@ -311,6 +311,24 @@ def app_page():
   <p class="sub" style="text-align:center;margin-top:18px">iPhone version: coming soon. Until then the full web app works in Safari.</p></div></section>"""
     return page('app.html', 'TripSarthi mobile app: travel CRM and WhatsApp on your phone', 'Download the TripSarthi app for Android: WhatsApp chats with voice notes, instant lead alerts, AI quotes, bookings and payments for Indian travel agents, even offline.', body, cur='app.html', crumbs=[('Mobile app', SITE + '/app.html')])
 
+def delete_account_page():
+    body = f"""<section class="phero"><div class="hero-bg" aria-hidden="true"><i class="blob b1"></i><i class="blob b2"></i></div>
+  <div class="wrap narrow"><p class="kicker">Your data, your choice</p><h1>Delete your TripSarthi account and data</h1><p class="lead">You can ask us to delete your TripSarthi account and the data in your workspace at any time. This page explains how, what is removed, and what the law requires us to keep.</p></div></section>
+<section class="section"><div class="wrap narrow prose">
+<h2>How to ask</h2>
+<ol><li><b>In the app or on the web:</b> sign in, open <em>Help &amp; support</em> and send a request titled &ldquo;Delete my account&rdquo;. This proves the request comes from you.</li>
+<li><b>Or by form / e-mail:</b> <a href="contact.html?topic=deletion#demo">use the contact form</a> (choose &ldquo;Delete my account and data&rdquo;) or write to <a href="mailto:{EMAIL}">{EMAIL}</a> from the e-mail address you registered with. We may ask one question to confirm it is you.</li></ol>
+<p>Only the workspace owner can ask for the whole workspace to be deleted. A team member can ask us to delete their own login.</p>
+<h2>What we delete</h2>
+<ul><li>Your login details, profile and phone-app sign-ins and push tokens.</li><li>Your contacts, enquiries, quotes, bookings, travellers, passport details, uploaded documents, WhatsApp conversations and files, tasks, notes, templates and settings.</li><li>Connections to WhatsApp, Meta, Google and payment accounts (we also revoke the access tokens we hold).</li></ul>
+<h2>What we must keep</h2>
+<ul><li><b>Tax invoices and credit notes</b> TripSarthi issued to you, and the payment records behind them: Indian GST law requires us to keep them for several years. They are kept only for that purpose.</li><li>Backups: deleted data leaves our encrypted backups within 35 days.</li><li>Records we need to handle a dispute or comply with a legal request, only for as long as needed.</li></ul>
+<h2>How long it takes</h2>
+<p>We confirm your request within 2 working days and complete the deletion within 30 days. We e-mail you when it is done. Deletion cannot be undone, so export anything you want to keep first (contacts, reports and invoices can be downloaded from the app).</p>
+<p><a class="btn btn-primary" href="contact.html?topic=deletion#demo">Request deletion {ico('arrow')}</a></p>
+</div></section>"""
+    return page('delete-account.html', 'Delete your TripSarthi account and data', 'How to ask TripSarthi to delete your account and workspace data, what is removed, what the law requires us to keep, and how long it takes.', body, '', crumbs=[('Delete account', SITE + '/delete-account.html')])
+
 def about_page():
     body = hero('About us', 'Built in India, for the people who <span class="grad">plan journeys</span>', 'TripSarthi is the workspace we wished every travel agency had — one calm place for enquiries, quotes, payments and paperwork.') + f'''
 <section class="section"><div class="wrap two"><div class="copy"><p class="kicker">Our story</p><h2>A <em>sarthi</em> is a companion on the road</h2>
@@ -340,7 +358,7 @@ def contact_page():
 <form class="card cform" id="contact-form" novalidate><div class="two-f"><label>Your name *<input name="name" required autocomplete="name"></label><label>Email *<input type="email" name="email" required autocomplete="email"></label></div>
 <div class="two-f"><label>Phone<input name="phone" type="tel" autocomplete="tel"></label><label>Agency / company<input name="company" autocomplete="organization"></label></div>
 <label class="chk" style="display:flex;gap:.55rem;align-items:flex-start;font-size:.86rem;line-height:1.4;margin:.2rem 0 .6rem"><input name="wa_opt_in" type="checkbox" style="margin-top:.2rem"><span>WhatsApp me about TripSarthi (optional — needs the phone number above). Reply STOP any time.</span></label>
-<label>I’d like to<select name="topic"><option value="demo">Book a demo</option><option value="pricing">Ask about pricing</option><option value="support">Get help or support</option><option value="partner">Discuss a partnership</option><option value="other">Something else</option></select></label>
+<label>I’d like to<select name="topic"><option value="demo">Book a demo</option><option value="pricing">Ask about pricing</option><option value="support">Get help or support</option><option value="partner">Discuss a partnership</option><option value="deletion">Delete my account and data</option><option value="other">Something else</option></select></label>
 <label>Message<textarea name="message" rows="5" placeholder="How many agents are on your team? Which tools do you use today?"></textarea></label>
 <div class="hp" aria-hidden="true"><label>Leave this field empty<input name="website" tabindex="-1" autocomplete="off"></label></div>
 <button class="btn btn-primary btn-lg btn-block" type="submit">Send message {ico('arrow')}</button><p class="fine" id="cf-note" role="status">We’ll reply by email or phone. Prefer to talk? Call {PHONES[0][0]}.</p></form></div>
@@ -363,6 +381,7 @@ def privacy_page():
 <h2>How we use it</h2><ul><li>To provide, secure and improve the service and to give support.</li><li>To reply to your enquiries and send service messages (for example billing and security notices).</li><li>To comply with law and to enforce our terms.</li></ul><p>We do not sell personal data.</p>
 <h2>Integrations</h2><p>If you connect third-party services (for example WhatsApp Business Platform, Meta Ads, Google Ads, Razorpay), data is exchanged with them as you direct. Their own terms and privacy policies apply. Customer lists used to build ad audiences are limited to contacts who have opted in and are hashed before upload.</p>
 <h2>Retention and deletion</h2><p>We keep workspace data while your account is active. You can export or ask us to delete it; we will delete or anonymise it within a reasonable period unless the law requires us to keep it.</p>
+<h2>Phone app</h2><p>The TripSarthi phone app uses the camera and photo library only when you attach a photo or document, the microphone only when you record a voice note, and notifications only if you allow them. It stores a sign-in token in the phone&rsquo;s secure storage and a temporary copy of recently viewed records so it keeps working without signal; this copy is erased when you sign out. We receive crash reports (the error message, app version and your user id) to fix problems. See <a href="delete-account.html">how to delete your account and data</a>.</p>
 <h2>Your rights and grievances</h2><p>Under India’s Digital Personal Data Protection Act, 2023 you may request access, correction, erasure and grievance redressal. Write to <a href="mailto:{EMAIL}">{EMAIL}</a> or call {PHONES[0][0]}.</p>
 <h2>Security</h2><p>We use encryption in transit, encryption at rest for sensitive fields, tenant isolation and access controls. No system is perfectly secure; please use strong passwords and tell us promptly about any concern.</p>
 <h2>Changes</h2><p>We will post updates on this page and change the date above.</p>
@@ -507,12 +526,12 @@ if __name__ == '__main__':
     ensure_variants()
     minify_css()
     patch_index()
-    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('partners.html', partners_page), ('app.html', app_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
+    pages = [('features.html', features_page), ('pricing.html', pricing_page), ('about.html', about_page), ('partners.html', partners_page), ('app.html', app_page), ('delete-account.html', delete_account_page), ('contact.html', contact_page), ('privacy.html', privacy_page), ('terms.html', terms_page), ('solutions.html', solutions_hub), ('blog/index.html', blog_index)]
     pages += [(f'{x["slug"]}.html', (lambda x=x: solution_page(x))) for x in SOLUTIONS] + [(f'blog/{a["slug"]}.html', (lambda a=a: article_page(a))) for a in ARTICLES]
     for f, fn in pages:
         write(f, fn())
     urls = [('', '1.0', 'weekly'), ('features.html', '0.9', 'monthly'), ('solutions.html', '0.8', 'monthly'), ('pricing.html', '0.9', 'monthly'), ('partners.html', '0.8', 'monthly'), ('app.html', '0.8', 'monthly')] + [(f'{x["slug"]}.html', '0.8', 'monthly') for x in SOLUTIONS] + \
-           [('blog/index.html', '0.7', 'weekly')] + [(f'blog/{a["slug"]}.html', '0.7', 'monthly') for a in ARTICLES] + [('about.html', '0.6', 'yearly'), ('contact.html', '0.7', 'yearly'), ('privacy.html', '0.3', 'yearly'), ('terms.html', '0.3', 'yearly')]
+           [('blog/index.html', '0.7', 'weekly')] + [(f'blog/{a["slug"]}.html', '0.7', 'monthly') for a in ARTICLES] + [('about.html', '0.6', 'yearly'), ('contact.html', '0.7', 'yearly'), ('privacy.html', '0.3', 'yearly'), ('terms.html', '0.3', 'yearly'), ('delete-account.html', '0.3', 'yearly')]
     sm = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + ''.join(f'  <url><loc>{SITE}/{u}</loc><lastmod>{TODAY}</lastmod><changefreq>{c}</changefreq><priority>{pr}</priority></url>\n' for u, pr, c in urls) + '</urlset>\n'
     open(os.path.join(ROOT, 'sitemap.xml'), 'w').write(sm); print('wrote sitemap.xml')
     keys = [('Features', 'features.html', 'Everything the product does'), ('Pricing', 'pricing.html', 'Starter ₹1,499, Growth ₹3,999, Pro ₹6,999 per month'), ('Travel agency software', 'travel-agency-software.html', 'Overview for Indian travel agencies'),

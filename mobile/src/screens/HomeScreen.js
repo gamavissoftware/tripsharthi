@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { View, ScrollView, TouchableOpacity, StyleSheet, Platform } from 'react-native'
+import { Text } from '../T'
 import { useFocusEffect } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { biz } from '../api'

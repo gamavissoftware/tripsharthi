@@ -36,7 +36,10 @@ class TripsController extends TravelBaseController
         if ($q = trim((string) $this->request->getGet('q'))) {
             $m->groupStart()->like('title', $q)->orLike('destination_text', $q)->groupEnd();
         }
-        $rows = $m->orderBy('id', 'DESC')->findAll(500);
+        // the phone pages through the list: ?limit=40&before_id=<smallest id it already has> (without them: the newest 500, as before)
+        if ($before = (int) $this->request->getGet('before_id')) { $m->where('id <', $before); }
+        $limit = (int) $this->request->getGet('limit');
+        $rows = $m->orderBy('id', 'DESC')->findAll($limit > 0 ? min($limit, 200) : 500);
         // The board shows who owns each trip. Names only (no email / role), looked up here so agents need no access to the team list.
         $ids = array_values(array_unique(array_filter(array_map(static fn ($r) => (int) ($r['owner_id'] ?? 0), $rows))));
         $names = [];

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, TouchableOpacity } from 'react-native'
+import { View, TouchableOpacity } from 'react-native'
+import { Text } from '../T'
 import { useFocusEffect } from '@react-navigation/native'
 import { api } from '../api'
 import { c, sp, type } from '../theme'

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, Platform } from 'react-native'
+import { View, FlatList, Platform } from 'react-native'
+import { Text } from '../T'
 import { useFocusEffect } from '@react-navigation/native'
 import { biz } from '../api'
 import { c, sp, type } from '../theme'

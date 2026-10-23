@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, useCallback } from 'react'
-import { View, Text, ActivityIndicator, BackHandler, Linking, Platform, TouchableOpacity, StyleSheet } from 'react-native'
+import { View, ActivityIndicator, BackHandler, Linking, Platform, TouchableOpacity, StyleSheet } from 'react-native'
+import { Text } from '../T'
 import { WebView } from 'react-native-webview'
 import { getToken, getAdminToken, adminSessionEnded, biz } from '../api'
 import { WEB_URL, ADMIN_URL } from '../config'

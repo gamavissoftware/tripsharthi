@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, Linking, Share, Alert, TouchableOpacity } from 'react-native'
+import { View, Linking, Share, Alert, TouchableOpacity } from 'react-native'
+import { Text } from '../T'
 import { api, inr } from '../api'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Pill, Btn, Input, Icon, Skeleton, ErrorBox, Empty, ok } from '../ui'

@@ -18,7 +18,7 @@ use App\Services\Email\EmailService;
  */
 final class ContactEnquiryService
 {
-    public const TOPICS = ['demo' => 'Demo request', 'pricing' => 'Pricing enquiry', 'support' => 'Help / support', 'partner' => 'Partnership', 'other' => 'Enquiry'];
+    public const TOPICS = ['demo' => 'Demo request', 'pricing' => 'Pricing enquiry', 'support' => 'Help / support', 'partner' => 'Partnership', 'deletion' => 'Account deletion request', 'other' => 'Enquiry'];
     public const MIN_FILL_MS = 1500;
     public const DEDUPE_MINUTES = 15;
 

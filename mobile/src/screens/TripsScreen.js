@@ -1,9 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native'
+import { View, FlatList, TextInput, TouchableOpacity, ScrollView, StyleSheet, Platform } from 'react-native'
+import { Text } from '../T'
 import { useFocusEffect } from '@react-navigation/native'
 import { api, biz } from '../api'
 import { c, sp, radius, type } from '../theme'
-import { Card, Chip, Pill, Icon, Avatar, Empty, ErrorBox, SkeletonList, Fab } from '../ui'
+import { Card, Chip, Pill, Icon, Avatar, Empty, ErrorBox, SkeletonList, Fab, Btn } from '../ui'
 import { inrShort, fmtDay } from '../logic'
 import OfflineBanner from '../OfflineBanner'
 
@@ -18,6 +19,8 @@ export default function TripsScreen({ navigation }) {
   const [meta, setMeta] = useState({ stale: false, at: null })
   const [refreshing, setRefreshing] = useState(false)
   const [err, setErr] = useState('')
+  const [moreLeft, setMoreLeft] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const alive = useRef(true), seq = useRef(0)
   useEffect(() => () => { alive.current = false }, [])
 
@@ -25,14 +28,24 @@ export default function TripsScreen({ navigation }) {
     const my = ++seq.current                                            // an older, slower answer must never replace a newer one
     try {
       setErr('')
-      const r = query.length >= 2 ? await biz.tripsSearchC(query, f) : await api.tripsC(f)
+      const r = await api.tripsPageC(f, query.length >= 2 ? query : '')
       if (!alive.current || my !== seq.current) return
-      setRows(r.data); setMeta({ stale: r.stale, at: r.at })
+      setRows(r.data); setMeta({ stale: r.stale, at: r.at }); setMoreLeft(r.data.length >= 40)
     } catch (e) { if (alive.current && my === seq.current) setErr(e.message) }
   }, [filter, q])
   useFocusEffect(useCallback(() => { load() }, [load]))
   useEffect(() => { const t = setTimeout(() => load(filter, q.trim()), 300); return () => clearTimeout(t) }, [q]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  async function loadMore() {
+    if (loadingMore || !rows || !rows.length) return
+    setLoadingMore(true)
+    try {
+      const before = Math.min(...rows.map(t => Number(t.id)))
+      const more = await api.tripsMore(filter, q.trim().length >= 2 ? q.trim() : '', before)
+      if (!alive.current) return
+      setRows(prev => [...prev, ...more.filter(m => !prev.some(p => p.id === m.id))]); setMoreLeft(more.length >= 40)
+    } catch { /* the button stays: try again */ } finally { if (alive.current) setLoadingMore(false) }
+  }
   const counts = rows && !q ? rows.reduce((m, t) => { m[t.status] = (m[t.status] || 0) + 1; return m }, {}) : {}
   return (
     <View style={{ flex: 1, backgroundColor: c.bg }}>
@@ -51,6 +64,7 @@ export default function TripsScreen({ navigation }) {
       {!rows && !err ? <SkeletonList n={4} /> : (
         <FlatList keyboardShouldPersistTaps="handled" keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'on-drag'} data={rows || []} keyExtractor={t => String(t.id)} contentContainerStyle={{ paddingHorizontal: sp.l, paddingBottom: 110 }} showsVerticalScrollIndicator={false}
           onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false) }} refreshing={refreshing}
+          ListFooterComponent={moreLeft ? <Btn label={loadingMore ? 'Loading…' : 'Load more'} kind="ghost" small busy={loadingMore} onPress={loadMore} style={{ marginTop: sp.s, marginBottom: sp.l }} /> : null}
           ListEmptyComponent={rows ? <Empty icon="airplane" title={q ? 'No enquiries found' : 'No enquiries here yet'} text={q ? 'Try another name or destination.' : 'Tap + to add a customer enquiry in about 20 seconds.'} action={q ? undefined : 'New enquiry'} onAction={() => navigation.navigate('NewEnquiry')} /> : null}
           renderItem={({ item: t }) => (
             <Card onPress={() => navigation.navigate('Trip', { id: Number(t.id) })} style={{ marginBottom: sp.m }}>

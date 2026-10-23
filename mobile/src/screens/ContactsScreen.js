@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native'
+import { View, FlatList, TextInput, TouchableOpacity, StyleSheet, Platform, Alert } from 'react-native'
+import { Text } from '../T'
 import { sendOrQueue } from '../outbox'
+import * as Contacts from 'expo-contacts'
 import { useFocusEffect } from '@react-navigation/native'
 import { contactApi } from '../api'
 import { c, sp, radius, type } from '../theme'
@@ -32,6 +34,21 @@ export default function ContactsScreen({ navigation, route }) {
     } catch (e) { if (alive.current && my === seq.current) setErr(e.message) }
   }, [])
   useFocusEffect(useCallback(() => { load(q); contactApi.summaryC().then(r => alive.current && setSum(r.data)).catch(() => {}) }, [])) // eslint-disable-line react-hooks/exhaustive-deps
+  async function importFromPhone() {
+    try {
+      const p = await Contacts.presentContactPickerAsync()
+      if (!p) return
+      const num = (p.phoneNumbers || []).map(x => x.number || x.digits).find(Boolean)
+      const name = p.name || [p.firstName, p.lastName].filter(Boolean).join(' ') || ''
+      if (!num) { Alert.alert('No phone number', 'That contact has no phone number saved, so it cannot be added.'); return }
+      const d = String(num).replace(/\D/g, '').replace(/^0+/, '')
+      const wa = String(num).trim().startsWith('+') ? d : (d.length === 10 ? '91' + d : d)
+      const email = (p.emails || []).map(x => x.email || x.address).find(Boolean)
+      const r = await sendOrQueue('contact', { name: name.trim() || num, wa_number: wa, email: email || undefined, source: 'manual' }, name || num)
+      if (r.queued) Alert.alert('Saved on your phone', 'No internet right now. This contact will be added automatically when you are back online.')
+      else { load(q.trim()); if (r.data && r.data.id) navigation.navigate('Contact', { id: Number(r.data.id) }) }
+    } catch (e) { Alert.alert('Could not import', e.message) }
+  }
   useEffect(() => { if (route?.params?.new) setSheet(true) }, [route?.params?.new])           // the Home shortcut opens the form straight away
   useEffect(() => { const t = setTimeout(() => load(q.trim()), 300); return () => clearTimeout(t) }, [q, load])   // search as you type
 
@@ -59,6 +76,7 @@ export default function ContactsScreen({ navigation, route }) {
               <Row avatar={x.name || x.wa_number} title={x.name || x.wa_number} last sub={[x.wa_number, x.city].filter(Boolean).join(' · ')} onPress={() => navigation.navigate('Contact', { id: Number(x.id) })}
                 right={<View style={{ alignItems: 'flex-end', gap: 4 }}>{!!x.lifecycle_stage && <Pill tone={STAGE_TONE[x.lifecycle_stage] || 'neutral'} text={x.lifecycle_stage} />}{String(x.opt_in) === '0' && <Text style={{ fontSize: 10.5, color: c.danger, fontWeight: '700' }}>opted out</Text>}</View>} />
             </Card>)} />)}
+      <TouchableOpacity onPress={importFromPhone} activeOpacity={0.85} accessibilityLabel="Import from phone" style={{ position: 'absolute', right: 22, bottom: 94, width: 48, height: 48, borderRadius: 24, backgroundColor: c.card, borderWidth: 1, borderColor: c.border, alignItems: 'center', justifyContent: 'center' }}><Icon name="download" size={22} color={c.primary} /></TouchableOpacity>
       <Fab icon="person-add" label="New contact" onPress={() => setSheet(true)} />
       <NewContact visible={sheet} onClose={() => setSheet(false)} onSaved={(ct) => { setSheet(false); load(q.trim()); if (ct?.id) navigation.navigate('Contact', { id: Number(ct.id) }) }} />
     </View>)

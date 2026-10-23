@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { View, Text, TouchableOpacity, AppState, Alert } from 'react-native'
+import { View, TouchableOpacity, AppState, Alert } from 'react-native'
+import { Text } from './T'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { onOutboxChange, outboxCount, flushOutbox, outboxFailed, outboxDismissFailed } from './outbox'
 import { Icon } from './ui'

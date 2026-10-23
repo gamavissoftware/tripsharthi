@@ -1,5 +1,6 @@
 import { Component } from 'react'
-import { View, Text, Linking, Platform } from 'react-native'
+import { View, Linking, Platform } from 'react-native'
+import { Text } from './T'
 import { c, sp, type } from './theme'
 import { Btn, Icon } from './ui'
 import { reportError } from './errors'

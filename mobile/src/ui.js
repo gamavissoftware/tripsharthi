@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback, createContext, useContext } from 'react'
-import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Animated, StyleSheet, ActivityIndicator, Platform, Modal, TextInput, Keyboard, Dimensions } from 'react-native'
+import { View, TouchableOpacity, ScrollView, RefreshControl, Animated, StyleSheet, ActivityIndicator, Platform, Modal, TextInput, Keyboard, Dimensions } from 'react-native'
+import { Text } from './T'
 import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import * as Haptics from 'expo-haptics'
@@ -244,7 +245,7 @@ export function Input({ label, error, style, hint, onFocus, ...p }) {
   return (
     <View ref={box} style={[{ marginBottom: sp.m }, style]}>
       {!!label && <Text style={[type.label, { marginBottom: 6 }]}>{tr(label)}</Text>}
-      <TextInput placeholderTextColor={c.faint} {...p} onFocus={(e) => { if (reveal) reveal(box); if (onFocus) onFocus(e) }} style={[s.input, error && { borderColor: c.danger }, p.multiline && { minHeight: 84, textAlignVertical: 'top' }]} />
+      <TextInput placeholderTextColor={c.faint} {...p} placeholder={typeof p.placeholder === 'string' ? tr(p.placeholder) : p.placeholder} onFocus={(e) => { if (reveal) reveal(box); if (onFocus) onFocus(e) }} style={[s.input, error && { borderColor: c.danger }, p.multiline && { minHeight: 84, textAlignVertical: 'top' }]} />
       {!!error ? <Text style={{ color: c.danger, fontSize: 12, marginTop: 4 }}>{error}</Text> : !!hint && <Text style={[type.small, { marginTop: 4 }]}>{hint}</Text>}
     </View>)
 }

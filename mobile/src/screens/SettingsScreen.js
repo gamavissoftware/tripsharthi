@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
-import { View, Text, Switch, TextInput, Linking, Alert, AppState, Platform } from 'react-native'
+import { View, Switch, TextInput, Linking, Alert, AppState, Platform } from 'react-native'
+import { Text } from '../T'
 import { pushApi } from '../api'
 import { c, sp, radius, type, themeChoice, saveThemeChoice } from '../theme'
 import { lang, saveLang, tr } from '../i18n'
+import * as Updates from 'expo-updates'
 import { Screen, Card, Section, Btn, Pill, Icon, Skeleton, ErrorBox, Chip } from '../ui'
 import { permissionState, registerForPush } from '../push'
 import { lockEnabled, lockAvailable, setLockEnabled } from '../lock'
@@ -21,6 +23,14 @@ function Toggle({ title, hint, value, onChange, disabled }) {
       <View style={{ flex: 1, paddingRight: 12 }}><Text style={{ color: c.text, fontWeight: '600', fontSize: 14.5 }}>{title}</Text>{!!hint && <Text style={[type.small, { marginTop: 2, lineHeight: 17 }]}>{hint}</Text>}</View>
       <Switch value={!!value} onValueChange={onChange} disabled={disabled} trackColor={{ true: c.primary, false: c.border }} thumbColor="#fff" />
     </View>)
+}
+
+/** Theme and language are read when the app starts, so offer to restart it right now (a release build can reload itself). */
+function restartPrompt() {
+  Alert.alert('Restart to apply', 'TripSarthi needs to restart to switch.', [
+    { text: 'Later', style: 'cancel' },
+    { text: 'Restart now', onPress: () => { Updates.reloadAsync().catch(() => Alert.alert('Close and reopen the app', 'Close TripSarthi completely and open it again to apply this.')) } },
+  ])
 }
 
 export default function SettingsScreen() {
@@ -84,11 +94,11 @@ export default function SettingsScreen() {
       <Card>
         <Text style={type.h3}>{tr('Appearance')}</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: sp.m }}>
-          {[['auto', 'Automatic (follow the phone)'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => <Chip key={k} label={l} active={look === k} onPress={() => { saveThemeChoice(k); setLook(k); Alert.alert(tr('Appearance'), tr('Close and reopen the app to apply this.')) }} />)}
+          {[['auto', 'Automatic (follow the phone)'], ['light', 'Light'], ['dark', 'Dark']].map(([k, l]) => <Chip key={k} label={l} active={look === k} onPress={() => { saveThemeChoice(k); setLook(k); restartPrompt() }} />)}
         </View>
         <Text style={[type.h3, { marginTop: sp.l }]}>{tr('Language')}</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginTop: sp.m }}>
-          {[['en', 'English'], ['hi', 'हिन्दी']].map(([k, l]) => <Chip key={k} label={l} active={tongue === k} onPress={() => { saveLang(k); setTongue(k); Alert.alert(tr('Language'), tr('Close and reopen the app to apply this.')) }} />)}
+          {[['en', 'English'], ['hi', 'हिन्दी']].map(([k, l]) => <Chip key={k} label={l} active={tongue === k} onPress={() => { saveLang(k); setTongue(k); restartPrompt() }} />)}
         </View>
       </Card>
 

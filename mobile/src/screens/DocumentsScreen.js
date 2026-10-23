@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { View, Text, Alert, Linking, Image, TouchableOpacity, Share } from 'react-native'
+import { View, Alert, Linking, Image, TouchableOpacity, Share } from 'react-native'
+import { Text } from '../T'
 import * as ImagePicker from 'expo-image-picker'
 import * as DocumentPicker from 'expo-document-picker'
 import { api, docsApi, contactApi } from '../api'

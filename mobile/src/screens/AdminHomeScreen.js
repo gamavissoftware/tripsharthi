@@ -1,4 +1,5 @@
-import { View, Text, Alert } from 'react-native'
+import { View, Alert } from 'react-native'
+import { Text } from '../T'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Row, Avatar, Section, Btn, Pill, Icon } from '../ui'
 import { ADMIN } from '../webRoutes'

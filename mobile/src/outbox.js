@@ -26,6 +26,24 @@ export async function outboxDismissFailed() { await write(FAILED, []); await tel
 export async function outboxClear() { try { await AsyncStorage.multiRemove([KEY, FAILED]) } catch { /* ignore */ } await tell() }
 
 /**
+ * Same idea for any other write that is safe to repeat later: marking a task done, a plain WhatsApp text reply. `path` is relative to /api/v1.
+ * The server's Idempotency-Key makes a retry count once. Returns { queued:false, data } or { queued:true, id }.
+ */
+export async function sendOrQueueRaw({ method = 'POST', path, body, summary, kind = 'raw' }) {
+  const key = newIdemKey()
+  try {
+    const r = await request(method, path, body, { 'Idempotency-Key': key })
+    return { queued: false, data: r.data }
+  } catch (e) {
+    if (outboxVerdict(e) !== 'retry' || e.status === 409) throw e
+    const items = await read(KEY)
+    items.push({ id: key, kind, method, path, body, summary: summary || 'Item', at: Date.now() })
+    await write(KEY, items); await tell()
+    return { queued: true, id: key }
+  }
+}
+
+/**
  * Sends a create-request now; if the phone has no signal, saves it and sends it later. Returns { queued:false, data } or { queued:true }.
  * The same Idempotency-Key is used for every attempt, so a retry after a dropped connection can never create a second copy.
  */
@@ -51,7 +69,7 @@ export async function flushOutbox() {
   try {
     for (;;) {
       const items = await read(KEY); if (!items.length) break
-      const it = items[0]; const def = KINDS[it.kind]
+      const it = items[0]; const def = it.path ? { method: it.method || 'POST', path: it.path } : KINDS[it.kind]
       if (!def) { await write(KEY, items.slice(1)); continue }
       try {
         await request(def.method, def.path, it.body, { 'Idempotency-Key': it.id })

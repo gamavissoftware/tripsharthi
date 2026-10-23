@@ -1,4 +1,5 @@
-import { View, Text, Linking, Alert, Platform } from 'react-native'
+import { View, Linking, Alert, Platform } from 'react-native'
+import { Text } from '../T'
 import Constants from 'expo-constants'
 import { c, sp, type } from '../theme'
 import { Screen, Card, Row, Avatar, Section, Icon, Pill } from '../ui'
@@ -55,7 +56,8 @@ export default function MoreScreen({ navigation, user, unread = 0, onSignOut, on
           <Row icon="notifications" tone={c.primary} title="Notifications" sub="Leads, replies, payments" onPress={go('Notifications')}
             right={unread > 0 ? <View style={{ backgroundColor: c.orange, minWidth: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 }}><Text style={{ color: '#fff', fontWeight: '800', fontSize: 12 }}>{unread > 99 ? '99+' : unread}</Text></View> : undefined} />
           <Row icon="phone-portrait" tone={c.navy} title="App settings" sub="Push alerts, app lock, quiet hours" onPress={go('Settings')} />
-          <Row icon="help-buoy" tone={c.teal} title="Help and support" sub="tripsarthi.com/contact" onPress={() => Linking.openURL('https://tripsarthi.com/contact.html').catch(() => Alert.alert('Could not open the link'))} last />
+          <Row icon="help-buoy" tone={c.teal} title="Help and support" sub="tripsarthi.com/contact" onPress={() => Linking.openURL('https://tripsarthi.com/contact.html').catch(() => Alert.alert('Could not open the link'))} />
+          <Row icon="trash-outline" tone={c.danger} title="Delete my account & data" sub="How to ask, and what we keep" onPress={() => Linking.openURL('https://tripsarthi.com/delete-account.html').catch(() => Alert.alert('Could not open the link'))} last />
         </Card>
       </Section>
 

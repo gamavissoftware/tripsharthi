@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { View, Text, TouchableOpacity, Alert } from 'react-native'
+import { View, TouchableOpacity, Alert } from 'react-native'
+import { Text } from './T'
 import { useAudioRecorder, useAudioRecorderState, RecordingPresets, AudioModule, setAudioModeAsync } from 'expo-audio'
 import { Icon } from './ui'
 import { c } from './theme'

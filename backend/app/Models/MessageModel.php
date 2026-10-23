@@ -185,4 +185,29 @@ class MessageModel extends BaseModel
             // Sprint 3: compute billable from category + window state
         ], true);
     }
+
+    /**
+     * Find text in WhatsApp messages across this workspace's conversations (newest first). Needs 3+ characters; % and _ in what was typed are
+     * literal. Each hit carries a short snippet around the match, the conversation id and who it is with.
+     * @return list<array<string,mixed>>
+     */
+    public static function searchText(int $tenantId, string $q, int $limit = 30): array
+    {
+        $q = trim($q);
+        if (mb_strlen($q) < 3) { return []; }
+        $like = '%' . strtr($q, ['\\' => '\\\\', '%' => '\\%', '_' => '\\_']) . '%';
+        $rows = db_connect()->query(
+            "SELECT m.id AS message_id, m.conversation_id, m.direction, m.type, m.body, m.created_at, c.contact_name, c.wa_number
+               FROM messages m JOIN conversations c ON c.id = m.conversation_id AND c.tenant_id = m.tenant_id
+              WHERE m.tenant_id = ? AND m.body LIKE ? AND m.type IN ('text','template','image','document','video') AND m.conversation_id IS NOT NULL
+              ORDER BY m.id DESC LIMIT " . max(1, min(50, $limit)), [$tenantId, $like])->getResultArray();
+        $needle = mb_strtolower($q);
+        foreach ($rows as &$r) {
+            $body = (string) $r['body']; $pos = mb_stripos($body, $needle);
+            $start = max(0, ($pos === false ? 0 : $pos) - 40);
+            $r['snippet'] = ($start > 0 ? '…' : '') . mb_substr($body, $start, 140) . (mb_strlen($body) > $start + 140 ? '…' : '');
+            unset($r['body']);
+        }
+        return $rows;
+    }
 }

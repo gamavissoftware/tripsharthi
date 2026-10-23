@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Text, TouchableOpacity, AppState } from 'react-native'
+import { TouchableOpacity, AppState } from 'react-native'
+import { Text } from './T'
 import * as Updates from 'expo-updates'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Icon } from './ui'

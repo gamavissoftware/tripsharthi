@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { ActivityIndicator, View, Text, TouchableOpacity, AppState, StyleSheet, Platform } from 'react-native'
+import { ActivityIndicator, View, TouchableOpacity, AppState, StyleSheet, Platform } from 'react-native'
+import { Text } from './src/T'
 import { Ionicons } from '@expo/vector-icons'
 import { useFonts } from 'expo-font'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -63,7 +64,7 @@ function Home({ unread, setUnread, chatUnread, setChatUnread, onSignOut, user, u
       tabBarStyle: { borderTopColor: c.border, backgroundColor: c.card, height: Platform.OS === 'ios' ? 86 : 70, paddingTop: 8, paddingBottom: Platform.OS === 'ios' ? 28 : 10 },
       tabBarIcon: ({ focused, color }) => <Ionicons name={ICON[route.name][focused ? 0 : 1]} size={24} color={color} />,
     })}>
-      <Tabs.Screen name="Home" options={{ headerShown: false }}>{(props) => <HomeScreen {...props} unread={unread} user={user} update={update} />}</Tabs.Screen>
+      <Tabs.Screen name="Home" options={{ headerShown: false, tabBarLabel: tr('Home') }}>{(props) => <HomeScreen {...props} unread={unread} user={user} update={update} />}</Tabs.Screen>
       <Tabs.Screen name="Enquiries" component={TripsScreen} options={{ title: tr('Enquiries') }} />
       <Tabs.Screen name="Chats" options={{ title: tr('WhatsApp chats'), tabBarLabel: tr('Chats'), tabBarBadge: chatUnread > 0 ? (chatUnread > 99 ? '99+' : chatUnread) : undefined, tabBarBadgeStyle: { backgroundColor: c.orange } }}>
         {(props) => <ChatsScreen {...props} onUnread={setChatUnread} />}

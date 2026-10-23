@@ -87,6 +87,9 @@ export const api = {
   login: (email, password) => request('POST', '/auth/login', { email, password }),
   // Reads go through the offline cache: { data, stale, at }. Writes below never do.
   tripsC: (status) => cached(`trips:${status || 'all'}`, () => request('GET', `/trips${status && status !== 'all' ? `?status=${status}` : ''}`).then(r => r.data)),
+  // the enquiry list is paged (40 at a time, newest first): `before` = the smallest id already on screen
+  tripsPageC: (status, q) => cached(`trips40:${status || 'all'}:${q || ''}`, () => request('GET', `/trips?limit=40${status && status !== 'all' ? `&status=${status}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`).then(r => r.data)),
+  tripsMore: (status, q, before) => request('GET', `/trips?limit=40&before_id=${Number(before)}${status && status !== 'all' ? `&status=${status}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`).then(r => r.data),
   tripC: (id) => cached(`trip:${id}`, () => request('GET', `/trips/${id}`).then(r => r.data)),
   trips: (status) => request('GET', `/trips${status && status !== 'all' ? `?status=${status}` : ''}`).then(r => r.data),
   trip: (id) => request('GET', `/trips/${id}`).then(r => r.data),
@@ -134,6 +137,8 @@ export const chatApi = {
   uploadMedia: (id, file) => upload(`/inbox/${id}/upload-media`, file),
   sendMedia: (id, m) => request('POST', `/inbox/${id}/messages`, { type: m.type, media_id: m.media_id, caption: m.caption || undefined, filename: m.filename }).then(r => r.data),
   mediaUrl: (mediaId) => `${API_URL}/api/v1/inbox/media/${encodeURIComponent(mediaId)}?token=${encodeURIComponent(token || '')}`,
+  // find a word in the messages of every conversation (3+ characters)
+  search: (q) => request('GET', `/inbox/search?q=${encodeURIComponent(q)}`).then(r => r.data),
   approvedTemplates: () => cached('tpl:approved', () => request('GET', '/templates?meta_status=approved').then(r => r.data)),
 }
 

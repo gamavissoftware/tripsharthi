@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { View, Text, ScrollView, Alert, TouchableOpacity } from 'react-native'
+import { View, ScrollView, Alert, TouchableOpacity } from 'react-native'
+import { Text } from './T'
 import { docsApi } from './api'
 import { c, sp, type } from './theme'
 import { Sheet, Input, Btn, Chip, ok } from './ui'
