@@ -50,14 +50,14 @@ All made and ready in `mobile/store/play/`: `app-icon-512.png`, `feature-graphic
 | Device or other IDs (push token) | Yes | Push notifications | No |
 | Crash logs / diagnostics | Yes | Fixing bugs | No |
 | Messages | Yes | WhatsApp chats of the user's business | No |
-- **Account deletion URL** (Play requires one): https://tripsarthi.com/delete-account.html (built: explains how to ask, what is deleted, what GST law makes us keep, 30-day timeline; requests arrive as website enquiries with the topic "Delete my account and data" or as a support request from inside the app). The app also links to it: More -> Delete my account & data. The team still deletes the data BY HAND today (there is no self-service button): write the runbook before launch.
+- **Account deletion URL** (Play requires one): https://tripsarthi.com/delete-account.html (built: explains how to ask, what is deleted, what GST law makes us keep, 30-day timeline; requests arrive as website enquiries with the topic "Delete my account and data" or as a support request from inside the app). The app also links to it: More -> Delete my account & data. The team deletes the data with `php spark account:delete` following `docs/ACCOUNT_DELETION_RUNBOOK.md` (no self-service button).
 - **Permissions to explain:** camera and photos (attach in chat), microphone (voice notes), notifications, biometrics (app lock). Location is not used.
 - **Content rating:** answer the questionnaire honestly (business tool, no user-generated public content) - expect "Everyone".
 - Declare the app uses no financial-services features: it only records payments, it does not move money.
 
 ## 6. Before you press Publish
 - [ ] Privacy policy reviewed by a lawyer and live
-- [x] Account deletion page live (the by-hand deletion runbook still needs writing)
+- [x] Account deletion page live and the runbook written (docs/ACCOUNT_DELETION_RUNBOOK.md)
 - [ ] Test account for Google reviewers created
 - [ ] Internal test installed and checked on a real phone: sign in, push, voice note, offline task, Hindi, dark mode
 - [ ] Data-safety form matches the table above
