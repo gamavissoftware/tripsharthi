@@ -101,3 +101,12 @@ The app checks when it opens and when it returns to the front (at most every 10 
 - OTA changes do NOT change the version number shown in the app. Do not raise `latest_version` in admin -> Mobile app for an OTA-only fix (that banner asks people to install a new APK). Raise it only when a new APK exists.
 - Roll back by publishing the previous good code again (`eas update --channel preview --message "revert"`) or `eas update:rollback`.
 - Builds made BEFORE 1.4.1 (1.4.0 and older) have no updater: they need one last manual install of 1.4.1.
+
+
+### Publishing an update: use the script, never `eas update` by hand
+```bash
+cd mobile
+scripts/publish-update.sh preview "what changed"       # APK builds
+scripts/publish-update.sh production "what changed"    # Play Store builds
+```
+It refuses to publish unless the tests pass, the tree is committed, the bundle contains https://app.tripsarthi.com and no development address, and the EAS environment holds EXPO_PUBLIC_API_URL (an update once went out without it and every phone lost its connection). Afterwards open the app on your phone twice and check admin -> Mobile app: "The newest update looks healthy". If it says "may be broken", open the app: if it cannot connect, run `eas update:rollback` (or publish the previous good commit with the script).

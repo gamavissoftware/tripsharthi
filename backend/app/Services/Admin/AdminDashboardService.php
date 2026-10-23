@@ -92,6 +92,8 @@ final class AdminDashboardService
         $add($a, 'invoice_mail', 'warn', 'Invoices not e-mailed', $notEmailed, 'resend from GST invoices', '/admin/invoices');
         $add($a, 'quiet', 'warn', 'Paying customers gone quiet', $quietPaid, 'not seen for 14+ days', '/admin/customers?segment=inactive');
         $add($a, 'not_activated', 'info', 'Customers who never set up', $count('not_activated'), 'signed up 3+ days ago, nothing added', '/admin/customers?segment=not_activated');
+        try { $uw = AppUpdateWatch::status(); } catch (\Throwable $e) { $uw = ['state' => 'unknown']; }
+        $add($a, 'app_update', 'danger', 'Phone app may be broken by an update', $uw['state'] === 'warn' ? (int) $uw['silent'] : 0, 'phones have stopped reporting since the newest update: open the app on your phone', '/admin/mobile-app');
         $add($a, 'payouts', 'info', 'Partners with commission ready to pay', $partnersToPay, '₹' . number_format(((int) $commissions['available']) / 100, 0) . ' is past its hold period', '/admin/partners');
         $setup = [];
         if (! $rz['configured']) { $setup[] = ['key' => 'razorpay', 'label' => 'Razorpay is not set up: customers cannot pay', 'to' => '/admin/payments']; }

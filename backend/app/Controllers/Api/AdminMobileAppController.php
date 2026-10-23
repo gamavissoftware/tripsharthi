@@ -13,7 +13,7 @@ class AdminMobileAppController extends TravelBaseController
     public function current()
     {
         $st = MobileAppLinks::status();
-        return $this->ok($st + ['errors' => \App\Services\Admin\AppErrorService::recent(), 'installs' => \App\Services\Admin\AppInstallService::summary($st['latest_version'] ?? null)]);
+        return $this->ok($st + ['errors' => \App\Services\Admin\AppErrorService::recent(), 'installs' => \App\Services\Admin\AppInstallService::summary($st['latest_version'] ?? null), 'update_watch' => \App\Services\Admin\AppUpdateWatch::status()]);
     }
 
     public function save()

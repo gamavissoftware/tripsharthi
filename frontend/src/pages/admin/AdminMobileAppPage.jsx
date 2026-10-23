@@ -25,6 +25,15 @@ export default function AdminMobileAppPage() {
     <div className="page">
       <div className="page-header"><div><h1 className="page-title">Mobile app</h1><p className="page-sub">Where customers download the TripSarthi phone app. Leave a box empty to hide that button.</p></div></div>
 
+      {st.update_watch && st.update_watch.state !== 'unknown' && (() => {
+        const w = st.update_watch, tone = w.state === 'warn' ? '#dc2626' : w.state === 'watching' ? '#d97706' : '#059669'
+        return (
+          <div className="card card-body" role={w.state === 'warn' ? 'alert' : undefined} style={{ marginBottom: 14, borderLeft: `4px solid ${tone}`, maxWidth: 980 }}>
+            <b style={{ color: tone }}>{w.state === 'warn' ? 'The newest update may be broken' : w.state === 'watching' ? 'Watching the newest update' : 'The newest update looks healthy'}</b>
+            <div style={{ color: 'var(--text-3)', fontSize: 13, marginTop: 2 }}>{w.message}{w.update_id ? <span> (update {w.update_id}, runtime {w.runtime}, published {String(w.published_at).slice(0, 16)} UTC)</span> : null}</div>
+          </div>)
+      })()}
+
       <div className="card card-body" style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 12, borderLeft: `4px solid ${st.available ? '#059669' : '#d97706'}` }}>
         {st.available ? <CheckCircle2 color="#059669" aria-hidden="true" /> : <CircleSlash color="#d97706" aria-hidden="true" />}
         <div><b>{st.available ? 'Download buttons are showing' : 'Download buttons are hidden'}</b>
