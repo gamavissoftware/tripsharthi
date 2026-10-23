@@ -396,6 +396,7 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
 
     $routes->group('mobile', ['filter' => 'auth'], static function (RouteCollection $routes): void {
         $routes->post('devices',        'Api\MobilePushController::registerDevice');
+        $routes->post('ping',           'Api\MobilePushController::ping');
         $routes->delete('devices',      'Api\MobilePushController::unregisterDevice');
         $routes->get('devices',         'Api\MobilePushController::devices');
         $routes->get('push/preferences', 'Api\MobilePushController::preferences');

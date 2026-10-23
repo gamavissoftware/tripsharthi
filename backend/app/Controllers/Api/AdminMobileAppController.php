@@ -10,7 +10,11 @@ use App\Services\Auth\CurrentUser;
 /** /api/v1/admin/mobile-app - the store links shown on the login screen and the website (filter: adminauth). 422 with plain words, never 401. */
 class AdminMobileAppController extends TravelBaseController
 {
-    public function current() { return $this->ok(MobileAppLinks::status() + ['errors' => \App\Services\Admin\AppErrorService::recent()]); }
+    public function current()
+    {
+        $st = MobileAppLinks::status();
+        return $this->ok($st + ['errors' => \App\Services\Admin\AppErrorService::recent(), 'installs' => \App\Services\Admin\AppInstallService::summary($st['latest_version'] ?? null)]);
+    }
 
     public function save()
     {

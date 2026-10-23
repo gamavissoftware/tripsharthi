@@ -46,6 +46,7 @@ import { cacheClear } from './src/cache'
 import { outboxClear } from './src/outbox'
 import PendingBanner from './src/PendingBanner'
 import OtaBanner from './src/OtaBanner'
+import { watchPing } from './src/appPing'
 import { lockEnabled, authenticate } from './src/lock'
 import { needsLock, updateState, updateLink } from './src/logic'
 
@@ -134,6 +135,8 @@ export default function App() {
     })
     return () => { dead = true; sub.remove() }
   }, [authed, unlock])
+
+  useEffect(() => { if (authed) return watchPing() }, [authed])      // tell the server which version this phone runs
 
   // who is signed in (name, role): drives the greeting and hides owner-only menu items from agents
   useEffect(() => { if (authed) biz.me().then(setUser).catch(() => {}) }, [authed])

@@ -62,6 +62,28 @@ export default function AdminMobileAppPage() {
         <div><button className="btn btn-primary" disabled={busy}><Link2 size={15} aria-hidden="true" /> {busy ? 'Saving…' : 'Save links'}</button></div>
       </form>
 
+      {st.installs && (
+        <div className="card card-body" style={{ marginBottom: 14, maxWidth: 980 }}>
+          <h3 style={{ margin: '0 0 4px' }}>Who uses the app <small style={{ color: 'var(--text-3)', fontWeight: 400 }}>(opened in the last {st.installs.days} days)</small></h3>
+          <div className="stat-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(170px,1fr))', gap: 12, margin: '10px 0 12px' }}>
+            <Kpi icon={Smartphone} tone="#0a6cc4" label="Phones" value={st.installs.phones} />
+            <Kpi icon={Smartphone} tone="#059669" label="Opened today" value={st.installs.active_24h} />
+            <Kpi icon={Smartphone} tone={st.installs.behind ? '#d97706' : '#059669'} label={st.installs.latest ? `Behind ${st.installs.latest}` : 'Behind newest'} value={st.installs.latest ? st.installs.behind : 'set newest version'} />
+          </div>
+          {st.installs.phones === 0
+            ? <p style={{ color: 'var(--text-3)', margin: 0 }}>No phone has reported in yet. Each phone reports when the app is opened (version 1.5.1 and newer).</p>
+            : <div style={{ overflowX: 'auto' }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                {st.installs.versions.map(v => <span key={v.version} className="badge" style={{ background: v.behind ? '#fef3c7' : '#d1fae5', color: v.behind ? '#92400e' : '#065f46', padding: '4px 10px', borderRadius: 999, fontWeight: 700, fontSize: 13 }}>{v.version}: {v.phones} {v.phones === 1 ? 'phone' : 'phones'}{v.behind ? ' · needs update' : ''}</span>)}
+              </div>
+              <table className="data-table" style={{ width: '100%' }}>
+                <thead><tr><th>Who</th><th>Workspace</th><th>Version</th><th>Phone</th><th>Last opened</th></tr></thead>
+                <tbody>{st.installs.recent.map(r => (
+                  <tr key={r.id}><td>{r.user_name || '-'}</td><td>{r.workspace || '-'}</td><td>{r.app_version}{r.update_id ? <small style={{ color: 'var(--text-3)' }}> · update {r.update_id}</small> : null}</td><td>{r.device_name || r.platform}</td><td>{String(r.last_seen_at).replace('T', ' ').slice(0, 16)}</td></tr>))}</tbody>
+              </table>
+            </div>}
+        </div>)}
+
       <div className="card card-body" style={{ marginTop: 14, maxWidth: 980 }}>
         <h3 style={{ margin: '0 0 4px' }}>Problems reported by the app <small style={{ color: 'var(--text-3)', fontWeight: 400 }}>(last 14 days)</small></h3>
         {(st.errors || []).length === 0

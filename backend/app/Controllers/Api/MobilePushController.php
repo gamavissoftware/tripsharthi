@@ -56,4 +56,11 @@ class MobilePushController extends TravelBaseController
             ->orderBy('id', 'DESC')->limit(40)->get()->getResultArray();
         return $this->ok($rows);
     }
+
+    /** POST /mobile/ping { install_id, app_version, platform, runtime_version?, update_id?, device_name? } - the app says hello when it opens (no push token needed). */
+    public function ping()
+    {
+        $ok = \App\Services\Admin\AppInstallService::ping(CurrentUser::id(), CurrentUser::tenantId(), $this->body());
+        return $this->respond(['success' => $ok], $ok ? 200 : 422);
+    }
 }
