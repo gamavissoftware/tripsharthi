@@ -1360,18 +1360,37 @@ class FlowEngine
 
         $tenantId  = (int) $ctx['tenantId'];
         $contactId = (int) $ctx['contact']['id'];
-        $pipeline  = (new \App\Models\PipelineModel())->ensureDefault($tenantId);
-        $stages    = (new \App\Models\PipelineStageModel())->forPipeline($tenantId, (int) $pipeline['id']);
+        // Optional pipeline_id / stage_id pick a specific pipeline (must belong to this workspace, else the default is used).
+        $pipeline = null;
+        if ((int) ($d['pipeline_id'] ?? 0) > 0) {
+            $pipeline = (new \App\Models\PipelineModel())->setTenant($tenantId)->find((int) $d['pipeline_id']);
+        }
+        $pipeline = $pipeline ?: (new \App\Models\PipelineModel())->ensureDefault($tenantId);
+        $stages   = (new \App\Models\PipelineStageModel())->forPipeline($tenantId, (int) $pipeline['id']);
         if (empty($stages)) {
             return ['outcome' => 'advance', 'sourceHandle' => 'next', 'detail' => 'No pipeline stages — skipped'];
+        }
+        $stageId = (int) $stages[0]['id'];
+        foreach ($stages as $s) {
+            if ((int) ($d['stage_id'] ?? 0) === (int) $s['id']) { $stageId = (int) $s['id']; }
+        }
+
+        // "Once per contact": a returning lead who already has an open deal in this pipeline does not get a second one.
+        if (! empty($d['skip_if_open'])) {
+            $open = (new \App\Models\DealModel())->setTenant($tenantId)
+                ->where('pipeline_id', (int) $pipeline['id'])->where('primary_contact_id', $contactId)->where('status', 'open')->first();
+            if ($open) {
+                return ['outcome' => 'advance', 'sourceHandle' => 'next', 'detail' => "Deal skipped: contact already has open deal #{$open['id']}"];
+            }
         }
 
         (new \App\Models\DealModel())->setTenant($tenantId)->insert([
             'title'              => $title,
             'pipeline_id'        => (int) $pipeline['id'],
-            'stage_id'           => (int) $stages[0]['id'],
+            'stage_id'           => $stageId,
             'primary_contact_id' => $contactId,
             'value_amount'       => (int) ($d['value_amount'] ?? 0),
+            'source'             => ($d['source'] ?? '') !== '' ? mb_substr((string) $d['source'], 0, 50) : null,
             'status'             => 'open',
             'last_activity_at'   => date('Y-m-d H:i:s'),
         ]);

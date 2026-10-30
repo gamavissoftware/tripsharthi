@@ -17,12 +17,18 @@ final class MarketingWorkspaceAccess
 {
     public const HEADER = 'X-TS-Marketing-Workspace';
 
-    /** API areas (first path segment after /api/v1/) the WhatsApp module needs. */
-    private const AREAS = ['inbox', 'templates', 'campaigns', 'contacts', 'segments', 'tags', 'ai', 'payments', 'custom-fields', 'users', 'whatsapp', 'waba', 'flows', 'quick-replies', 'conversations', 'notifications'];
+    /** API areas (first path segment after /api/v1/) the WhatsApp and CRM modules need. */
+    private const AREAS = ['inbox', 'templates', 'campaigns', 'contacts', 'segments', 'tags', 'ai', 'payments', 'custom-fields', 'users', 'whatsapp', 'waba', 'flows', 'quick-replies', 'conversations', 'notifications',
+        // the admin CRM module (Subscriber Funnel): leads, pipeline, tasks, meetings, notes, Facebook lead-ad connection, e-mail marketing, saved views
+        'pipelines', 'deals', 'tasks', 'meetings', 'notes', 'activities', 'accounts', 'meta-integrations', 'meta-leads', 'email-marketing', 'crm', 'web-forms', 'lead-sources', 'imports'];
+
+    /** Inside an allowed area, these stay closed (the workspace audit log is the customer-facing record of support access itself). */
+    private const DENY = ['crm/audit-logs'];
 
     public static function allowed(string $path): bool
     {
         $p = trim((string) preg_replace('#^(?:.*?/)?api/v1/#', '', trim($path, '/') . '/'), '/');
+        foreach (self::DENY as $d) { if ($p === $d || str_starts_with($p, $d . '/')) { return false; } }
         $first = explode('/', $p, 2)[0];
         return in_array($first, self::AREAS, true);
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { HashRouter, Routes, Route, NavLink, Navigate } from 'react-router-dom'
-import { Smartphone, LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, Inbox, Megaphone, LayoutTemplate, PanelLeftClose, PanelLeftOpen, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText } from 'lucide-react'
+import { Smartphone, LayoutDashboard, Building2, CreditCard, MessagesSquare, LogOut, Menu, Inbox, Megaphone, LayoutTemplate, PanelLeftClose, PanelLeftOpen, ShieldCheck, Tag, Handshake, MessageCircle, Wallet, LifeBuoy, Mail, Send, ScrollText, FileText, Users, Kanban, ListTodo, Workflow, CalendarClock, Target } from 'lucide-react'
 import { ToastProvider } from '../components/Toast'
 import { isLoggedIn } from '../api/client'
 import { adminAuth } from '../api/adminAuth'
@@ -25,6 +25,18 @@ import AdminPaymentsPage from '../pages/admin/AdminPaymentsPage'
 import AdminWhatsappPage from '../pages/admin/AdminWhatsappPage'
 import AdminWhatsappWorkspacePage from '../pages/admin/AdminWhatsappWorkspacePage'
 import AdminWaModulePage from '../pages/admin/AdminWaModulePage'
+import AdminCrmPage from '../pages/admin/AdminCrmPage'
+import AdminCrmGate from '../pages/admin/AdminCrmGate'
+import ContactsPage from '../pages/ContactsPage'
+import ContactDetailPage from '../pages/ContactDetailPage'
+import DealsPage from '../pages/DealsPage'
+import DealDetailPage from '../pages/DealDetailPage'
+import DealCreatePage from '../pages/DealCreatePage'
+import TasksPage from '../pages/TasksPage'
+import MeetingsPage from '../pages/MeetingsPage'
+import FlowsPage from '../pages/FlowsPage'
+import FlowBuilderPage from '../pages/FlowBuilderPage'
+import TagsPage from '../pages/TagsPage'
 
 // One place to add sections as the admin grows (offers, partners, WhatsApp, ...).
 const NAV = [
@@ -42,6 +54,14 @@ const NAV = [
     { to: '/admin/partners',      label: 'Partners',      icon: Handshake },
     { to: '/admin/inbox',         label: 'Website inbox', icon: MessagesSquare },
     { to: '/admin/access-log',    label: 'Access log',    icon: ScrollText },
+  ] },
+  { section: 'CRM', items: [
+    { to: '/admin/crm',  label: 'Lead dashboard', icon: Target, end: true },
+    { to: '/contacts',   label: 'Leads',          icon: Users },
+    { to: '/deals',      label: 'Pipeline',       icon: Kanban },
+    { to: '/tasks',      label: 'Follow-ups',     icon: ListTodo },
+    { to: '/meetings',   label: 'Meetings',       icon: CalendarClock },
+    { to: '/flows',      label: 'Automations',    icon: Workflow },
   ] },
   { section: 'WhatsApp', items: [
     { to: '/admin/whatsapp',           label: 'Overview',       icon: MessageCircle, end: true },
@@ -120,6 +140,17 @@ function Shell({ user, onLogout }) {
           <Route path="/admin/whatsapp/campaigns" element={<AdminWaModulePage kind="campaigns" />} />
           <Route path="/admin/whatsapp/templates" element={<AdminWaModulePage kind="templates" />} />
           <Route path="/admin/whatsapp/:id" element={<AdminWhatsappWorkspacePage />} />
+          <Route path="/admin/crm" element={<AdminCrmPage />} />
+          <Route path="/contacts" element={<AdminCrmGate title="Leads"><ContactsPage /></AdminCrmGate>} />
+          <Route path="/contacts/:id" element={<AdminCrmGate title="Lead"><ContactDetailPage /></AdminCrmGate>} />
+          <Route path="/deals" element={<AdminCrmGate title="Pipeline"><DealsPage /></AdminCrmGate>} />
+          <Route path="/deals/new" element={<AdminCrmGate title="New deal"><DealCreatePage /></AdminCrmGate>} />
+          <Route path="/deals/:id" element={<AdminCrmGate title="Deal"><DealDetailPage /></AdminCrmGate>} />
+          <Route path="/tasks" element={<AdminCrmGate title="Follow-ups"><TasksPage /></AdminCrmGate>} />
+          <Route path="/meetings" element={<AdminCrmGate title="Meetings"><MeetingsPage /></AdminCrmGate>} />
+          <Route path="/flows" element={<AdminCrmGate title="Automations"><FlowsPage /></AdminCrmGate>} />
+          <Route path="/flows/:id" element={<AdminCrmGate title="Automation"><FlowBuilderPage /></AdminCrmGate>} />
+          <Route path="/tags" element={<AdminCrmGate title="Tags"><TagsPage /></AdminCrmGate>} />
           <Route path="/admin/inbox" element={<AdminInboxPage />} />
           <Route path="/admin/access-log" element={<AdminAccessLogPage />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />

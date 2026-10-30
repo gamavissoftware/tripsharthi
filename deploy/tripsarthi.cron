@@ -24,6 +24,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 0 4 * * *    www-data  cd {$APP_DIR}/backend && php spark subscription:remind       >> /dev/null 2>&1
 # every minute: send the next few queued TripSarthi marketing e-mails (admin app -> Email marketing)
 * * * * *    www-data  cd {$APP_DIR}/backend && php spark platform-email:send        >> /dev/null 2>&1
+*/10 * * * *  www-data  cd {$APP_DIR}/backend && php spark crm:reconcile              >> /dev/null 2>&1
 0 5 * * *    www-data  cd {$APP_DIR}/backend && php spark waba:billing-sync         >> /dev/null 2>&1
 # nightly backup of the database + uploaded files (kept 14 days in /var/backups/tripsarthi)
 30 1 * * *   root      APP_DIR={$APP_DIR} {$APP_DIR}/deploy/backup.sh >> /var/log/tripsarthi-backup.log 2>&1

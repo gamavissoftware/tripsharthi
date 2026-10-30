@@ -119,6 +119,14 @@ const ADMIN = [
     I('/admin/inbox', 'Website inbox', 'chatbubbles'),
     I('/admin/access-log', 'Access log', 'list'),
   ]),
+  G('crm', 'CRM', 'funnel', [
+    I('/admin/crm', 'Lead dashboard', 'analytics'),
+    I('/contacts', 'Leads', 'people'),
+    I('/deals', 'Pipeline', 'git-network'),
+    I('/tasks', 'Follow-ups', 'checkbox'),
+    I('/meetings', 'Meetings', 'calendar'),
+    I('/flows', 'Automations', 'flash'),
+  ]),
   G('whatsapp', 'WhatsApp', 'logo-whatsapp', [
     I('/admin/whatsapp', 'Overview', 'logo-whatsapp'),
     I('/admin/whatsapp/inbox', 'WhatsApp inbox', 'chatbubbles'),

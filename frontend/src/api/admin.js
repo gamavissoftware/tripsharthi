@@ -95,4 +95,11 @@ export const admin = {
   updatePromotion:    (id, b)   => api.put(`/admin/promotions/${id}`, b).then(unwrap),
   grants:             ()        => api.get('/admin/grants').then(unwrap),
   grant:              (b)       => api.post('/admin/grants', b).then(unwrap),
+  // TripSarthi's own CRM (Subscriber Funnel)
+  crmStatus:          ()        => api.get('/admin/crm/status').then(unwrap),
+  crmDashboard:       (days)    => api.get('/admin/crm/dashboard?days=' + days).then(unwrap),
+  crmSetup:           ()        => api.post('/admin/crm/setup', {}).then(unwrap),
+  crmReconcile:       ()        => api.post('/admin/crm/reconcile', {}).then(unwrap),
+  crmMailRelay:       ()        => api.post('/admin/crm/mail-relay', {}).then(unwrap),
+  crmAutomation:      (key, on) => api.post(`/admin/crm/automations/${key}/${on ? 'on' : 'off'}`, {}).then(unwrap),
 }
