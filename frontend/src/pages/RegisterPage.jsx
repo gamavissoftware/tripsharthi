@@ -5,6 +5,7 @@ import { readReferral, clearReferral } from '../lib/referral'
 import { toast } from '../components/Toast'
 import Field from '../components/FormField'
 import { firstInvalid, shake } from '../lib/formFocus'
+import { trackMeta } from '../lib/metaPixel'
 
 const WEBSITE = typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:8080' : 'https://tripsarthi.com'
 
@@ -62,6 +63,7 @@ export default function RegisterPage({ onLogin, onShowLogin, onShowForgot }) {
       const data = await api.post('/auth/register', { name: f.name.trim(), company: f.company.trim(), email: f.email.trim(), password: f.password, ...(f.phone.trim() ? { phone: f.phone.trim() } : {}), wa_opt_in: waOptIn, email_opt_in: emailOptIn, ...(ref ? { ref } : {}) })
       clearReferral()
       saveToken(data.token)
+      trackMeta('CompleteRegistration', { content_name: 'TripSarthi Free Signup', status: true })
       toast.success('Welcome to TripSarthi', 'Your workspace is ready.')
       onLogin?.(data.user)
     } catch (err) {

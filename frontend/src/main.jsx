@@ -8,11 +8,13 @@ import { captureReferral } from './lib/referral'
 import { installClipboardFallback } from './lib/clipboardFallback'
 import { installFormValidation } from './lib/formValidation'
 import { setupImpersonation } from './lib/impersonation'
+import { installMetaPixel } from './lib/metaPixel'
 
 setupImpersonation()                               // a TripSarthi support session opened from the admin app (separate token, this tab only)
 captureReferral()                                  // remember ?ref=PARTNERCODE from a partner's link before anything else runs
 
 installClipboardFallback()
+installMetaPixel()                               // Meta Pixel (only when VITE_META_PIXEL_ID is set at build time)
 installFormValidation()                          // red highlight + message + toast for every form's required / format checks
 
 createRoot(document.getElementById('root')).render(
