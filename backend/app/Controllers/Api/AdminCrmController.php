@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers\Api;
 
 use App\Services\Admin\PlatformCrmService;
+use App\Services\Admin\PlatformFacebookConnector;
 use App\Services\Auth\CurrentUser;
 
 /**
@@ -31,4 +32,14 @@ class AdminCrmController extends TravelBaseController
     public function mailRelay() { return $this->run(fn () => (new PlatformCrmService())->useMailRelay()); }
     public function on($key = null)  { return $this->run(fn () => (new PlatformCrmService())->activate((string) $key, true, $this->adminId())); }
     public function off($key = null) { return $this->run(fn () => (new PlatformCrmService())->activate((string) $key, false, $this->adminId())); }
+    public function facebookConnect()
+    {
+        $b = $this->request->getJSON(true) ?: [];
+        return $this->run(fn () => (new PlatformFacebookConnector())->connect((string) ($b['page_id'] ?? ''), (string) ($b['token'] ?? ''), $this->adminId()));
+    }
+    public function facebookImport()
+    {
+        $b = $this->request->getJSON(true) ?: [];
+        return $this->run(fn () => (new PlatformFacebookConnector())->importPast((int) ($b['months'] ?? 4)));
+    }
 }

@@ -100,6 +100,8 @@ export const admin = {
   crmDashboard:       (days)    => api.get('/admin/crm/dashboard?days=' + days).then(unwrap),
   crmSetup:           ()        => api.post('/admin/crm/setup', {}).then(unwrap),
   crmReconcile:       ()        => api.post('/admin/crm/reconcile', {}).then(unwrap),
+  crmFacebookConnect: (page_id, token) => api.post('/admin/crm/facebook/connect', { page_id, token }).then(unwrap),
+  crmFacebookImport:  (months)  => api.post('/admin/crm/facebook/import', { months }).then(unwrap),
   crmMailRelay:       ()        => api.post('/admin/crm/mail-relay', {}).then(unwrap),
   crmAutomation:      (key, on) => api.post(`/admin/crm/automations/${key}/${on ? 'on' : 'off'}`, {}).then(unwrap),
 }

@@ -535,6 +535,8 @@ $routes->group('api/v1', ['filter' => ['cors', 'ratelimit']], static function (R
         $routes->get('crm/dashboard',                       'Api\AdminCrmController::dashboard');
         $routes->post('crm/setup',                          'Api\AdminCrmController::setup');
         $routes->post('crm/reconcile',                      'Api\AdminCrmController::reconcile');
+        $routes->post('crm/facebook/connect',               'Api\\AdminCrmController::facebookConnect');
+        $routes->post('crm/facebook/import',                'Api\\AdminCrmController::facebookImport');
         $routes->post('crm/mail-relay',                     'Api\AdminCrmController::mailRelay');
         $routes->post('crm/automations/(:segment)/on',      'Api\AdminCrmController::on/$1');
         $routes->post('crm/automations/(:segment)/off',     'Api\AdminCrmController::off/$1');

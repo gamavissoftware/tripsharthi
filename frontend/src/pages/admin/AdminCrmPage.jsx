@@ -52,15 +52,24 @@ function FacebookPanel({ onChange }) {
 
   async function connect(e) {
     e.preventDefault()
-    if (!form.page_id.trim() || form.page_access_token.trim().length < 10) { toast.error('Missing details', 'Enter the Facebook Page ID and its Page access token.'); return }
+    if (!/^\d{5,25}$/.test(form.page_id.trim())) { toast.error('Check the Page ID', 'It is a number, e.g. 1384403011425937.'); return }
+    if (form.page_access_token.trim().length < 20) { toast.error('Missing token', 'Paste the access token from Meta Graph API Explorer.'); return }
     setBusy(true)
     try {
-      const c = await api.post('/meta-integrations', { page_id: form.page_id.trim(), page_access_token: form.page_access_token.trim() })
-      const id = c.data?.id ?? c.id
-      if (id) { try { await api.post(`/meta-integrations/${id}/subscribe`, {}) } catch (err) { toast.error('Connected, but not subscribed yet', err.message) } }
-      toast.success('Page connected', 'New lead-form enquiries will now appear in the CRM.')
+      const r = (await admin.crmFacebookConnect(form.page_id.trim(), form.page_access_token.trim()))
+      toast.success(`Connected: ${r.page_name || r.page_id}`, `${r.forms} lead form(s) holding ${r.leads_in_forms} leads. ${r.subscribed ? 'Real-time delivery is on.' : 'Not subscribed yet.'}${r.long_lived ? '' : ' Token may expire soon.'}`)
+      if (r.warning) toast.error('Note', r.warning)
       setForm({ page_id: '', page_access_token: '' }); load(); onChange?.()
-    } catch (err) { toast.error('Could not connect', err.message || 'Check the Page ID and token.') } finally { setBusy(false) }
+    } catch (err) { toast.error('Could not connect', err.message || 'Meta refused the details.') } finally { setBusy(false) }
+  }
+  async function importPast() {
+    if (!(await confirmAsk('Bring in the leads Meta still holds (up to the last 4 months) as contacts? No messages are sent.'))) return
+    setBusy(true)
+    try {
+      const r = await admin.crmFacebookImport(4)
+      toast.success(`Imported ${r.inserted} new, ${r.updated} already there`, `${r.deals} added to the funnel${r.skipped ? `, ${r.skipped} without a phone or e-mail skipped` : ''}.`)
+      load(); onChange?.()
+    } catch (err) { toast.error('Import failed', err.message) } finally { setBusy(false) }
   }
   async function test(id) {
     try { const d = await api.post(`/meta-integrations/${id}/test`, {}); toast.success('Test lead created', `Contact #${d.contact_id} — see Leads.`) } catch (err) { toast.error('Test failed', err.message) }
@@ -78,18 +87,19 @@ function FacebookPanel({ onChange }) {
         <div style={{ display: 'grid', gap: 8, marginBottom: 12 }}>
           {rows.map(r => (
             <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', border: '1px solid #edf1f7', borderRadius: 10, padding: '9px 12px' }}>
-              <b>{r.config?.page_name || `Page ${r.page_id}`}</b><span style={{ color: 'var(--text-3)', fontSize: 13 }}>ID {r.page_id}</span>
+              <b>{r.config?.page_name || `Page ${r.page_id} (not verified - reconnect)`}</b><span style={{ color: 'var(--text-3)', fontSize: 13 }}>ID {r.page_id}</span>
               <Pill color={r.status === 'active' ? 'var(--success)' : 'var(--text-3)'}>{r.status}</Pill>
               <span style={{ flex: 1 }} />
               <button className="btn btn-secondary btn-sm" onClick={() => test(r.id)}>Send test lead</button>
+              <button className="btn btn-secondary btn-sm" disabled={busy} onClick={importPast}>Import past leads</button>
               <button className="btn btn-secondary btn-sm" onClick={() => remove(r.id)}>Disconnect</button>
             </div>
           ))}
         </div>
       )}
       <form onSubmit={connect} noValidate style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-        <div style={{ flex: '1 1 160px' }}><label htmlFor="fbp" style={{ fontSize: 13 }}>Facebook Page ID</label><input id="fbp" className="form-input" value={form.page_id} onChange={e => setForm({ ...form, page_id: e.target.value })} placeholder="e.g. 104837261938475" /></div>
-        <div style={{ flex: '2 1 260px' }}><label htmlFor="fbt" style={{ fontSize: 13 }}>Page access token</label><input id="fbt" className="form-input" type="password" autoComplete="off" value={form.page_access_token} onChange={e => setForm({ ...form, page_access_token: e.target.value })} placeholder="Long-lived Page token with leads_retrieval" /></div>
+        <div style={{ flex: '1 1 160px' }}><label htmlFor="fbp" style={{ fontSize: 13 }}>Facebook Page ID</label><input id="fbp" className="form-input" value={form.page_id} onChange={e => setForm({ ...form, page_id: e.target.value })} placeholder="e.g. 1384403011425937" /></div>
+        <div style={{ flex: '2 1 260px' }}><label htmlFor="fbt" style={{ fontSize: 13 }}>Facebook access token</label><input id="fbt" className="form-input" type="password" autoComplete="off" value={form.page_access_token} onChange={e => setForm({ ...form, page_access_token: e.target.value })} placeholder="Access token from Graph API Explorer (TripSarthi app)" /></div>
         <button className="btn btn-primary" disabled={busy}>{busy ? 'Connecting…' : 'Connect Page'}</button>
       </form>
     </div>
