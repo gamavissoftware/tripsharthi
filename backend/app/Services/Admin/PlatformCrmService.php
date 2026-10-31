@@ -232,20 +232,55 @@ final class PlatformCrmService
         return (int) db_connect()->query("SELECT COUNT(DISTINCT a.contact_id) n FROM lead_attributions a JOIN contact_tags ct ON ct.contact_id = a.contact_id AND ct.tag_id = ? WHERE a.tenant_id = ? AND a.touch = 'first' AND a.touched_at >= ? AND COALESCE(NULLIF(a.campaign_name,''), a.campaign_id, '(no campaign)') = ?", [$tagId, $t, $since, $campaign])->getRow()->n;
     }
 
+    // ── intake ──────────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Puts one Facebook lead into the Subscriber Funnel ("New lead") the moment it exists, whether or not any automation is switched on.
+     * Idempotent: a contact that already has a deal in the funnel (open, won or lost) gets no second one. No flow trigger is fired here.
+     * Returns the deal id, or null when nothing was created (CRM not set up, not this workspace, already in the funnel).
+     */
+    public function adoptLead(int $tenantId, int $contactId): ?int
+    {
+        if ($tenantId !== $this->tenant()) { return null; }
+        $pl = (new PipelineModel())->setTenant($tenantId)->where('entity_type', 'deal')->where('name', self::PIPELINE)->first();
+        if (! $pl) { return null; }
+        $db = db_connect();
+        if ($db->query('SELECT 1 FROM deals WHERE tenant_id = ? AND pipeline_id = ? AND primary_contact_id = ? AND deleted_at IS NULL LIMIT 1', [$tenantId, (int) $pl['id'], $contactId])->getRow()) { return null; }
+        $stage = (new PipelineStageModel())->setTenant($tenantId)->where('pipeline_id', (int) $pl['id'])->where('name', 'New lead')->first();
+        $contact = $db->table('contacts')->select('id,name')->where('id', $contactId)->where('tenant_id', $tenantId)->where('deleted_at', null)->get()->getRowArray();
+        if (! $stage || ! $contact) { return null; }
+        return (int) (new DealModel())->setTenant($tenantId)->insert([
+            'title' => 'Facebook Ads lead', 'pipeline_id' => (int) $pl['id'], 'stage_id' => (int) $stage['id'], 'primary_contact_id' => $contactId,
+            'value_amount' => 0, 'status' => 'open', 'source' => 'facebook_ads', 'last_activity_at' => $this->stamp(),
+        ], true) ?: null;
+    }
+
+    /** Catch-up for leads that arrived before the CRM was set up, or while something failed. @return int deals created */
+    public function adoptMissing(): int
+    {
+        $t = $this->tenant();
+        if ($t === null) { return 0; }
+        $ids = array_column(db_connect()->query("SELECT id FROM contacts WHERE tenant_id = ? AND source = 'meta_lead_ads' AND deleted_at IS NULL ORDER BY id", [$t])->getResultArray(), 'id');
+        $n = 0;
+        foreach ($ids as $id) { if ($this->adoptLead($t, (int) $id) !== null) { $n++; } }
+        return $n;
+    }
+
     // ── reconcile ───────────────────────────────────────────────────────────────────────────
 
     /**
      * Moves every open Subscriber Funnel deal to the stage that matches reality. Safe to run any time and repeatedly; a deal never moves BACKWARDS
      * (except nothing: lost / won deals are left alone).
-     * @return array{checked:int,signed_up:int,subscribed:int,engaged:int,contacted:int}
+     * @return array{adopted:int,checked:int,signed_up:int,subscribed:int,engaged:int,contacted:int}
      */
     public function reconcile(): array
     {
-        $out = ['checked' => 0, 'signed_up' => 0, 'subscribed' => 0, 'engaged' => 0, 'contacted' => 0];
+        $out = ['adopted' => 0, 'checked' => 0, 'signed_up' => 0, 'subscribed' => 0, 'engaged' => 0, 'contacted' => 0];
         $t = $this->tenant();
         if ($t === null) { return $out; }
         $pl = (new PipelineModel())->setTenant($t)->where('entity_type', 'deal')->where('name', self::PIPELINE)->first();
         if (! $pl) { return $out; }
+        $out['adopted'] = $this->adoptMissing();
         $db = db_connect();
         $stages = $this->stageIds($t, (int) $pl['id']);
         $pos = array_flip(array_keys($stages));            // stage name => position in the funnel (creation order)

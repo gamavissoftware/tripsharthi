@@ -210,6 +210,9 @@ class ContactDedupeService
             FlowTriggerService::fire('meta_lead_received', $tenantId, $contactId, [
                 'source' => $source,
             ]);
+            // TripSarthi's own CRM: a Facebook lead enters the Subscriber Funnel at once (no-op for every other workspace).
+            try { (new \App\Services\Admin\PlatformCrmService())->adoptLead($tenantId, $contactId); }
+            catch (\Throwable $e) { log_message('warning', '[crm] adoptLead failed: ' . $e->getMessage()); }
         }
 
         // google_lead_received fires ADDITIONALLY for Google Ads Lead Form contacts.

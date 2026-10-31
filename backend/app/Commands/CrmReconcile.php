@@ -18,8 +18,8 @@ class CrmReconcile extends BaseCommand
     public function run(array $params): void
     {
         $r = (new PlatformCrmService())->reconcile();
-        if ($r['signed_up'] + $r['subscribed'] + $r['engaged'] + $r['contacted'] > 0) {
-            CLI::write("[crm:reconcile] checked={$r['checked']} contacted={$r['contacted']} engaged={$r['engaged']} signed_up={$r['signed_up']} subscribed={$r['subscribed']}", 'green');
+        if ($r['adopted'] + $r['signed_up'] + $r['subscribed'] + $r['engaged'] + $r['contacted'] > 0) {
+            CLI::write("[crm:reconcile] adopted={$r['adopted']} checked={$r['checked']} contacted={$r['contacted']} engaged={$r['engaged']} signed_up={$r['signed_up']} subscribed={$r['subscribed']}", 'green');
         }
     }
 }

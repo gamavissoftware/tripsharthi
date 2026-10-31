@@ -156,6 +156,29 @@ final class PlatformCrmTest extends CIUnitTestCase
         $this->assertSame(30, $svc->dashboard(5)['days']);
     }
 
+    public function testFacebookLeadsEnterTheFunnelWithoutAnyAutomationOn(): void
+    {
+        $svc = new PlatformCrmService(); $svc->setup(1, false);
+        $db = db_connect();
+        $mk = function (string $name, string $source) use ($db): int {
+            $db->table('contacts')->insert(['tenant_id' => self::MK, 'name' => $name, 'wa_number' => '98' . random_int(10000000, 99999999), 'source' => $source, 'status' => 'new', 'opt_in' => 1, 'created_at' => date('Y-m-d H:i:s')]);
+            return (int) $db->insertID();
+        };
+        $fb = $mk('FB', 'meta_lead_ads'); $manual = $mk('Manual', 'manual');
+        $dealId = $svc->adoptLead(self::MK, $fb);
+        $this->assertNotNull($dealId);
+        $this->assertSame('New lead', $this->stageOf($dealId));
+        $this->assertNull($svc->adoptLead(self::MK, $fb), 'a second call must not create a second deal');
+        $this->assertNull($svc->adoptLead(5, $fb), 'another workspace is never touched');
+        $this->assertSame(0, (int) $db->table('deals')->where('primary_contact_id', $manual)->countAllResults(), 'only Facebook leads are adopted by the catch-up');
+        $old = $mk('Old FB lead', 'meta_lead_ads');
+        $this->assertSame(1, $svc->adoptMissing());
+        $this->assertSame(0, $svc->adoptMissing());
+        $this->assertSame(1, (int) $db->table('deals')->where('primary_contact_id', $old)->countAllResults());
+        $r = $svc->reconcile();
+        $this->assertArrayHasKey('adopted', $r);
+    }
+
     public function testNoMarketingWorkspaceIsExplained(): void
     {
         PlatformSettings::set(PlatformSettings::MARKETING_TENANT, '0');
