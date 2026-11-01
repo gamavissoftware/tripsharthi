@@ -37,6 +37,7 @@ class AdminCrmController extends TravelBaseController
         $b = $this->request->getJSON(true) ?: [];
         return $this->run(fn () => (new PlatformFacebookConnector())->connect((string) ($b['page_id'] ?? ''), (string) ($b['token'] ?? ''), $this->adminId()));
     }
+    public function facebookEvents() { return $this->run(fn () => (new PlatformFacebookConnector())->recentEvents()); }
     public function facebookImport()
     {
         $b = $this->request->getJSON(true) ?: [];

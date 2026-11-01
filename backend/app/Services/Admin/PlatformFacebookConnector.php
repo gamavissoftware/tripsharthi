@@ -128,6 +128,23 @@ final class PlatformFacebookConnector
         return $out;
     }
 
+    /**
+     * The newest lead events Meta delivered to the marketing workspace, with why one failed (so a rejected lead is visible without server access).
+     * @return list<array<string,mixed>>
+     */
+    public function recentEvents(int $limit = 15): array
+    {
+        $rows = \Config\Database::connect()->table('meta_lead_events')
+            ->select('id, leadgen_id, status, contact_id, error, created_at')
+            ->where('tenant_id', $this->tenant())
+            ->orderBy('id', 'DESC')->limit(max(1, min(50, $limit)))->get()->getResultArray();
+        return array_map(static fn (array $r): array => [
+            'id' => (int) $r['id'], 'leadgen_id' => (string) $r['leadgen_id'], 'status' => (string) $r['status'],
+            'contact_id' => $r['contact_id'] !== null ? (int) $r['contact_id'] : null,
+            'error' => $r['error'], 'created_at' => $r['created_at'],
+        ], $rows);
+    }
+
     /** Never let a token reach a message. */
     private function clean(string $msg, string $token): string
     {

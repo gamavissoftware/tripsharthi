@@ -47,6 +47,9 @@ function FacebookPanel({ onChange }) {
   const [hook, setHook] = useState('')
   const [form, setForm] = useState({ page_id: '', page_access_token: '' })
   const [busy, setBusy] = useState(false)
+  const [events, setEvents] = useState([])
+  const loadEvents = useCallback(() => admin.crmFacebookEvents().then(d => setEvents(Array.isArray(d) ? d : [])).catch(() => setEvents([])), [])
+  useEffect(() => { loadEvents() }, [loadEvents])
   const load = useCallback(() => api.get('/meta-integrations').then(d => { setRows(d.data ?? []); setHook(d.webhook_url ?? '') }).catch(() => setRows([])), [])
   useEffect(() => { load() }, [load])
 
@@ -97,6 +100,25 @@ function FacebookPanel({ onChange }) {
           ))}
         </div>
       )}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <b style={{ fontSize: 14 }}>Recent lead events</b>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={loadEvents}>Refresh</button>
+        </div>
+        {events.length === 0 ? <div style={{ color: 'var(--text-3)', fontSize: 13 }}>No leads have been delivered by Meta yet.</div> : (
+          <div style={{ display: 'grid', gap: 6 }}>
+            {events.map(ev => (
+              <div key={ev.id} style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', border: '1px solid #edf1f7', borderRadius: 8, padding: '6px 10px', fontSize: 13 }}>
+                <Pill color={ev.status === 'processed' ? 'var(--success)' : ev.status === 'failed' ? 'var(--danger)' : 'var(--text-3)'}>{ev.status === 'queued' ? 'waiting' : ev.status}</Pill>
+                <span style={{ color: 'var(--text-3)' }}>{ev.created_at ? new Date(ev.created_at.replace(' ', 'T') + 'Z').toLocaleString() : ''}</span>
+                <span style={{ color: 'var(--text-3)' }}>Lead {ev.leadgen_id}</span>
+                {ev.contact_id ? <span>contact #{ev.contact_id}</span> : null}
+                {ev.error ? <span style={{ color: 'var(--danger)' }}>{ev.error}</span> : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
       <form onSubmit={connect} noValidate style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
         <div style={{ flex: '1 1 160px' }}><label htmlFor="fbp" style={{ fontSize: 13 }}>Facebook Page ID</label><input id="fbp" className="form-input" value={form.page_id} onChange={e => setForm({ ...form, page_id: e.target.value })} placeholder="e.g. 1384403011425937" /></div>
         <div style={{ flex: '2 1 260px' }}><label htmlFor="fbt" style={{ fontSize: 13 }}>Facebook access token</label><input id="fbt" className="form-input" type="password" autoComplete="off" value={form.page_access_token} onChange={e => setForm({ ...form, page_access_token: e.target.value })} placeholder="Access token from Graph API Explorer (TripSarthi app)" /></div>

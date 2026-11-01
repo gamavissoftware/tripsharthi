@@ -123,4 +123,18 @@ final class PlatformFacebookConnectorTest extends CIUnitTestCase
         try { (new PlatformFacebookConnector($g))->connect('abc', 'GOODUSERTOKEN-aaaaaaaaaaaa', 1); }
         finally { $this->assertSame([], $g->calls); }
     }
+
+    public function testRecentEventsListsOnlyTheMarketingWorkspaceWithTheFailureReason(): void
+    {
+        $db = db_connect();
+        $db->table('meta_lead_events')->truncate();
+        $db->table('meta_lead_events')->insertBatch([
+            ['tenant_id' => self::MK, 'integration_id' => 1, 'leadgen_id' => 'L1', 'status' => 'failed', 'error' => 'dummy phone', 'created_at' => '2026-11-01 10:00:00'],
+            ['tenant_id' => 77, 'integration_id' => 2, 'leadgen_id' => 'L2', 'status' => 'processed', 'error' => null, 'created_at' => '2026-11-01 10:01:00'],
+        ]);
+        $rows = (new PlatformFacebookConnector(new ScriptedGraph()))->recentEvents();
+        $this->assertCount(1, $rows);
+        $this->assertSame('L1', $rows[0]['leadgen_id']);
+        $this->assertSame('dummy phone', $rows[0]['error']);
+    }
 }
